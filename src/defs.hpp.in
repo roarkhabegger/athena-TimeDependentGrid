@@ -22,6 +22,9 @@
 // enable shearing box? default=0 (false)
 #define SHEARING_BOX @SHEARING_BOX@
 
+// enable dual-energy? default=0 (false)
+#define DUAL_ENERGY @DUAL_ENERGY@ 
+
 // non-barotropic equation of state (i.e. P not simply a func of rho)? default=1 (true)
 #define NON_BAROTROPIC_EOS @NON_BAROTROPIC_EOS@
 
@@ -75,6 +78,7 @@
 // macros associated with numerical algorithm (rarely modified)
 
 #define NHYDRO @NHYDRO_VARIABLES@
+#define NINT @NINT_VARIABLE@
 #define NFIELD @NFIELD_VARIABLES@
 #define NWAVE @NWAVE_VALUE@
 #define NGHOST @NUMBER_GHOST_CELLS@

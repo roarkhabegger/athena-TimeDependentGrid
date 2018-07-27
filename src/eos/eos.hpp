@@ -101,6 +101,11 @@ public:
   Real GetIsoSoundSpeed() const {return iso_sound_speed_;}
   Real GetDensityFloor() const {return density_floor_;}
   Real GetPressureFloor() const {return pressure_floor_;}
+	#ifdef DUAL_ENERGY
+	Real GetIeta1() const {return ieta1_;}
+	Real GetIeta2() const {return ieta2_;}
+	#endif // DUAL_ENERGY 
+	
 
 private:
   MeshBlock *pmy_block_;                 // ptr to MeshBlock containing this EOS
@@ -117,6 +122,9 @@ private:
   AthenaArray<Real> normal_mm_;          // normal-frame momenta, used in GR MHD
   AthenaArray<Real> normal_bb_;          // normal-frame fields, used in GR MHD
   AthenaArray<Real> normal_tt_;          // normal-frame M.B, used in GR MHD
+	#ifdef DUAL_ENERGY
+	Real ieta1_, ieta2_; 
+	#endif 
 };
 
 #endif // EOS_EOS_HPP_

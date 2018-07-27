@@ -62,7 +62,7 @@ Mesh::Mesh(ParameterInput *pin, int mesh_test) {
   MeshBlock *pfirst;
   enum BoundaryFlag block_bcs[6];
   int64_t nbmax;
-  int dim;
+  int dim, ilog;
 
   // mesh test
   if (mesh_test>0) Globals::nranks=mesh_test;
@@ -159,9 +159,18 @@ Mesh::Mesh(ParameterInput *pin, int mesh_test) {
   }
 
   // read ratios of grid cell size in each direction
-  block_size.x1rat = mesh_size.x1rat = pin->GetOrAddReal("mesh","x1rat",1.0);
-  block_size.x2rat = mesh_size.x2rat = pin->GetOrAddReal("mesh","x2rat",1.0);
-  block_size.x3rat = mesh_size.x3rat = pin->GetOrAddReal("mesh","x3rat",1.0);
+	// ilog = 1 allows for uniform log-spacing in x1
+	ilog = pin->GetOrAddInteger("mesh", "ilog", 0); 
+	if (ilog == 0) {
+		block_size.x1rat = mesh_size.x1rat = pin->GetOrAddReal("mesh","x1rat",1.0);
+	}
+	else {
+		block_size.x1rat = mesh_size.x1rat = std::pow(mesh_size.x1max/mesh_size.x1min, 
+																									1.0/mesh_size.nx1); 
+	}
+	block_size.x2rat = mesh_size.x2rat = pin->GetOrAddReal("mesh","x2rat",1.0);
+	block_size.x3rat = mesh_size.x3rat = pin->GetOrAddReal("mesh","x3rat",1.0);
+
 
   // read BC flags for each of the 6 boundaries in turn.
   mesh_bcs[INNER_X1] = GetBoundaryFlag(pin->GetOrAddString("mesh","ix1_bc","none"));

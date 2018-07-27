@@ -87,10 +87,10 @@ Reconstruction::Reconstruction(MeshBlock *pmb, ParameterInput *pin) {
   scr01_i_.NewAthenaArray(ncells1);
   scr02_i_.NewAthenaArray(ncells1);
 
-  scr1_ni_.NewAthenaArray(NWAVE,ncells1);
-  scr2_ni_.NewAthenaArray(NWAVE,ncells1);
-  scr3_ni_.NewAthenaArray(NWAVE,ncells1);
-  scr4_ni_.NewAthenaArray(NWAVE,ncells1);
+  scr1_ni_.NewAthenaArray(NWAVE+NINT,ncells1);
+  scr2_ni_.NewAthenaArray(NWAVE+NINT,ncells1);
+  scr3_ni_.NewAthenaArray(NWAVE+NINT,ncells1);
+  scr4_ni_.NewAthenaArray(NWAVE+NINT,ncells1);
 
   if (xorder == 4) {
     scr03_i_.NewAthenaArray(ncells1);
@@ -106,10 +106,10 @@ Reconstruction::Reconstruction(MeshBlock *pmb, ParameterInput *pin) {
     scr13_i_.NewAthenaArray(ncells1);
     scr14_i_.NewAthenaArray(ncells1);
 
-    scr5_ni_.NewAthenaArray(NWAVE,ncells1);
-    scr6_ni_.NewAthenaArray(NWAVE,ncells1);
-    scr7_ni_.NewAthenaArray(NWAVE,ncells1);
-    scr8_ni_.NewAthenaArray(NWAVE,ncells1);
+    scr5_ni_.NewAthenaArray(NWAVE+NINT,ncells1);
+    scr6_ni_.NewAthenaArray(NWAVE+NINT,ncells1);
+    scr7_ni_.NewAthenaArray(NWAVE+NINT,ncells1);
+    scr8_ni_.NewAthenaArray(NWAVE+NINT,ncells1);
 
     // Precompute PPM coefficients in x1-direction ---------------------------------------
     c1i.NewAthenaArray(ncells1);

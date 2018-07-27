@@ -389,7 +389,7 @@ int main(int argc, char *argv[]) {
         pmesh->pfgrd->Solve(step,0);
       else if (SELF_GRAVITY_ENABLED == 2) // multigrid
         pmesh->pmgrd->Solve(step);
-      ptlist->DoTaskListOneSubstep(pmesh, step);
+      ptlist->DoTaskListOneSubstep(pmesh, step); // one substep of integration
     }
 
     pmesh->ncycle++;

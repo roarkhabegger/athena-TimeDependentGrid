@@ -52,7 +52,7 @@ Real Hydro::NewBlockTimeStep(void) {
   dt1.InitWithShallowCopy(dt1_);
   dt2.InitWithShallowCopy(dt2_);
   dt3.InitWithShallowCopy(dt3_);
-  Real wi[(NWAVE)];
+  Real wi[(NWAVE+NINT)];
 
   Real min_dt = (FLT_MAX);
 
@@ -68,7 +68,11 @@ Real Hydro::NewBlockTimeStep(void) {
           wi[IVX]=w(IVX,k,j,i);
           wi[IVY]=w(IVY,k,j,i);
           wi[IVZ]=w(IVZ,k,j,i);
-          if (NON_BAROTROPIC_EOS) wi[IPR]=w(IPR,k,j,i);
+          if (NON_BAROTROPIC_EOS) {
+						wi[IPR]=w(IPR,k,j,i);
+						if (DUAL_ENERGY) wi[IGE]=w(IGE,k,j,i);
+					}
+					
 
           if (MAGNETIC_FIELDS_ENABLED) {
 

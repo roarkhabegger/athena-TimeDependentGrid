@@ -204,11 +204,15 @@ TimeIntegratorTaskList::TimeIntegratorTaskList(ParameterInput *pin, Mesh *pm)
   // Now assemble list of tasks for each step of time integrator
   {using namespace HydroIntegratorTaskNames; // NOLINT (build/namespace)
     AddTimeIntegratorTask(STARTUP_INT,NONE);
+		// Check IE
+		if (DUAL_ENERGY)
+			AddTimeIntegratorTask(CHECK_IE, STARTUP_INT); 
     AddTimeIntegratorTask(START_ALLRECV,STARTUP_INT);
     // calculate hydro/field diffusive fluxes
     AddTimeIntegratorTask(DIFFUSE_HYD,START_ALLRECV);
     if (MAGNETIC_FIELDS_ENABLED)
       AddTimeIntegratorTask(DIFFUSE_FLD,START_ALLRECV);
+
     // compute hydro fluxes, integrate hydro variables
     if (MAGNETIC_FIELDS_ENABLED)
       AddTimeIntegratorTask(CALC_HYDFLX,(START_ALLRECV|DIFFUSE_HYD|DIFFUSE_FLD));
@@ -252,6 +256,8 @@ TimeIntegratorTaskList::TimeIntegratorTaskList(ParameterInput *pin, Mesh *pm)
       }
     }
 
+
+
     // prolongate, compute new primitives
     if (MAGNETIC_FIELDS_ENABLED) { // MHD
       if (pm->multilevel==true) { // SMR or AMR
@@ -278,6 +284,7 @@ TimeIntegratorTaskList::TimeIntegratorTaskList(ParameterInput *pin, Mesh *pm)
       }
     }
 
+
     // everything else
     AddTimeIntegratorTask(PHY_BVAL,CON2PRIM);
 //    if (SELF_GRAVITY_ENABLED == 1) {
@@ -286,6 +293,10 @@ TimeIntegratorTaskList::TimeIntegratorTaskList(ParameterInput *pin, Mesh *pm)
 //    } else {
     AddTimeIntegratorTask(USERWORK,PHY_BVAL);
 //    }
+		// sync dual-energy
+		if (DUAL_ENERGY)
+			AddTimeIntegratorTask(SYNC_IE, USERWORK); 
+
     AddTimeIntegratorTask(NEW_DT,USERWORK);
     if (pm->adaptive==true) {
       AddTimeIntegratorTask(AMR_FLAG,USERWORK);
@@ -483,6 +494,17 @@ void TimeIntegratorTaskList::AddTimeIntegratorTask(uint64_t id, uint64_t dep) {
         (&TimeIntegratorTaskList::FieldDiffusion);
       break;
 
+		case (SYNC_IE):
+			task_list_[ntasks].TaskFunc=
+				static_cast<enum TaskStatus (TaskList::*)(MeshBlock*,int)>
+				(&TimeIntegratorTaskList::InternalEnergySync);
+			break; 
+		case (CHECK_IE):
+			task_list_[ntasks].TaskFunc=
+				static_cast<enum TaskStatus (TaskList::*)(MeshBlock*,int)>
+				(&TimeIntegratorTaskList::InternalEnergyCheck);
+			break; 
+
     default:
       std::stringstream msg;
       msg << "### FATAL ERROR in AddTimeIntegratorTask" << std::endl
@@ -651,6 +673,20 @@ enum TaskStatus TimeIntegratorTaskList::HydroDiffusion(MeshBlock *pmb, int step)
   // *** this must be changed for the RK3 integrator
   if(step <= nsub_steps) {
     ph->phdif->CalcHydroDiffusionFlux(ph->w,ph->u,ph->flux);
+  } else {
+    return TASK_FAIL;
+  }
+  return TASK_NEXT;
+}
+
+//----------------------------------------------------------------------------------------
+// Function to check total and internal energy
+enum TaskStatus TimeIntegratorTaskList::InternalEnergyCheck(MeshBlock *pmb, int step) {
+  Hydro *ph=pmb->phydro;
+
+  // *** this must be changed for the RK3 integrator
+  if(step <= nsub_steps) {
+    ph->CheckEint(ph->u);
   } else {
     return TASK_FAIL;
   }
@@ -865,6 +901,15 @@ enum TaskStatus TimeIntegratorTaskList::UserWork(MeshBlock *pmb, int step) {
 
   pmb->UserWorkInLoop();
   return TASK_SUCCESS;
+}
+
+// Function to sync internal with total energy
+enum TaskStatus TimeIntegratorTaskList::InternalEnergySync(MeshBlock *pmb, int step) {
+	if (step != nsub_steps) return TASK_SUCCESS; // only do on last sub-step
+
+	Hydro *ph=pmb->phydro; 
+	ph->SyncEint(ph->u);
+	return TASK_SUCCESS; 
 }
 
 enum TaskStatus TimeIntegratorTaskList::NewBlockTimeStep(MeshBlock *pmb, int step) {

@@ -357,6 +357,7 @@ Real Cylindrical::GetCellVolume(const int k, const int j, const int i) {
 void Cylindrical::CoordSrcTerms(const Real dt, const AthenaArray<Real> *flux,
   const AthenaArray<Real> &prim, const AthenaArray<Real> &bcc, AthenaArray<Real> &u) {
   Real iso_cs = pmy_block->peos->GetIsoSoundSpeed();
+	Real gm1    = pmy_block->peos->GetGamma() - 1.0; 
 
   HydroDiffusion *phd = pmy_block->phydro->phdif;
   bool do_hydro_diffusion = (phd->hydro_diffusion_defined &&
@@ -369,9 +370,9 @@ void Cylindrical::CoordSrcTerms(const Real dt, const AthenaArray<Real> *flux,
         // src_1 = <M_{phi phi}><1/r>
         Real m_pp = prim(IDN,k,j,i)*prim(IM2,k,j,i)*prim(IM2,k,j,i);
         if (NON_BAROTROPIC_EOS) {
-           m_pp += prim(IEN,k,j,i);
+					m_pp += prim(IEN,k,j,i);
         } else {
-           m_pp += (iso_cs*iso_cs)*prim(IDN,k,j,i);
+          m_pp += (iso_cs*iso_cs)*prim(IDN,k,j,i);
         }
         if (MAGNETIC_FIELDS_ENABLED) {
           m_pp += 0.5*( SQR(bcc(IB1,k,j,i)) - SQR(bcc(IB2,k,j,i)) + SQR(bcc(IB3,k,j,i)) );
@@ -386,6 +387,11 @@ void Cylindrical::CoordSrcTerms(const Real dt, const AthenaArray<Real> *flux,
         Real& x_ip1 = x1f(i+1);
         u(IM2,k,j,i) -= dt*coord_src2_i_(i)*(x_i*flux[X1DIR](IM2,k,j,i)
                                            + x_ip1*flux[X1DIR](IM2,k,j,i+1));
+
+				// src term for internal energy -v_R*P/r 
+				if (DUAL_ENERGY) {
+					u(IIE,k,j,i) -= dt*prim(IPR,k,j,i)*prim(IVX,k,j,i)/x1v(i); 
+				}
       }
     }
   }

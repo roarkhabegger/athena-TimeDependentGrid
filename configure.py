@@ -18,6 +18,7 @@
 #   -g                enable general relativity
 #   -t                enable interface frame transformations for GR
 #   -shear            enable shearing periodic boundary conditions
+#   -de               enable dual-energy 
 #   -debug            enable debug flags (-g -O0); override other compiler options
 #   -float            enable single precision (default is double)
 #   -mpi              enable parallelization with MPI
@@ -112,6 +113,12 @@ parser.add_argument('-shear',
     action='store_true',
     default=False,
     help='enable shearing box')
+
+# -de argument
+parser.add_argument('-de',
+    action='store_true',
+    default=False,
+    help='enable dual energy') 
 
 # -debug argument
 parser.add_argument('-debug',
@@ -245,6 +252,10 @@ if args['eos'] == 'isothermal':
   if args['s'] or args['g']:
     raise SystemExit('### CONFIGURE ERROR: '\
         + 'Isothermal EOS is incompatible with relativity')
+  if args['de']:
+    raise SystemExit('### CONFIGURE ERROR: '\
+        + 'Isothermal EOS is incompatible with dual-energy')
+
 
 #--- Step 3. Set definitions and Makefile options based on above arguments ---------------
 
@@ -264,9 +275,15 @@ definitions['NON_BAROTROPIC_EOS'] = '1' if args['eos'] == 'adiabatic' else '0'
 makefile_options['EOS_FILE'] = args['eos']
 # set number of hydro variables for adiabatic/isothermal
 if args['eos'] == 'adiabatic':
-  definitions['NHYDRO_VARIABLES'] = '5'
+  if args['de']:
+    definitions['NHYDRO_VARIABLES'] = '6'
+    definitions['NINT_VARIABLE'] = '1'
+  else:
+    definitions['NHYDRO_VARIABLES'] = '5'
+    definitions['NINT_VARIABLE'] = '0'
 if args['eos'] == 'isothermal':
   definitions['NHYDRO_VARIABLES'] = '4'
+  definitions['NINT_VARIABLE'] = '0' 
 
 # --flux=[name] argument
 definitions['RSOLVER'] = makefile_options['RSOLVER_FILE'] = args['flux']
@@ -317,6 +334,15 @@ if args['shear']:
   definitions['SHEARING_BOX'] = '1'
 else:
   definitions['SHEARING_BOX'] = '0'
+
+# -de argument 
+# set variety of macros based on whether dual-energy is defined 
+if args['de']:
+  definitions['DUAL_ENERGY'] = '1'
+  makefile_options['EOS_FILE']     += '_de'
+  makefile_options['RSOLVER_FILE'] += '_de'
+else:
+  definitions['DUAL_ENERGY'] = '0'
 
 # --cxx=[name] argument
 if args['cxx'] == 'g++':
@@ -553,6 +579,7 @@ print('  Special relativity:      ' + ('ON' if args['s'] else 'OFF'))
 print('  General relativity:      ' + ('ON' if args['g'] else 'OFF'))
 print('  Frame transformations:   ' + ('ON' if args['t'] else 'OFF'))
 print('  ShearingBox:             ' + ('ON' if args['shear'] else 'OFF'))
+print('  Dual-Energy:             ' + ('ON' if args['de'] else 'OFF'))
 print('  Debug flags:             ' + ('ON' if args['debug'] else 'OFF'))
 print('  Linker flags:            ' + makefile_options['LINKER_FLAGS'] + ' ' \
     + makefile_options['LIBRARY_FLAGS'])

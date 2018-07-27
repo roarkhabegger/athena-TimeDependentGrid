@@ -47,7 +47,7 @@ enum NeighborType {NEIGHBOR_NONE=0, NEIGHBOR_FACE=1, NEIGHBOR_EDGE=2, NEIGHBOR_C
 enum BoundaryStatus {BNDRY_WAITING, BNDRY_ARRIVED, BNDRY_COMPLETED};
 
 // flags to mark which variables are reversed across polar boundary
-static bool flip_across_pole_hydro[] = {false, false, true, true, false};
+static bool flip_across_pole_hydro[] = {false, false, true, true, false, false};
 static bool flip_across_pole_field[] = {false, true, true};
 
 //----------------------------------------------------------------------------------------

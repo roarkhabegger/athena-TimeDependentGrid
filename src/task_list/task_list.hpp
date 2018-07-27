@@ -124,6 +124,9 @@ public:
   enum TaskStatus FieldDiffusion(MeshBlock *pmb, int step);
   enum TaskStatus CalcDiffusivity(MeshBlock *pmb, int step);
 
+	enum TaskStatus InternalEnergySync(MeshBlock *pmb, int step); 
+	enum TaskStatus InternalEnergyCheck(MeshBlock *pmb, int step); 
+
   enum TaskStatus HydroSend(MeshBlock *pmb, int step);
   enum TaskStatus FieldSend(MeshBlock *pmb, int step);
 
@@ -230,6 +233,9 @@ namespace HydroIntegratorTaskNames {
   const uint64_t DIFFUSE_HYD=1LL<<54;
   const uint64_t DIFFUSE_FLD=1LL<<55;
   const uint64_t CALC_DIFFUSIVITY=1LL<<56;
+
+	const uint64_t SYNC_IE=1LL<<57;
+	const uint64_t CHECK_IE=1LL<<58;
 }; // namespace HydroIntegratorTaskNames
 
 #endif // TASK_LIST_TASK_LIST_HPP_

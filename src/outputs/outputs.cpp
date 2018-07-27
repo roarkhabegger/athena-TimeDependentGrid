@@ -337,6 +337,17 @@ void OutputType::LoadOutputData(MeshBlock *pmb) {
       AppendOutputDataNode(pod);
       num_vars_++;
     }
+		if (DUAL_ENERGY) {
+			if (output_params.variable.compare("IE") == 0 ||
+					output_params.variable.compare("cons") == 0) {
+				pod = new OutputData;
+				pod->type = "SCALARS";
+				pod->name = "Eint";
+				pod->data.InitWithShallowSlice(phyd->u,4,IIE,1);
+				AppendOutputDataNode(pod);
+				num_vars_++;
+			}
+		}
   }
 
   // pressure
@@ -350,6 +361,17 @@ void OutputType::LoadOutputData(MeshBlock *pmb) {
       AppendOutputDataNode(pod);
       num_vars_++;
     }
+		if (DUAL_ENERGY) {
+			if (output_params.variable.compare("IGE") == 0 ||
+					output_params.variable.compare("prim") == 0) {
+				pod = new OutputData;
+				pod->type = "SCALARS";
+				pod->name = "IGint";
+				pod->data.InitWithShallowSlice(phyd->w,4,IGE,1);
+				AppendOutputDataNode(pod);
+				num_vars_++;
+			}
+		}
   }
 
   // momentum vector

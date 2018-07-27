@@ -44,6 +44,9 @@ public:
   // shearing box src terms
   void ShearingBoxSourceTerms(const Real dt, const AthenaArray<Real> *flx,
                            const AthenaArray<Real> &p, AthenaArray<Real> &c);
+	// dual-energy src terms
+	void InternalEnergy(const Real dt, const AthenaArray<Real> *flx, 
+									const AthenaArray<Real> &p, AthenaArray<Real> &c); 
   Real UnstratifiedDisk(const Real x1, const Real x2, const Real x3);
 
   void SelfGravity(const Real dt, const AthenaArray<Real> *flx,

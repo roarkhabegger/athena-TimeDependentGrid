@@ -123,6 +123,9 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin) {
         }
       }
       phydro->u(IEN,k,j,i) = pres/gm1;
+			if (DUAL_ENERGY) {
+				phydro->u(IIE,k,j,i) = pres/gm1; 
+			}
       if (RELATIVISTIC_DYNAMICS)  // this should only ever be SR with this file
         phydro->u(IEN,k,j,i) += den;
     }
