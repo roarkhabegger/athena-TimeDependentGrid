@@ -53,12 +53,14 @@ void Hydro::RiemannSolver(const int kl, const int ku, const int jl, const int ju
     wli[IVY]=wl(ivy,k,j,i);
     wli[IVZ]=wl(ivz,k,j,i);
     wli[IPR]=wl(IPR,k,j,i);
+		if (DUAL_ENERGY) wli[IGE]=wl(IGE,k,j,i);
 
     wri[IDN]=wr(IDN,k,j,i);
     wri[IVX]=wr(ivx,k,j,i);
     wri[IVY]=wr(ivy,k,j,i);
     wri[IVZ]=wr(ivz,k,j,i);
     wri[IPR]=wr(IPR,k,j,i);
+		if (DUAL_ENERGY) wri[IGE]=wr(IGE,k,j,i);
 
 //--- Step2.  Compute Roe-averaged state
 
@@ -159,8 +161,39 @@ void Hydro::RiemannSolver(const int kl, const int ku, const int jl, const int ju
     flx(ivy,k,j,i) = flxi[IVY];
     flx(ivz,k,j,i) = flxi[IVZ];
     flx(IEN,k,j,i) = flxi[IEN];
+		if (DUAL_ENERGY) {
+			if (flxi[IDN]  >= 0) {
+				flx(IIE,k,j,i) = flxi[IDN]*wli[IGE];
+			}
+			else {
+				flx(IIE,k,j,i) = flxi[IDN]*wri[IGE];
+			}
+		}
   }
   }}
+
+	// fluxes of passive scalars, computed from density flux 
+	for (int n=NHYDRO-NSCALARS; n<NHYDRO; n++) {
+		for (int k=kl; k<=ku; ++k) {
+		for (int j=jl; j<=ju; ++j) {
+#pragma omp simd
+			for (int i=il; i<=iu; ++i) {
+
+//--- Step 1.  Load L/R states into local variables
+				wli[n]=wl(n,k,j,i);
+		
+				wri[n]=wr(n,k,j,i);
+
+//--- Step 2. Compute flux from the pre-computed density flux
+				if (flx(IDN,k,j,i) >= 0) {
+					flx(n,k,j,i) = flx(IDN,k,j,i)*wli[n];
+				}
+				else {
+					flx(n,k,j,i) = flx(IDN,k,j,i)*wri[n]; 
+				}
+			}
+		}}
+	}
 
   return;
 }

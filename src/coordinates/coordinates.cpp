@@ -634,6 +634,13 @@ void Coordinates::CoordSrcTerms(const Real dt, const AthenaArray<Real> *flux,
 }
 
 //----------------------------------------------------------------------------------------
+// Coordinate (Geometric) source term function for collisionless variables
+void Coordinates::CoordSrcTermsCL(const Real dt, const AthenaArray<Real> *flux,
+  const AthenaArray<Real> &prim, AthenaArray<Real> &u) {
+  return;
+}
+
+//----------------------------------------------------------------------------------------
 // Function for determining if index corresponds to a polar boundary
 // Inputs:
 //   j: x2-index

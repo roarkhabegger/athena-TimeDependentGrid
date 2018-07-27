@@ -38,14 +38,14 @@ public:
 
   // functions
   // linear transformations of vectors between primitive and characteristic variables
-  static void LeftEigenmatrixDotVector(MeshBlock *pmb, const int ivx,
+	static void LeftEigenmatrixDotVector(MeshBlock *pmb, const int ivx,
     const int il, const int iu, const AthenaArray<Real> &b1, const AthenaArray<Real> &w,
     AthenaArray<Real> &vect);
   static void RightEigenmatrixDotVector(MeshBlock *pmb, const int ivx,
     const int il, const int iu, const AthenaArray<Real> &b1, const AthenaArray<Real> &w,
     AthenaArray<Real> &vect);
 
-  // reconstruction functions of various orders in each dimension
+  // reconstruction functions of various orders in each dimension for hydro vars
   static void DonorCellX1(MeshBlock *pmb, const int kl, const int ku,
     const int jl, const int ju  , const int il, const int iu, const AthenaArray<Real> &w,
     const AthenaArray<Real> &bcc, AthenaArray<Real> &wl, AthenaArray<Real> &wr);
@@ -82,6 +82,52 @@ public:
     const int jl, const int ju  , const int il, const int iu, const AthenaArray<Real> &w,
     const AthenaArray<Real> &bcc, AthenaArray<Real> &wl, AthenaArray<Real> &wr);
 
+	// collisionless reconstruction functions 
+	static void LeftEigenmatrixDotVectorCL(MeshBlock *pmb, const int ivx,
+    const int ip12, const int il, const int iu, const AthenaArray<Real> &w,
+    AthenaArray<Real> &vect);
+  static void RightEigenmatrixDotVectorCL(MeshBlock *pmb, const int ivx,
+    const int ip12, const int il, const int iu, const AthenaArray<Real> &w,
+    AthenaArray<Real> &vect);
+
+	// reconstruction functions of various orders in each dimension for cless vars
+  static void DonorCellCLX1(MeshBlock *pmb, const int kl, const int ku,
+    const int jl, const int ju, const int il, const int iu, const AthenaArray<Real> &w,
+    AthenaArray<Real> &wl, AthenaArray<Real> &wr);
+
+  static void DonorCellCLX2(MeshBlock *pmb, const int kl, const int ku,
+    const int jl, const int ju, const int il, const int iu, const AthenaArray<Real> &w,
+    AthenaArray<Real> &wl, AthenaArray<Real> &wr);
+
+  static void DonorCellCLX3(MeshBlock *pmb, const int kl, const int ku,
+    const int jl, const int ju, const int il, const int iu, const AthenaArray<Real> &w,
+    AthenaArray<Real> &wl, AthenaArray<Real> &wr);
+
+  static void PiecewiseLinearCLX1(MeshBlock *pmb, const int kl, const int ku,
+    const int jl, const int ju, const int il, const int iu, const AthenaArray<Real> &w,
+    AthenaArray<Real> &wl, AthenaArray<Real> &wr);
+
+  static void PiecewiseLinearCLX2(MeshBlock *pmb, const int kl, const int ku,
+    const int jl, const int ju, const int il, const int iu, const AthenaArray<Real> &w,
+    AthenaArray<Real> &wl, AthenaArray<Real> &wr);
+
+  static void PiecewiseLinearCLX3(MeshBlock *pmb, const int kl, const int ku,
+    const int jl, const int ju, const int il, const int iu, const AthenaArray<Real> &w,
+    AthenaArray<Real> &wl, AthenaArray<Real> &wr);
+
+  static void PiecewiseParabolicCLX1(MeshBlock *pmb, const int kl, const int ku,
+    const int jl, const int ju, const int il, const int iu, const AthenaArray<Real> &w,
+    AthenaArray<Real> &wl, AthenaArray<Real> &wr);
+
+  static void PiecewiseParabolicCLX2(MeshBlock *pmb, const int kl, const int ku,
+    const int jl, const int ju, const int il, const int iu, const AthenaArray<Real> &w,
+    AthenaArray<Real> &wl, AthenaArray<Real> &wr);
+
+  static void PiecewiseParabolicCLX3(MeshBlock *pmb, const int kl, const int ku,
+    const int jl, const int ju, const int il, const int iu, const AthenaArray<Real> &w,
+    AthenaArray<Real> &wl, AthenaArray<Real> &wr);
+
+
 private:
   MeshBlock* pmy_block_;  // ptr to MeshBlock containing this Reconstruction
 
@@ -91,5 +137,12 @@ private:
   AthenaArray<Real> scr11_i_,scr12_i_,scr13_i_,scr14_i_;
   AthenaArray<Real> scr1_ni_, scr2_ni_, scr3_ni_, scr4_ni_, scr5_ni_;
   AthenaArray<Real> scr6_ni_, scr7_ni_, scr8_ni_;
+	
+	// scratch arrays used for CLESS reconstruction PLM, PPM 
+  AthenaArray<Real> scrcl01_i_,scrcl02_i_,scrcl03_i_,scrcl04_i_,scrcl05_i_;
+  AthenaArray<Real> scrcl06_i_,scrcl07_i_,scrcl08_i_,scrcl09_i_,scrcl10_i_;
+  AthenaArray<Real> scrcl11_i_,scrcl12_i_,scrcl13_i_,scrcl14_i_;
+  AthenaArray<Real> scrcl1_ni_, scrcl2_ni_, scrcl3_ni_, scrcl4_ni_, scrcl5_ni_;
+  AthenaArray<Real> scrcl6_ni_, scrcl7_ni_, scrcl8_ni_;
 };
 #endif // RECONSTRUCT_RECONSTRUCTION_HPP_

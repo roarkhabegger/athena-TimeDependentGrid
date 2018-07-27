@@ -128,7 +128,7 @@ void Reconstruction::PiecewiseParabolicX1(MeshBlock *pmb,
 
 //--- Step 1. ----------------------------------------------------------------------------
 // Reconstruct interface averages <a>_{i-1/2} and <a>_{i+1/2}
-    for (int n=0; n<(NWAVE); ++n) {
+    for (int n=0; n<(NWAVE+NINT+NSCALARS); ++n) {
 
       // Compute average slope in i-1, i, i+1 zones
 #pragma omp simd simdlen(SIMD_WIDTH)
@@ -316,7 +316,7 @@ void Reconstruction::PiecewiseParabolicX1(MeshBlock *pmb,
         ql_iph(n,i ) = qplus(i);
         qr_imh(n,i ) = qminus(i);
       }
-    } // end char PPM loop over NWAVE
+    } // end char PPM loop over NWAVE + NINT + NSCALARS
 
     // Project limited slope back to primitive variables, if necessary
     if (pmb->precon->characteristic_reconstruction) {
@@ -325,7 +325,7 @@ void Reconstruction::PiecewiseParabolicX1(MeshBlock *pmb,
     }
 
     // compute ql_(i+1/2) and qr_(i-1/2)
-    for (int n=0; n<(NWAVE); ++n) {
+    for (int n=0; n<(NWAVE+NINT+NSCALARS); ++n) {
 #pragma omp simd
       for (int i=il-1; i<=iu; ++i) {
         wl(n,k,j,i+1) = ql_iph(n,i);
@@ -432,7 +432,7 @@ void Reconstruction::PiecewiseParabolicX2(MeshBlock *pmb,
 
 //--- Step 1. ----------------------------------------------------------------------------
 // Reconstruct interface averages <a>_{j-1/2} and <a>_{j+1/2}
-    for (int n=0; n<(NWAVE); ++n) {
+    for (int n=0; n<(NWAVE+NINT+NSCALARS); ++n) {
 
       // Compute average slope in j-1, j, j+1 zones
 #pragma omp simd simdlen(SIMD_WIDTH)
@@ -619,7 +619,7 @@ void Reconstruction::PiecewiseParabolicX2(MeshBlock *pmb,
         ql_jph(n,i ) = qplus(i);
         qr_jmh(n,i ) = qminus(i);
       }
-    } // end char PPM loop over NWAVE
+    } // end char PPM loop over NWAVE + NINT + NSCALARS
 
     // Project limited slope back to primitive variables, if necessary
     if (pmb->precon->characteristic_reconstruction) {
@@ -628,7 +628,7 @@ void Reconstruction::PiecewiseParabolicX2(MeshBlock *pmb,
     }
 
     // compute ql_(j+1/2) and qr_(j-1/2)
-    for (int n=0; n<(NWAVE); ++n) {
+    for (int n=0; n<(NWAVE+NINT+NSCALARS); ++n) {
 #pragma omp simd
       for (int i=il; i<=iu; ++i) {
         wl(n,k,j+1,i) = ql_jph(n,i);
@@ -735,7 +735,7 @@ void Reconstruction::PiecewiseParabolicX3(MeshBlock *pmb,
 
 //--- Step 1. ----------------------------------------------------------------------------
 // Reconstruct interface averages <a>_{k-1/2} and <a>_{k+1/2}
-    for (int n=0; n<(NWAVE); ++n) {
+    for (int n=0; n<(NWAVE+NINT+NSCALARS); ++n) {
 
       // Compute average slope in k-1, k, k+1 zones
 #pragma omp simd simdlen(SIMD_WIDTH)
@@ -925,7 +925,7 @@ void Reconstruction::PiecewiseParabolicX3(MeshBlock *pmb,
         ql_kph(n,i ) = qplus(i);
         qr_kmh(n,i ) = qminus(i);
       }
-    } // end char PPM loop over NWAVE
+    } // end char PPM loop over NWAVE + NINT + NSCALARS
 
     // Project limited slope back to primitive variables, if necessary
     if (pmb->precon->characteristic_reconstruction) {
@@ -934,7 +934,7 @@ void Reconstruction::PiecewiseParabolicX3(MeshBlock *pmb,
     }
 
     // compute ql_(k+1/2) and qr_(k-1/2)
-    for (int n=0; n<(NWAVE); ++n) {
+    for (int n=0; n<(NWAVE+NINT+NSCALARS); ++n) {
 #pragma omp simd
       for (int i=il; i<=iu; ++i) {
         wl(n,k+1,j,i) = ql_kph(n,i);

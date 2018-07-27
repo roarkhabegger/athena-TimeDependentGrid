@@ -58,7 +58,6 @@ void OutflowInnerX1(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
       }
     }}
   }
-
   return;
 }
 
@@ -305,6 +304,137 @@ void OutflowOuterX3(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
 #pragma omp simd
       for (int i=is; i<=ie; ++i) {
         b.x3f((ke+k+1),j,i) = b.x3f((ke+1),j,i);
+      }
+    }}
+  }
+
+  return;
+}
+
+// Cless versions of outflow BC  
+//----------------------------------------------------------------------------------------
+//! \fn void OutflowInnerX1(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
+//                          FaceField &b, Real time, Real dt,
+//                          int is, int ie, int js, int je, int ks, int ke)
+//  \brief OUTFLOW boundary conditions, inner x1 boundary
+
+void OutflowInnerCLX1(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
+     Real time, Real dt, int is, int ie, int js, int je, int ks, int ke) {
+  // copy hydro variables into ghost zones
+  for (int n=0; n<(NCLESS); ++n) {
+    for (int k=ks; k<=ke; ++k) {
+    for (int j=js; j<=je; ++j) {
+#pragma omp simd
+      for (int i=1; i<=(NGHOST); ++i) {
+        prim(n,k,j,is-i) = prim(n,k,j,is);
+      }
+    }}
+  }
+  return;
+}
+
+//----------------------------------------------------------------------------------------
+//! \fn void OutflowOuterX1(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
+//                         FaceField &b, Real time, Real dt,
+//                         int is, int ie, int js, int je, int ks, int ke)
+//  \brief OUTFLOW boundary conditions, outer x1 boundary
+
+void OutflowOuterCLX1(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
+     Real time, Real dt, int is, int ie, int js, int je, int ks, int ke) {
+  // copy hydro variables into ghost zones
+  for (int n=0; n<(NCLESS); ++n) {
+    for (int k=ks; k<=ke; ++k) {
+    for (int j=js; j<=je; ++j) {
+#pragma omp simd
+      for (int i=1; i<=(NGHOST); ++i) {
+        prim(n,k,j,ie+i) = prim(n,k,j,ie);
+      }
+    }}
+  }
+
+  return;
+}
+
+//----------------------------------------------------------------------------------------
+//! \fn void OutflowInnerX2(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
+//                          FaceField &b, Real time, Real dt,
+//                          int is, int ie, int js, int je, int ks, int ke)
+//  \brief OUTFLOW boundary conditions, inner x2 boundary
+
+void OutflowInnerCLX2(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
+     Real time, Real dt, int is, int ie, int js, int je, int ks, int ke) {
+  // copy hydro variables into ghost zones
+  for (int n=0; n<(NCLESS); ++n) {
+    for (int k=ks; k<=ke; ++k) {
+    for (int j=1; j<=(NGHOST); ++j) {
+#pragma omp simd
+      for (int i=is; i<=ie; ++i) {
+        prim(n,k,js-j,i) = prim(n,k,js,i);
+      }
+    }}
+  }
+
+  return;
+}
+
+//----------------------------------------------------------------------------------------
+//! \fn void OutflowOuterX2(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
+//                          FaceField &b, Real time, Real dt,
+//                          int is, int ie, int js, int je, int ks, int ke)
+//  \brief OUTFLOW boundary conditions, outer x2 boundary
+
+void OutflowOuterCLX2(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
+     Real time, Real dt, int is, int ie, int js, int je, int ks, int ke) {
+  // copy hydro variables into ghost zones
+  for (int n=0; n<(NCLESS); ++n) {
+    for (int k=ks; k<=ke; ++k) {
+    for (int j=1; j<=(NGHOST); ++j) {
+#pragma omp simd
+      for (int i=is; i<=ie; ++i) {
+        prim(n,k,je+j,i) = prim(n,k,je,i);
+      }
+    }}
+  }
+  return;
+}
+
+//----------------------------------------------------------------------------------------
+//! \fn void OutflowInnerX3(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
+//                          FaceField &b, Real time, Real dt,
+//                          int is, int ie, int js, int je, int ks, int ke)
+//  \brief OUTFLOW boundary conditions, inner x3 boundary
+
+void OutflowInnerCLX3(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
+     Real time, Real dt, int is, int ie, int js, int je, int ks, int ke) {
+  // copy hydro variables into ghost zones
+  for (int n=0; n<(NCLESS); ++n) {
+    for (int k=1; k<=(NGHOST); ++k) {
+    for (int j=js; j<=je; ++j) {
+#pragma omp simd
+      for (int i=is; i<=ie; ++i) {
+        prim(n,ks-k,j,i) = prim(n,ks,j,i);
+      }
+    }}
+  }
+
+  return;
+}
+
+//----------------------------------------------------------------------------------------
+//! \fn void OutflowOuterX3(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
+//                          FaceField &b, Real time, Real dt,
+//                          int is, int ie, int js, int je, int ks, int ke)
+//  \brief OUTFLOW boundary conditions, outer x3 boundary
+
+void OutflowOuterCLX3(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
+     Real time, Real dt, int is, int ie, int js, int je, int ks, int ke) {
+  // copy hydro variables into ghost zones
+  for (int n=0; n<(NCLESS); ++n) {
+    for (int k=1; k<=(NGHOST); ++k) {
+    for (int j=js; j<=je; ++j) {
+#pragma omp simd
+      for (int i=is; i<=ie; ++i) {
+        prim(n,ke+k,j,i) = prim(n,ke,j,i);
       }
     }}
   }

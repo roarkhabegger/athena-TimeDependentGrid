@@ -24,6 +24,7 @@ struct IntegratorWeight;
 
 class Hydro {
 friend class Field;
+friend class Cless; 
 public:
   Hydro(MeshBlock *pmb, ParameterInput *pin);
   ~Hydro();
@@ -58,6 +59,9 @@ public:
   void AddGravityFluxWithGflx(void);
   void CalculateGravityFlux(AthenaArray<Real> &phi_in);
   void CorrectGravityFlux(void);
+	// dual-energy functions 
+	void SyncEint(AthenaArray<Real> &u); 
+	void CheckEint(AthenaArray<Real> &u); 
 
 private:
   AthenaArray<Real> dt1_,dt2_,dt3_;  // scratch arrays used in NewTimeStep

@@ -73,11 +73,27 @@ void EquationOfState::ConservedToPrimitive(AthenaArray<Real> &cons,
       Real ke = 0.5*di*(SQR(u_m1) + SQR(u_m2) + SQR(u_m3));
       w_p = gm1*(u_e - ke);
 
-      // apply pressure floor, correct total energy
-      u_e = (w_p > pressure_floor_) ?  u_e : ((pressure_floor_/gm1) + ke);
-      w_p = (w_p > pressure_floor_) ?  w_p : pressure_floor_;
+			u_e = (w_p > pressure_floor_) ?  u_e : ((pressure_floor_/gm1) + ke);
+			w_p = (w_p > pressure_floor_) ?  w_p : pressure_floor_;
     }
-  }}
+	}}
+
+	// passive scalars 
+	for (int n=(NHYDRO-NSCALARS); n<NHYDRO; ++n) {
+		for (int k=kl; k<=ku; ++k) {
+		for (int j=jl; j<=ju; ++j) {
+#pragma omp simd
+			for (int i=il; i<=iu; ++i) {
+				Real& u_s = cons(n  ,k,j,i);
+				Real& u_d = cons(IDN,k,j,i);
+				Real   di = 1./u_d; 
+				
+				Real& w_s = prim(n,k,j,i);
+
+				w_s = u_s*di;
+			}
+		}}
+  }
 
   return;
 }
@@ -121,8 +137,27 @@ void EquationOfState::PrimitiveToConserved(const AthenaArray<Real> &prim,
     }
   }}
 
+	// passive scalars 
+	for (int n=(NHYDRO-NSCALARS); n<NHYDRO; ++n) { 
+#pragma omp simd
+		for (int k=kl; k<=ku; ++k) {
+		for (int j=jl; j<=ju; ++j) {
+#pragma novector
+			for (int i=il; i<=iu; ++i) {
+				Real& u_s = cons(n,k,j,i);
+
+				const Real& w_s = prim(n  ,k,j,i);
+				const Real& w_d = prim(IDN,k,j,i);
+
+				u_s = w_s*w_d; 
+			}
+		}}
+	}
+
+
   return;
 }
+
 
 //----------------------------------------------------------------------------------------
 // \!fn Real EquationOfState::SoundSpeed(Real prim[NHYDRO])
@@ -130,6 +165,7 @@ void EquationOfState::PrimitiveToConserved(const AthenaArray<Real> &prim,
 Real EquationOfState::SoundSpeed(const Real prim[NHYDRO]) {
   return std::sqrt(gamma_*prim[IPR]/prim[IDN]);
 }
+
 
 //---------------------------------------------------------------------------------------
 // \!fn void EquationOfState::ApplyPrimitiveFloors(AthenaArray<Real> &prim,

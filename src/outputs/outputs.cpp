@@ -65,6 +65,7 @@
 #include "../field/field.hpp"
 #include "../gravity/gravity.hpp"
 #include "../hydro/hydro.hpp"
+#include "../cless/cless.hpp"
 #include "../mesh/mesh.hpp"
 #include "../parameter_input.hpp"
 #include "outputs.hpp"
@@ -300,6 +301,7 @@ Outputs::~Outputs() {
 void OutputType::LoadOutputData(MeshBlock *pmb) {
   Hydro *phyd = pmb->phydro;
   Field *pfld = pmb->pfield;
+	Cless *pcle = pmb->pcless; 
   Gravity *pgrav = pmb->pgrav;
   num_vars_ = 0;
   OutputData *pod;
@@ -337,6 +339,17 @@ void OutputType::LoadOutputData(MeshBlock *pmb) {
       AppendOutputDataNode(pod);
       num_vars_++;
     }
+		if (DUAL_ENERGY) {
+			if (output_params.variable.compare("IE") == 0 ||
+					output_params.variable.compare("cons") == 0) {
+				pod = new OutputData;
+				pod->type = "SCALARS";
+				pod->name = "Eint";
+				pod->data.InitWithShallowSlice(phyd->u,4,IIE,1);
+				AppendOutputDataNode(pod);
+				num_vars_++;
+			}
+		}
   }
 
   // pressure
@@ -350,6 +363,17 @@ void OutputType::LoadOutputData(MeshBlock *pmb) {
       AppendOutputDataNode(pod);
       num_vars_++;
     }
+		if (DUAL_ENERGY) {
+			if (output_params.variable.compare("IGE") == 0 ||
+					output_params.variable.compare("prim") == 0) {
+				pod = new OutputData;
+				pod->type = "SCALARS";
+				pod->name = "IGint";
+				pod->data.InitWithShallowSlice(phyd->w,4,IGE,1);
+				AppendOutputDataNode(pod);
+				num_vars_++;
+			}
+		}
   }
 
   // momentum vector
@@ -464,6 +488,92 @@ void OutputType::LoadOutputData(MeshBlock *pmb) {
     }
   } // endif (SELF_GRAVITY_ENABLED)
 
+	if (NSCALARS > 0) {
+		if (output_params.variable.compare("prim") == 0 ||
+			  output_params.variable.compare("cons") == 0 ) {
+			for (int n=(NHYDRO-NSCALARS); n<NHYDRO; ++n) {
+				pod = new OutputData;
+				pod->type = "SCALARS";
+				pod->name = "s" + std::to_string(n-NHYDRO+NSCALARS); 
+				pod->data.InitWithShallowSlice(phyd->u,4,n,1);
+				AppendOutputDataNode(pod);
+				num_vars_++; 
+			}
+		}
+	}
+
+	if (CLESS_ENABLED) {
+		if (output_params.variable.compare("cons") == 0) {
+			pod = new OutputData;
+			pod->type = "SCALARS";
+			pod->name = "dcl"; 
+			pod->data.InitWithShallowSlice(pcle->u,4,IDN,1);
+			AppendOutputDataNode(pod);
+			num_vars_++; 
+
+			pod = new OutputData;
+			pod->type = "VECTORS";
+			pod->name = "Mcl";
+			pod->data.InitWithShallowSlice(pcle->u,4,IM1,3);
+			AppendOutputDataNode(pod);
+			num_vars_+=3;
+			if (output_params.cartesian_vector) {
+				AthenaArray<Real> src;
+				src.InitWithShallowSlice(pcle->u,4,IM1,3);
+				pod = new OutputData;
+				pod->type = "VECTORS";
+				pod->name = "Mcl_xyz";
+				pod->data.NewAthenaArray(3,pcle->u.GetDim3(),pcle->u.GetDim2(),pcle->u.GetDim1());
+				CalculateCartesianVector(src, pod->data, pmb->pcoord);
+				AppendOutputDataNode(pod);
+				num_vars_+=3;
+			}
+
+			// output Eij as scalars 
+			pod = new OutputData;
+			pod->type = "SCALARS";
+			pod->name = "E11"; 
+			pod->data.InitWithShallowSlice(pcle->u,4,IE11,1);
+			AppendOutputDataNode(pod);
+			num_vars_++; 
+
+			pod = new OutputData;
+			pod->type = "SCALARS";
+			pod->name = "E22"; 
+			pod->data.InitWithShallowSlice(pcle->u,4,IE22,1);
+			AppendOutputDataNode(pod);
+			num_vars_++; 
+
+			pod = new OutputData;
+			pod->type = "SCALARS";
+			pod->name = "E33"; 
+			pod->data.InitWithShallowSlice(pcle->u,4,IE33,1);
+			AppendOutputDataNode(pod);
+			num_vars_++; 
+
+			pod = new OutputData;
+			pod->type = "SCALARS";
+			pod->name = "E12"; 
+			pod->data.InitWithShallowSlice(pcle->u,4,IE12,1);
+			AppendOutputDataNode(pod);
+			num_vars_++; 
+
+			pod = new OutputData;
+			pod->type = "SCALARS";
+			pod->name = "E13"; 
+			pod->data.InitWithShallowSlice(pcle->u,4,IE13,1);
+			AppendOutputDataNode(pod);
+			num_vars_++; 
+
+			pod = new OutputData;
+			pod->type = "SCALARS";
+			pod->name = "E23"; 
+			pod->data.InitWithShallowSlice(pcle->u,4,IE23,1);
+			AppendOutputDataNode(pod);
+			num_vars_++; 
+
+		}
+	}
 
   if (MAGNETIC_FIELDS_ENABLED) {
     // vector of cell-centered magnetic field

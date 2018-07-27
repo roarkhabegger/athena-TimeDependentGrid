@@ -12,12 +12,17 @@
 #   --coord=xxx       use xxx as the coordinate system
 #   --eos=xxx         use xxx as the equation of state
 #   --flux=xxx        use xxx as the Riemann solver
+#   --fluxcl=xxx      use xxx as the Riemann solver for CLESS 
 #   --nghost=xxx      set NGHOST=xxx
+#   --ns=xxx          set NSCALARS=xxx
 #   -b                enable magnetic fields
+#   -cl               enable collisionless-solver
+#   -clo              only solve collisionless equations 
 #   -s                enable special relativity
 #   -g                enable general relativity
 #   -t                enable interface frame transformations for GR
 #   -shear            enable shearing periodic boundary conditions
+#   -de               enable dual-energy 
 #   -debug            enable debug flags (-g -O0); override other compiler options
 #   -float            enable single precision (default is double)
 #   -mpi              enable parallelization with MPI
@@ -87,16 +92,39 @@ parser.add_argument('--flux',
                     choices=['default', 'hlle', 'hllc', 'hlld', 'roe', 'llf'],
                     help='select Riemann solver')
 
+# --fluxcl=[name] argument
+parser.add_argument('--fluxcl',
+    default='default',
+    choices=['default','hlle','roe'],
+    help='select Riemann solver for collisionless solver')
+
 # --nghost=[value] argument
 parser.add_argument('--nghost',
                     default='2',
                     help='set number of ghost zones')
+
+# --ns=[value] argument
+parser.add_argument('--ns',
+    default='0',
+    help='set number of passively advected scalar fields')
 
 # -b argument
 parser.add_argument('-b',
                     action='store_true',
                     default=False,
                     help='enable magnetic field')
+
+# -cl argument
+parser.add_argument('-cl',
+    action='store_true',
+    default=False,
+    help='enable collisionless solver')
+
+# -clo argument 
+parser.add_argument('-clo',
+    action='store_true',
+    default=False,
+    help='enable collisionless-only mode (only integrate cless-variables)')
 
 # -s argument
 parser.add_argument('-s',
@@ -121,6 +149,12 @@ parser.add_argument('-shear',
                     action='store_true',
                     default=False,
                     help='enable shearing box')
+
+# -de argument
+parser.add_argument('-de',
+    action='store_true',
+    default=False,
+    help='enable dual energy') 
 
 # -debug argument
 parser.add_argument('-debug',
@@ -149,7 +183,7 @@ parser.add_argument('-omp',
 # --grav=[name] argument
 parser.add_argument('--grav',
                     default='none',
-                    choices=['none', 'fft'],
+                    choices=['none','fft','fft_cyl'],
                     help='select self-gravity solver')
 
 # -fft argument
@@ -241,6 +275,10 @@ if args['flux'] == 'default':
     else:
         args['flux'] = 'hllc'
 
+# Set default flux for CLESS
+if args['fluxcl'] == 'default':
+    args['fluxcl'] = 'hlle'
+
 # Check Riemann solver compatibility
 if args['flux'] == 'hllc' and args['eos'] == 'isothermal':
     raise SystemExit('### CONFIGURE ERROR: HLLC flux cannot be used with isothermal EOS')
@@ -265,11 +303,19 @@ if not args['g'] and args['coord'] not in ('cartesian', 'cylindrical', 'spherica
     raise SystemExit('### CONFIGURE ERROR: '
                      + args['coord'] + ' coordinates only apply to GR')
 if args['eos'] == 'isothermal':
-    if args['s'] or args['g']:
-        raise SystemExit('### CONFIGURE ERROR: '
-                         + 'Isothermal EOS is incompatible with relativity')
+  if args['s'] or args['g']:
+    raise SystemExit('### CONFIGURE ERROR: '\
+        + 'Isothermal EOS is incompatible with relativity')
+  if args['de']:
+    raise SystemExit('### CONFIGURE ERROR: '\
+        + 'Isothermal EOS is incompatible with dual-energy')
 
-# --- Step 3. Set definitions and Makefile options based on above argument
+# Check cless 
+if args['clo'] and not args['cl']:
+    raise SystemExit('### CONFIGURE ERROR: '\
+        + 'Collisionless-only-mode requires collisionless solver to be enabled')
+
+#--- Step 3. Set definitions and Makefile options based on above arguments ---------------
 
 # Prepare dictionaries of substitutions to be made
 definitions = {}
@@ -287,15 +333,46 @@ definitions['NON_BAROTROPIC_EOS'] = '1' if args['eos'] == 'adiabatic' else '0'
 makefile_options['EOS_FILE'] = args['eos']
 # set number of hydro variables for adiabatic/isothermal
 if args['eos'] == 'adiabatic':
+  if args['de']:
+    definitions['NHYDRO_VARIABLES'] = '6'
+    definitions['NINT_VARIABLE'] = '1'
+  else:
     definitions['NHYDRO_VARIABLES'] = '5'
+    definitions['NINT_VARIABLE'] = '0'
 if args['eos'] == 'isothermal':
-    definitions['NHYDRO_VARIABLES'] = '4'
+  definitions['NHYDRO_VARIABLES'] = '4'
+  definitions['NINT_VARIABLE'] = '0' 
+
+# set number of collisionless variables, if using it
+if args['cl']:
+    definitions['CLESS_ENABLED'] = '1'
+    definitions['NCLESS_VARIABLES'] = '10'
+    definitions['NWAVE_CLESS'] = '10'
+    if args['clo']:
+        definitions['CLESS_ONLY_MODE'] = '1'
+    else:
+        definitions['CLESS_ONLY_MODE'] = '0'
+else:
+    definitions['CLESS_ENABLED'] = '0' 
+    definitions['NCLESS_VARIABLES'] = '0' 
+    definitions['NWAVE_CLESS'] = '0'
+    definitions['CLESS_ONLY_MODE'] = '0'
 
 # --flux=[name] argument
 definitions['RSOLVER'] = makefile_options['RSOLVER_FILE'] = args['flux']
 
+# --fluxcl=[name] argument
+definitions['RSOLVER_CL'] = makefile_options['RSOLVER_CL_FILE'] = args['fluxcl']+'_cl' 
+makefile_options['RSOLVER_CL_DIR'] = '' 
+
 # --nghost=[value] argument
 definitions['NUMBER_GHOST_CELLS'] = args['nghost']
+
+# --ns=[value] argument
+definitions['NSCAL_VARIABLE'] = args['ns']
+# add it to NHYDRO
+definitions['NHYDRO_VARIABLES'] = str(int(definitions['NHYDRO_VARIABLES']) + 
+                                      int(args['ns']) )  
 
 # -b argument
 # set variety of macros based on whether MHD/hydro or adi/iso are defined
@@ -340,6 +417,15 @@ if args['shear']:
     definitions['SHEARING_BOX'] = '1'
 else:
     definitions['SHEARING_BOX'] = '0'
+
+# -de argument 
+# set variety of macros based on whether dual-energy is defined 
+if args['de']:
+  definitions['DUAL_ENERGY'] = '1'
+  makefile_options['EOS_FILE']     += '_de'
+#  makefile_options['RSOLVER_FILE'] += '_de'
+else:
+  definitions['DUAL_ENERGY'] = '0'
 
 # --cxx=[name] argument
 if args['cxx'] == 'g++':
@@ -507,12 +593,17 @@ else:
 if args['grav'] == "none":
     definitions['SELF_GRAVITY_ENABLED'] = '0'
 else:
-    if args['grav'] == "fft":
-        definitions['SELF_GRAVITY_ENABLED'] = '1'
-        if not args['fft']:
-            raise SystemExit(
-                '### CONFIGURE ERROR: FFT Poisson solver only be used with FFT')
-
+  if args['grav'] == "fft":
+    definitions['SELF_GRAVITY_ENABLED'] = '1'
+    if not args['fft']:
+      raise SystemExit('### CONFIGURE ERROR: FFT Poisson solver only be used with FFT')
+  if args['grav'] == "fft_cyl":
+    definitions['SELF_GRAVITY_ENABLED'] = '3'
+    if not args['fft']:
+      raise SystemExit('### CONFIGURE ERROR: FFT_CYL Poisson solver only be used with FFT')
+    if args['coord'] != 'cylindrical':
+        raise SystemExit('### CONFIGURE ERROR: FFT_CYL Poisson solver requires cylindrical'
+                         ' coordinates.') 
 # -fft argument
 makefile_options['MPIFFT_FILE'] = ' '
 definitions['FFT_ENABLED'] = '0'
@@ -588,6 +679,7 @@ makefile_options['PROBLEM_FILE'] += '.cpp'
 makefile_options['COORDINATES_FILE'] += '.cpp'
 makefile_options['EOS_FILE'] += '.cpp'
 makefile_options['RSOLVER_FILE'] += '.cpp'
+makefile_options['RSOLVER_CL_FILE'] += '.cpp' 
 
 # Read templates
 with open(defsfile_input, 'r') as current_file:
@@ -613,17 +705,22 @@ print('  Problem generator:       ' + args['prob'])
 print('  Coordinate system:       ' + args['coord'])
 print('  Equation of state:       ' + args['eos'])
 print('  Riemann solver:          ' + args['flux'])
+print('  CL Riemann solver:       ' + args['fluxcl'])
 print('  Self Gravity:            ' + ('OFF' if args['grav'] == 'none' else args['grav']))
 print('  Magnetic fields:         ' + ('ON' if args['b'] else 'OFF'))
+print('  Collisionless solver:    ' + ('ON' if args['cl'] else 'OFF'))
+print('  COllisionless only mode: ' + ('ON' if args['clo'] else 'OFF'))
 print('  Special relativity:      ' + ('ON' if args['s'] else 'OFF'))
 print('  General relativity:      ' + ('ON' if args['g'] else 'OFF'))
 print('  Frame transformations:   ' + ('ON' if args['t'] else 'OFF'))
 print('  ShearingBox:             ' + ('ON' if args['shear'] else 'OFF'))
+print('  Dual-Energy:             ' + ('ON' if args['de'] else 'OFF'))
 print('  Debug flags:             ' + ('ON' if args['debug'] else 'OFF'))
 print('  Linker flags:            ' + makefile_options['LINKER_FLAGS'] + ' '
       + makefile_options['LIBRARY_FLAGS'])
 print('  Precision:               ' + ('single' if args['float'] else 'double'))
 print('  Number of ghost cells:   ' + args['nghost'])
+print('  Passive scalar fields:   ' + args['ns'])
 print('  MPI parallelism:         ' + ('ON' if args['mpi'] else 'OFF'))
 print('  OpenMP parallelism:      ' + ('ON' if args['omp'] else 'OFF'))
 print('  FFT:                     ' + ('ON' if args['fft'] else 'OFF'))

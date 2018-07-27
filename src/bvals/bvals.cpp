@@ -27,6 +27,7 @@
 #include "../globals.hpp"
 #include "../gravity/mggravity.hpp"
 #include "../hydro/hydro.hpp"
+#include "../cless/cless.hpp"
 #include "../mesh/mesh.hpp"
 #include "../mesh/mesh_refinement.hpp"
 #include "../multigrid/multigrid.hpp"
@@ -46,8 +47,10 @@ BoundaryValues::BoundaryValues(MeshBlock *pmb, enum BoundaryFlag *input_bcs,
                                ParameterInput *pin)
  : BoundaryBase(pmb->pmy_mesh, pmb->loc, pmb->block_size, input_bcs) {
   pmy_block_=pmb;
-  for (int i=0; i<6; i++)
+  for (int i=0; i<6; i++) {
     BoundaryFunction_[i]=NULL;
+		BoundaryFunctionCL_[i]=NULL; 
+	}
 
 // Set BC functions for each of the 6 boundaries in turn ---------------------------------
   // Inner x1
@@ -55,13 +58,16 @@ BoundaryValues::BoundaryValues(MeshBlock *pmb, enum BoundaryFlag *input_bcs,
   switch(block_bcs[INNER_X1]) {
     case REFLECTING_BNDRY:
       BoundaryFunction_[INNER_X1] = ReflectInnerX1;
+			BoundaryFunctionCL_[INNER_X1] = ReflectInnerCLX1;
       break;
     case OUTFLOW_BNDRY:
       BoundaryFunction_[INNER_X1] = OutflowInnerX1;
+			BoundaryFunctionCL_[INNER_X1] = OutflowInnerCLX1; 
       break;
     case BLOCK_BNDRY: // block boundary
     case PERIODIC_BNDRY: // periodic boundary
       BoundaryFunction_[INNER_X1] = NULL;
+			BoundaryFunctionCL_[INNER_X1] = NULL; 
       break;
     case SHEAR_PERIODIC_BNDRY: // shearing periodic boundary
       if (!SHEARING_BOX) block_bcs[INNER_X1]=PERIODIC_BNDRY;
@@ -82,13 +88,16 @@ BoundaryValues::BoundaryValues(MeshBlock *pmb, enum BoundaryFlag *input_bcs,
   switch(block_bcs[OUTER_X1]) {
     case REFLECTING_BNDRY:
       BoundaryFunction_[OUTER_X1] = ReflectOuterX1;
+			BoundaryFunctionCL_[OUTER_X1] = ReflectOuterCLX1;
       break;
     case OUTFLOW_BNDRY:
       BoundaryFunction_[OUTER_X1] = OutflowOuterX1;
+			BoundaryFunctionCL_[OUTER_X1] = OutflowOuterCLX1; 
       break;
     case BLOCK_BNDRY: // block boundary
     case PERIODIC_BNDRY: // periodic boundary
       BoundaryFunction_[OUTER_X1] = NULL;
+			BoundaryFunctionCL_[OUTER_X1] = NULL;
       break;
     case SHEAR_PERIODIC_BNDRY: // shearing periodic boundary
       if (!SHEARING_BOX) block_bcs[OUTER_X1]=PERIODIC_BNDRY;
@@ -110,9 +119,11 @@ BoundaryValues::BoundaryValues(MeshBlock *pmb, enum BoundaryFlag *input_bcs,
     switch(block_bcs[INNER_X2]) {
       case REFLECTING_BNDRY:
         BoundaryFunction_[INNER_X2] = ReflectInnerX2;
+				BoundaryFunctionCL_[INNER_X2] = ReflectInnerCLX2;
         break;
       case OUTFLOW_BNDRY:
         BoundaryFunction_[INNER_X2] = OutflowInnerX2;
+				BoundaryFunctionCL_[INNER_X2] = OutflowInnerCLX2;
         break;
       case BLOCK_BNDRY: // block boundary
       case PERIODIC_BNDRY: // periodic boundary
@@ -136,9 +147,11 @@ BoundaryValues::BoundaryValues(MeshBlock *pmb, enum BoundaryFlag *input_bcs,
     switch(block_bcs[OUTER_X2]) {
       case REFLECTING_BNDRY:
         BoundaryFunction_[OUTER_X2] = ReflectOuterX2;
+				BoundaryFunctionCL_[OUTER_X2] = ReflectOuterCLX2;
         break;
       case OUTFLOW_BNDRY:
         BoundaryFunction_[OUTER_X2] = OutflowOuterX2;
+				BoundaryFunctionCL_[OUTER_X2] = OutflowOuterCLX2;
         break;
       case BLOCK_BNDRY: // block boundary
       case PERIODIC_BNDRY: // periodic boundary
@@ -165,13 +178,16 @@ BoundaryValues::BoundaryValues(MeshBlock *pmb, enum BoundaryFlag *input_bcs,
     switch(block_bcs[INNER_X3]) {
       case REFLECTING_BNDRY:
         BoundaryFunction_[INNER_X3] = ReflectInnerX3;
+				BoundaryFunctionCL_[INNER_X3] = ReflectInnerCLX3;
         break;
       case OUTFLOW_BNDRY:
         BoundaryFunction_[INNER_X3] = OutflowInnerX3;
+				BoundaryFunctionCL_[INNER_X3] = OutflowInnerCLX3;
         break;
       case BLOCK_BNDRY: // block boundary
       case PERIODIC_BNDRY: // periodic boundary
         BoundaryFunction_[INNER_X3] = NULL;
+				BoundaryFunctionCL_[INNER_X3] = NULL;
         break;
       case USER_BNDRY: // user-enrolled BCs
         BoundaryFunction_[INNER_X3] = pmy_mesh_->BoundaryFunction_[INNER_X3];
@@ -187,13 +203,16 @@ BoundaryValues::BoundaryValues(MeshBlock *pmb, enum BoundaryFlag *input_bcs,
     switch(block_bcs[OUTER_X3]) {
       case REFLECTING_BNDRY:
         BoundaryFunction_[OUTER_X3] = ReflectOuterX3;
+				BoundaryFunctionCL_[OUTER_X3] = ReflectOuterCLX3;
         break;
       case OUTFLOW_BNDRY:
         BoundaryFunction_[OUTER_X3] = OutflowOuterX3;
+				BoundaryFunctionCL_[OUTER_X3] = OutflowOuterCLX3;
         break;
       case BLOCK_BNDRY: // block boundary
       case PERIODIC_BNDRY: // periodic boundary
         BoundaryFunction_[OUTER_X3] = NULL;
+				BoundaryFunctionCL_[OUTER_X1] = NULL;
         break;
       case USER_BNDRY: // user-enrolled BCs
         BoundaryFunction_[OUTER_X3] = pmy_mesh_->BoundaryFunction_[OUTER_X3];
@@ -241,6 +260,11 @@ BoundaryValues::BoundaryValues(MeshBlock *pmb, enum BoundaryFlag *input_bcs,
     InitBoundaryData(bd_field_, BNDRY_FIELD);
     InitBoundaryData(bd_emfcor_, BNDRY_EMFCOR);
   }
+	if (CLESS_ENABLED) {
+		InitBoundaryData(bd_cless_, BNDRY_CLESS);
+		if (pmy_mesh_->multilevel==true)
+			InitBoundaryData(bd_flcorcl_, BNDRY_FLCORCL); 
+	}
 
   if (num_north_polar_blocks_ > 0) {
     emf_north_send_ = new Real *[num_north_polar_blocks_];
@@ -517,6 +541,11 @@ BoundaryValues::~BoundaryValues() {
     DestroyBoundaryData(bd_field_);
     DestroyBoundaryData(bd_emfcor_);
   }
+	if (CLESS_ENABLED) {
+		DestroyBoundaryData(bd_cless_);
+	if (pmy_mesh_->multilevel==true) 
+		DestroyBoundaryData(bd_flcorcl_); 
+	}
 
   if (MAGNETIC_FIELDS_ENABLED) {
     if (num_north_polar_blocks_ > 0) {
@@ -638,12 +667,13 @@ void BoundaryValues::InitBoundaryData(BoundaryData &bd, enum BoundaryType type) 
   cng3=cng*f3d;
   int size;
   bd.nbmax=maxneighbor_;
-  if (type==BNDRY_FLCOR || type==BNDRY_EMFCOR) {
+  if (type==BNDRY_FLCOR || type==BNDRY_EMFCOR || type==BNDRY_FLCORCL) {
     for (bd.nbmax=0; BoundaryValues::ni[bd.nbmax].type==NEIGHBOR_FACE; bd.nbmax++);
   }
   if (type==BNDRY_EMFCOR) {
     for (          ; BoundaryValues::ni[bd.nbmax].type==NEIGHBOR_EDGE; bd.nbmax++);
   }
+
   for (int n=0;n<bd.nbmax;n++) {
     // Clear flags and requests
     bd.flag[n]=BNDRY_WAITING;
@@ -672,6 +702,23 @@ void BoundaryValues::InitBoundaryData(BoundaryData &bd, enum BoundaryType type) 
           size=std::max(size,f2c);
         }
         size*=NHYDRO;
+      }
+      break;
+      case BNDRY_CLESS: {
+        size=((BoundaryValues::ni[n].ox1==0)?pmb->block_size.nx1:NGHOST)
+            *((BoundaryValues::ni[n].ox2==0)?pmb->block_size.nx2:NGHOST)
+            *((BoundaryValues::ni[n].ox3==0)?pmb->block_size.nx3:NGHOST);
+        if (multilevel) {
+          int f2c=((BoundaryValues::ni[n].ox1==0) ? ((pmb->block_size.nx1+1)/2):NGHOST)
+                 *((BoundaryValues::ni[n].ox2==0) ? ((pmb->block_size.nx2+1)/2):NGHOST)
+                 *((BoundaryValues::ni[n].ox3==0) ? ((pmb->block_size.nx3+1)/2):NGHOST);
+          int c2f=((BoundaryValues::ni[n].ox1==0) ? ((pmb->block_size.nx1+1)/2+cng1):cng)
+                 *((BoundaryValues::ni[n].ox2==0) ? ((pmb->block_size.nx2+1)/2+cng2):cng)
+                 *((BoundaryValues::ni[n].ox3==0) ? ((pmb->block_size.nx3+1)/2+cng3):cng);
+          size=std::max(size,c2f);
+          size=std::max(size,f2c);
+        }
+        size*=NCLESS;
       }
       break;
       case BNDRY_FIELD: {
@@ -727,12 +774,23 @@ void BoundaryValues::InitBoundaryData(BoundaryData &bd, enum BoundaryType type) 
       }
       break;
       case BNDRY_FLCOR: {
+
         if (BoundaryValues::ni[n].ox1!=0)
           size=(pmb->block_size.nx2+1)/2*(pmb->block_size.nx3+1)/2*NHYDRO;
         if (BoundaryValues::ni[n].ox2!=0)
           size=(pmb->block_size.nx1+1)/2*(pmb->block_size.nx3+1)/2*NHYDRO;
         if (BoundaryValues::ni[n].ox3!=0)
           size=(pmb->block_size.nx1+1)/2*(pmb->block_size.nx2+1)/2*NHYDRO;
+      }
+      break;
+      case BNDRY_FLCORCL: {
+
+        if (BoundaryValues::ni[n].ox1!=0)
+          size=(pmb->block_size.nx2+1)/2*(pmb->block_size.nx3+1)/2*NCLESS;
+        if (BoundaryValues::ni[n].ox2!=0)
+          size=(pmb->block_size.nx1+1)/2*(pmb->block_size.nx3+1)/2*NCLESS;
+        if (BoundaryValues::ni[n].ox3!=0)
+          size=(pmb->block_size.nx1+1)/2*(pmb->block_size.nx2+1)/2*NCLESS;
       }
       break;
       case BNDRY_EMFCOR: {
@@ -766,6 +824,7 @@ void BoundaryValues::InitBoundaryData(BoundaryData &bd, enum BoundaryType type) 
         }
       }
       break;
+
       default: {
         std::stringstream msg;
         msg << "### FATAL ERROR in InitBoundaryData" << std::endl
@@ -776,6 +835,8 @@ void BoundaryValues::InitBoundaryData(BoundaryData &bd, enum BoundaryType type) 
     }
     bd.send[n]=new Real[size];
     bd.recv[n]=new Real[size];
+
+
   }
 }
 
@@ -1085,8 +1146,42 @@ void BoundaryValues::Initialize(void) {
                         nb.rank,tag,MPI_COMM_WORLD,&(bd_emfcor_.req_send[nb.bufid]));
         }
       }
-    }
-  }
+
+			if (CLESS_ENABLED) {
+				if (nb.level==mylevel) { // same
+					ssize=rsize=((nb.ox1==0)?pmb->block_size.nx1:NGHOST)
+										 *((nb.ox2==0)?pmb->block_size.nx2:NGHOST)
+										 *((nb.ox3==0)?pmb->block_size.nx3:NGHOST);
+				} else if (nb.level<mylevel) { // coarser
+					ssize=((nb.ox1==0) ? ((pmb->block_size.nx1+1)/2):NGHOST)
+							 *((nb.ox2==0) ? ((pmb->block_size.nx2+1)/2):NGHOST)
+							 *((nb.ox3==0) ? ((pmb->block_size.nx3+1)/2):NGHOST);
+					rsize=((nb.ox1==0) ? ((pmb->block_size.nx1+1)/2+cng1):cng1)
+							 *((nb.ox2==0) ? ((pmb->block_size.nx2+1)/2+cng2):cng2)
+							 *((nb.ox3==0) ? ((pmb->block_size.nx3+1)/2+cng3):cng3);
+				} else { // finer
+					ssize=((nb.ox1==0) ? ((pmb->block_size.nx1+1)/2+cng1):cng1)
+							 *((nb.ox2==0) ? ((pmb->block_size.nx2+1)/2+cng2):cng2)
+							 *((nb.ox3==0) ? ((pmb->block_size.nx3+1)/2+cng3):cng3);
+					rsize=((nb.ox1==0) ? ((pmb->block_size.nx1+1)/2):NGHOST)
+							 *((nb.ox2==0) ? ((pmb->block_size.nx2+1)/2):NGHOST)
+							 *((nb.ox3==0) ? ((pmb->block_size.nx3+1)/2):NGHOST);
+				}
+				ssize*=NCLESS; rsize*=NCLESS;
+				// specify the offsets in the view point of the target block: flip ox? signs
+				tag=CreateBvalsMPITag(nb.lid, TAG_CLESS, nb.targetid);
+				if (bd_cless_.req_send[nb.bufid]!=MPI_REQUEST_NULL)
+					MPI_Request_free(&bd_cless_.req_send[nb.bufid]);
+				MPI_Send_init(bd_cless_.send[nb.bufid],ssize,MPI_ATHENA_REAL,
+											nb.rank,tag,MPI_COMM_WORLD,&(bd_cless_.req_send[nb.bufid]));
+				tag=CreateBvalsMPITag(pmb->lid, TAG_CLESS, nb.bufid);
+				if (bd_cless_.req_recv[nb.bufid]!=MPI_REQUEST_NULL)
+					MPI_Request_free(&bd_cless_.req_recv[nb.bufid]);
+				MPI_Recv_init(bd_cless_.recv[nb.bufid],rsize,MPI_ATHENA_REAL,
+											nb.rank,tag,MPI_COMM_WORLD,&(bd_cless_.req_recv[nb.bufid]));
+			}
+		}
+	}
 
   // Initialize polar neighbor communications to other ranks
   if (MAGNETIC_FIELDS_ENABLED) {
@@ -1197,8 +1292,12 @@ void BoundaryValues::StartReceivingForInit(bool cons_and_field) {
         MPI_Start(&(bd_hydro_.req_recv[nb.bufid]));
         if (MAGNETIC_FIELDS_ENABLED)
           MPI_Start(&(bd_field_.req_recv[nb.bufid]));
+				if (CLESS_ENABLED)
+					MPI_Start(&(bd_cless_.req_recv[nb.bufid]));
       } else { // must be primitive initialization
         MPI_Start(&(bd_hydro_.req_recv[nb.bufid]));
+				if (CLESS_ENABLED)
+					MPI_Start(&(bd_cless_.req_recv[nb.bufid]));
       }
     }
   }
@@ -1236,6 +1335,11 @@ void BoundaryValues::StartReceivingAll(const Real time) {
            MPI_Start(&(bd_emfcor_.req_recv[nb.bufid]));
         }
       }
+			if (CLESS_ENABLED) {
+				MPI_Start(&(bd_cless_.req_recv[nb.bufid]));
+				if (nb.type==NEIGHBOR_FACE && nb.level>mylevel)
+					MPI_Start(&(bd_flcorcl_.req_recv[nb.bufid]));
+			}
     }
   }
   if (MAGNETIC_FIELDS_ENABLED) {
@@ -1329,6 +1433,8 @@ void BoundaryValues::ClearBoundaryForInit(bool cons_and_field) {
       bd_field_.flag[nb.bufid] = BNDRY_WAITING;
     if (GENERAL_RELATIVITY and pmy_mesh_->multilevel)
       bd_hydro_.flag[nb.bufid] = BNDRY_WAITING;
+		if (CLESS_ENABLED)
+			bd_cless_.flag[nb.bufid] = BNDRY_WAITING; 
 #ifdef MPI_PARALLEL
     if (nb.rank!=Globals::my_rank) {
       if (cons_and_field) {  // normal case
@@ -1336,9 +1442,13 @@ void BoundaryValues::ClearBoundaryForInit(bool cons_and_field) {
         MPI_Wait(&(bd_hydro_.req_send[nb.bufid]),MPI_STATUS_IGNORE);
         if (MAGNETIC_FIELDS_ENABLED)
           MPI_Wait(&(bd_field_.req_send[nb.bufid]),MPI_STATUS_IGNORE);
+				if (CLESS_ENABLED) 
+					MPI_Wait(&(bd_cless_.req_send[nb.bufid]),MPI_STATUS_IGNORE);
       } else {  // must be primitive initialization
         if (GENERAL_RELATIVITY and pmy_mesh_->multilevel)
           MPI_Wait(&(bd_hydro_.req_send[nb.bufid]),MPI_STATUS_IGNORE);
+				if (CLESS_ENABLED)
+					MPI_Wait(&(bd_cless_.req_send[nb.bufid]),MPI_STATUS_IGNORE);
       }
     }
 #endif
@@ -1365,6 +1475,11 @@ void BoundaryValues::ClearBoundaryAll(void) {
       if ((nb.type==NEIGHBOR_FACE) || (nb.type==NEIGHBOR_EDGE))
         bd_emfcor_.flag[nb.bufid] = BNDRY_WAITING;
     }
+		if (CLESS_ENABLED) {
+			bd_cless_.flag[nb.bufid] = BNDRY_WAITING; 
+			if (nb.type==NEIGHBOR_FACE) 
+				bd_flcorcl_.flag[nb.bufid] = BNDRY_WAITING;
+		}
 #ifdef MPI_PARALLEL
     if (nb.rank!=Globals::my_rank) {
       // Wait for Isend
@@ -1381,6 +1496,12 @@ void BoundaryValues::ClearBoundaryAll(void) {
             MPI_Wait(&(bd_emfcor_.req_send[nb.bufid]),MPI_STATUS_IGNORE);
         }
       }
+			if (CLESS_ENABLED) {
+				MPI_Wait(&(bd_cless_.req_send[nb.bufid]),MPI_STATUS_IGNORE);
+			
+				if (nb.type==NEIGHBOR_FACE && nb.level<pmb->loc.level)
+				  MPI_Wait(&(bd_flcorcl_.req_send[nb.bufid]),MPI_STATUS_IGNORE);
+			}
     }
 #endif
   }
@@ -1549,6 +1670,83 @@ void BoundaryValues::ApplyPhysicalBoundaries(AthenaArray<Real> &pdst,
 
   return;
 }
+
+//----------------------------------------------------------------------------------------
+//! \fn void BoundaryValues::ApplyPhysicalBoundariesCL(AthenaArray<Real> &pdst,
+//           AthenaArray<Real> &cdst,
+//           const Real time, const Real dt)
+//  \brief Apply all the physical boundary conditions for cless 
+
+void BoundaryValues::ApplyPhysicalBoundariesCL(AthenaArray<Real> &pdst,
+										 AthenaArray<Real> &cdst, 
+										 const Real time, const Real dt) {
+	MeshBlock *pmb=pmy_block_;
+	Coordinates *pco=pmb->pcoord;
+	int bis=pmb->is-NGHOST, bie=pmb->ie+NGHOST, bjs=pmb->js, bje=pmb->je,
+			bks=pmb->ks, bke=pmb->ke;
+	if (BoundaryFunctionCL_[INNER_X2]==NULL && pmb->block_size.nx2>1) bjs=pmb->js-NGHOST;
+	if (BoundaryFunctionCL_[OUTER_X2]==NULL && pmb->block_size.nx2>1) bje=pmb->je+NGHOST;
+	if (BoundaryFunctionCL_[INNER_X3]==NULL && pmb->block_size.nx3>1) bks=pmb->ks-NGHOST;
+	if (BoundaryFunctionCL_[OUTER_X3]==NULL && pmb->block_size.nx3>1) bke=pmb->ke+NGHOST;
+	// Apply boundary function on inner-x1
+	if (BoundaryFunctionCL_[INNER_X1] != NULL) {
+		BoundaryFunctionCL_[INNER_X1](pmb, pco, pdst, time, dt,
+																	pmb->is, pmb->ie, bjs, bje, bks, bke);
+		pmb->peos->PrimclToConscl(pdst, cdst, pco,
+			pmb->is-NGHOST, pmb->is-1, bjs, bje, bks, bke);
+	}
+
+	// Apply boundary function on outer-x1
+	if (BoundaryFunctionCL_[OUTER_X1] != NULL) {
+		BoundaryFunctionCL_[OUTER_X1](pmb, pco, pdst, time, dt,
+																	pmb->is, pmb->ie, bjs, bje, bks, bke);
+		pmb->peos->PrimclToConscl(pdst, cdst, pco,
+			pmb->ie+1, pmb->ie+NGHOST, bjs, bje, bks, bke);
+	}
+
+	if (pmb->block_size.nx2>1) { // 2D or 3D
+
+		// Apply boundary function on inner-x2
+		if (BoundaryFunctionCL_[INNER_X2] != NULL) {
+			BoundaryFunctionCL_[INNER_X2](pmb, pco, pdst, time, dt,
+																		bis, bie, pmb->js, pmb->je, bks, bke);
+			pmb->peos->PrimclToConscl(pdst, cdst, pco,
+				bis, bie, pmb->js-NGHOST, pmb->js-1, bks, bke);
+		}
+
+		// Apply boundary function on outer-x2
+		if (BoundaryFunctionCL_[OUTER_X2] != NULL) {
+			BoundaryFunctionCL_[OUTER_X2](pmb, pco, pdst, time, dt,
+																		bis, bie, pmb->js, pmb->je, bks, bke);
+			pmb->peos->PrimclToConscl(pdst, cdst, pco,
+				bis, bie, pmb->je+1, pmb->je+NGHOST, bks, bke);
+		}
+	}
+
+	if (pmb->block_size.nx3>1) { // 3D
+		bjs=pmb->js-NGHOST;
+		bje=pmb->je+NGHOST;
+
+		// Apply boundary function on inner-x3
+		if (BoundaryFunctionCL_[INNER_X3] != NULL) {
+			BoundaryFunctionCL_[INNER_X3](pmb, pco, pdst, time, dt,
+																		bis, bie, bjs, bje, pmb->ks, pmb->ke);
+			pmb->peos->PrimclToConscl(pdst, cdst, pco,
+				bis, bie, bjs, bje, pmb->ks-NGHOST, pmb->ks-1);
+		}
+
+		// Apply boundary function on outer-x3
+		if (BoundaryFunctionCL_[OUTER_X3] != NULL) {
+			BoundaryFunctionCL_[OUTER_X3](pmb, pco, pdst, time, dt,
+																		bis, bie, bjs, bje, pmb->ks, pmb->ke);
+			pmb->peos->PrimclToConscl(pdst, cdst, pco,
+				bis, bie, bjs, bje, pmb->ke+1, pmb->ke+NGHOST);
+		}
+	}
+
+	return;
+}
+
 
 //----------------------------------------------------------------------------------------
 //! \fn void BoundaryValues::ProlongateBoundaries(AthenaArray<Real> &pdst,
@@ -1799,4 +1997,187 @@ void BoundaryValues::ProlongateBoundaries(AthenaArray<Real> &pdst,
     pmb->peos->PrimitiveToConserved(pdst, bcdst, cdst, pmb->pcoord,
                                     fsi, fei, fsj, fej, fsk, fek);
   }
+}
+
+
+//----------------------------------------------------------------------------------------
+//! \fn void BoundaryValues::ProlongateBoundariesCL(AthenaArray<Real> &pdst,
+//           AthenaArray<Real> &cdst, 
+//           const Real time, const Real dt)
+//  \brief Prolongate the level boundary using the coarse data for cless 
+
+void BoundaryValues::ProlongateBoundariesCL(AthenaArray<Real> &pdst,
+     AthenaArray<Real> &cdst, 
+     const Real time, const Real dt) {
+  
+	MeshBlock *pmb=pmy_block_;
+  MeshRefinement *pmr=pmb->pmr;
+  int64_t &lx1=pmb->loc.lx1;
+  int64_t &lx2=pmb->loc.lx2;
+  int64_t &lx3=pmb->loc.lx3;
+  int &mylevel=pmb->loc.level;
+
+  for (int n=0; n<nneighbor; n++) {
+    NeighborBlock& nb = neighbor[n];
+    if (nb.level >= mylevel) continue;
+    // fill the required ghost-ghost zone
+    int nis, nie, njs, nje, nks, nke;
+    nis=std::max(nb.ox1-1,-1), nie=std::min(nb.ox1+1,1);
+    if (pmb->block_size.nx2==1) njs=0, nje=0;
+    else njs=std::max(nb.ox2-1,-1), nje=std::min(nb.ox2+1,1);
+    if (pmb->block_size.nx3==1) nks=0, nke=0;
+    else nks=std::max(nb.ox3-1,-1), nke=std::min(nb.ox3+1,1);
+    for (int nk=nks; nk<=nke; nk++) {
+      for (int nj=njs; nj<=nje; nj++) {
+        for (int ni=nis; ni<=nie; ni++) {
+          int ntype=std::abs(ni)+std::abs(nj)+std::abs(nk);
+          // skip myself or coarse levels; only the same level must be restricted
+          if (ntype==0 || nblevel[nk+1][nj+1][ni+1]!=mylevel) continue;
+
+          // this neighbor block is on the same level
+          // and needs to be restricted for prolongation
+          int ris, rie, rjs, rje, rks, rke;
+          if (ni==0) {
+            ris=pmb->cis, rie=pmb->cie;
+            if (nb.ox1==1) ris=pmb->cie;
+            else if (nb.ox1==-1) rie=pmb->cis;
+          } else if (ni== 1) {
+            ris=pmb->cie+1, rie=pmb->cie+1;
+          } else { //(ni==-1)
+            ris=pmb->cis-1, rie=pmb->cis-1;
+          }
+          if (nj==0) {
+            rjs=pmb->cjs, rje=pmb->cje;
+            if (nb.ox2==1) rjs=pmb->cje;
+            else if (nb.ox2==-1) rje=pmb->cjs;
+          } else if (nj== 1) {
+            rjs=pmb->cje+1, rje=pmb->cje+1;
+          } else { //(nj==-1)
+            rjs=pmb->cjs-1, rje=pmb->cjs-1;
+          }
+          if (nk==0) {
+            rks=pmb->cks, rke=pmb->cke;
+            if (nb.ox3==1) rks=pmb->cke;
+            else if (nb.ox3==-1) rke=pmb->cks;
+          } else if (nk== 1) {
+            rks=pmb->cke+1, rke=pmb->cke+1;
+          } else { //(nk==-1)
+            rks=pmb->cks-1, rke=pmb->cks-1;
+          }
+
+          pmb->pmr->RestrictCellCenteredValues(cdst, pmr->coarse_conscl_, 0, NCLESS-1,
+                                               ris, rie, rjs, rje, rks, rke);
+        }
+      }
+    }
+
+    // calculate the loop limits for the ghost zones
+    int cn = pmb->cnghost-1;
+    int si, ei, sj, ej, sk, ek, fsi, fei, fsj, fej, fsk, fek;
+    if (nb.ox1==0) {
+      si=pmb->cis, ei=pmb->cie;
+      if ((lx1&1L)==0L) ei+=cn;
+      else             si-=cn;
+    } else if (nb.ox1>0) { si=pmb->cie+1,  ei=pmb->cie+cn;}
+    else              si=pmb->cis-cn, ei=pmb->cis-1;
+    if (nb.ox2==0) {
+      sj=pmb->cjs, ej=pmb->cje;
+      if (pmb->block_size.nx2 > 1) {
+        if ((lx2&1L)==0L) ej+=cn;
+        else             sj-=cn;
+      }
+    } else if (nb.ox2>0) { sj=pmb->cje+1,  ej=pmb->cje+cn;}
+    else              sj=pmb->cjs-cn, ej=pmb->cjs-1;
+    if (nb.ox3==0) {
+      sk=pmb->cks, ek=pmb->cke;
+      if (pmb->block_size.nx3 > 1) {
+        if ((lx3&1L)==0L) ek+=cn;
+        else             sk-=cn;
+      }
+    } else if (nb.ox3>0) { sk=pmb->cke+1,  ek=pmb->cke+cn;}
+    else              sk=pmb->cks-cn, ek=pmb->cks-1;
+
+    // convert the ghost zone and ghost-ghost zones into primitive variables
+    // this includes cell-centered field calculation
+    int f1m=0, f1p=0, f2m=0, f2p=0, f3m=0, f3p=0;
+    if (nb.ox1==0) {
+      if (nblevel[1][1][0]!=-1) f1m=1;
+      if (nblevel[1][1][2]!=-1) f1p=1;
+    } else {
+      f1m=1;
+      f1p=1;
+    }
+    if (pmb->block_size.nx2>1) {
+      if (nb.ox2==0) {
+        if (nblevel[1][0][1]!=-1) f2m=1;
+        if (nblevel[1][2][1]!=-1) f2p=1;
+      } else {
+        f2m=1;
+        f2p=1;
+      }
+    }
+    if (pmb->block_size.nx3>1) {
+      if (nb.ox3==0) {
+        if (nblevel[0][1][1]!=-1) f3m=1;
+        if (nblevel[2][1][1]!=-1) f3p=1;
+      } else {
+        f3m=1;
+        f3p=1;
+      }
+    }
+
+    pmb->peos->ConsclToPrimcl(pmr->coarse_conscl_, pmr->coarse_primcl_,
+                 pmr->coarse_primcl_, pmr->pcoarsec,
+                 si-f1m, ei+f1p, sj-f2m, ej+f2p, sk-f3m, ek+f3p);
+
+    // Apply physical boundaries
+    if (nb.ox1==0) {
+      if (BoundaryFunctionCL_[INNER_X1]!=NULL) {
+        BoundaryFunctionCL_[INNER_X1](pmb, pmr->pcoarsec, pmr->coarse_primcl_,
+                time, dt, pmb->cis, pmb->cie, sj, ej, sk, ek);
+      }
+      if (BoundaryFunctionCL_[OUTER_X1]!=NULL) {
+        BoundaryFunctionCL_[OUTER_X1](pmb, pmr->pcoarsec, pmr->coarse_primcl_,
+                time, dt, pmb->cis, pmb->cie, sj, ej, sk, ek);
+      }
+    }
+    if (nb.ox2==0 && pmb->block_size.nx2 > 1) {
+      if (BoundaryFunctionCL_[INNER_X2]!=NULL) {
+        BoundaryFunctionCL_[INNER_X2](pmb, pmr->pcoarsec, pmr->coarse_primcl_,
+                time, dt, si, ei, pmb->cjs, pmb->cje, sk, ek);
+      }
+      if (BoundaryFunctionCL_[OUTER_X2]!=NULL) {
+        BoundaryFunctionCL_[OUTER_X2](pmb, pmr->pcoarsec, pmr->coarse_primcl_,
+                time, dt, si, ei, pmb->cjs, pmb->cje, sk, ek);
+      }
+    }
+    if (nb.ox3==0 && pmb->block_size.nx3 > 1) {
+      if (BoundaryFunctionCL_[INNER_X3]!=NULL) {
+        BoundaryFunctionCL_[INNER_X3](pmb, pmr->pcoarsec, pmr->coarse_primcl_,
+                time, dt, si, ei, sj, ej, pmb->cks, pmb->cke);
+      }
+      if (BoundaryFunctionCL_[OUTER_X3]!=NULL) {
+        BoundaryFunctionCL_[OUTER_X3](pmb, pmr->pcoarsec, pmr->coarse_primcl_,
+                time, dt, si, ei, sj, ej, pmb->cks, pmb->cke);
+      }
+    }
+
+    // now that the ghost-ghost zones are filled
+    // calculate the loop limits for the finer grid
+    fsi=(si-pmb->cis)*2+pmb->is,   fei=(ei-pmb->cis)*2+pmb->is+1;
+    if (pmb->block_size.nx2 > 1)
+      fsj=(sj-pmb->cjs)*2+pmb->js, fej=(ej-pmb->cjs)*2+pmb->js+1;
+    else fsj=pmb->js, fej=pmb->je;
+    if (pmb->block_size.nx3 > 1)
+      fsk=(sk-pmb->cks)*2+pmb->ks, fek=(ek-pmb->cks)*2+pmb->ks+1;
+    else fsk=pmb->ks, fek=pmb->ke;
+
+    // prolongate hydro variables using primitive
+    pmr->ProlongateCellCenteredValues(pmr->coarse_primcl_, pdst, 0, NCLESS-1,
+                                      si, ei, sj, ej, sk, ek);
+    
+    // calculate conservative variables
+    pmb->peos->PrimclToConscl(pdst, cdst, pmb->pcoord,
+                              fsi, fei, fsj, fej, fsk, fek);
+	}
 }

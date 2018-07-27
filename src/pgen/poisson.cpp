@@ -28,6 +28,7 @@
 #include "../gravity/gravity.hpp"
 #include "../gravity/mggravity.hpp"
 #include "../hydro/hydro.hpp"
+#include "../cless/cless.hpp"
 #include "../mesh/mesh.hpp"
 #include "../multigrid/multigrid.hpp"
 #include "../parameter_input.hpp"
@@ -119,6 +120,32 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin) {
       phydro->u(IM2,k,j,i) = phia;
       phydro->u(IM3,k,j,i) = 0.0;
     }
+
+		if (CLESS_ENABLED) {
+			if (nlim > 0) {
+				pcless->u(IDN ,k,j,i) = den;
+				pcless->u(IM1 ,k,j,i) = 0.0;
+				pcless->u(IM2 ,k,j,i) = 0.0;
+				pcless->u(IM3 ,k,j,i) = 0.0;
+				pcless->u(IE11,k,j,i) = 1.0;
+				pcless->u(IE22,k,j,i) = 1.0;
+				pcless->u(IE33,k,j,i) = 1.0;
+				pcless->u(IE12,k,j,i) = 0.0;
+				pcless->u(IE13,k,j,i) = 0.0;
+				pcless->u(IE23,k,j,i) = 0.0; 
+			} else {
+				pcless->u(IDN,k,j,i) = den;
+				pcless->u(IM1,k,j,i) = den;
+				pcless->u(IM2,k,j,i) = phia;
+				pcless->u(IM3,k,j,i) = 0.0;
+				pcless->u(IE11,k,j,i) = 1.0;
+				pcless->u(IE22,k,j,i) = 1.0;
+				pcless->u(IE33,k,j,i) = 1.0;
+				pcless->u(IE12,k,j,i) = 0.0;
+				pcless->u(IE13,k,j,i) = 0.0;
+				pcless->u(IE23,k,j,i) = 0.0; 
+			}
+		}
   }}}
 
 }

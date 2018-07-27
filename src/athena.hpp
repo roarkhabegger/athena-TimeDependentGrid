@@ -105,15 +105,28 @@ typedef struct EdgeField {
 //----------------------------------------------------------------------------------------
 // enums used everywhere
 
-// array indices for conserved: density, momemtum, total energy, face-centered field
-enum {IDN=0, IM1=1, IM2=2, IM3=3, IEN=4};
+// array indices for conserved: density, momemtum, total energy, internal energy,
+// face-centered field
+enum {IDN=0, IM1=1, IM2=2, IM3=3, IEN=4, IIE=5};
 enum {IB1=0, IB2=1, IB3=2};
 
+// array indices for cless variables
+enum {IE11=4,IE22=5,IE33=6,IE12=7,IE13=8,IE23=9};
+
 // array indices for 1D primitives: velocity, transverse components of field
-enum {IVX=1, IVY=2, IVZ=3, IPR=4, IBY=(NHYDRO), IBZ=((NHYDRO)+1)};
+enum {IVX=1, IVY=2, IVZ=3, IPR=4, IGE=5, IBY=(NHYDRO), IBZ=((NHYDRO)+1)};
+
+// array indices for cless variables
+enum {IP11=4,IP22=5,IP33=6,IP12=7,IP13=8,IP23=9};
 
 // array indices for face-centered electric fields returned by Riemann solver
 enum {X1E2=0, X1E3=1, X2E3=0, X2E1=1, X3E1=0, X3E2=1};
+
+// array indices for passive scalars (only goes to 10), this is mostly for pgen 
+enum {IS0=(NHYDRO-NSCALARS)  , IS1=(NHYDRO-NSCALARS)+1, IS2=(NHYDRO-NSCALARS)+2,
+			IS3=(NHYDRO-NSCALARS)+3, IS4=(NHYDRO-NSCALARS)+4, IS5=(NHYDRO-NSCALARS)+5,
+			IS6=(NHYDRO-NSCALARS)+6, IS7=(NHYDRO-NSCALARS)+7, IS8=(NHYDRO-NSCALARS)+8,
+			IS9=(NHYDRO-NSCALARS)+9};
 
 // array indices for metric and triangular matrices in GR
 enum {I00, I01, I02, I03, I11, I12, I13, I22, I23, I33, NMETRIC};
@@ -125,12 +138,14 @@ enum CoordinateDirection {X1DIR=0, X2DIR=1, X3DIR=2};
 // needed wherever MPI communications are used.  Must be < 32 and unique
 enum Athena_MPI_Tag {TAG_HYDRO=0, TAG_FIELD=1, TAG_RAD=2, TAG_CHEM=3, TAG_HYDFLX=4,
   TAG_FLDFLX=5, TAG_RADFLX=6, TAG_CHMFLX=7, TAG_AMR=8, TAG_FLDFLX_POLE=9, TAG_GRAVITY=11,
-  TAG_MGGRAV=12,TAG_SHBOX_HYDRO=13,TAG_SHBOX_FIELD=14,TAG_SHBOX_EMF=15};
+  TAG_MGGRAV=12,TAG_SHBOX_HYDRO=13,TAG_SHBOX_FIELD=14,TAG_SHBOX_EMF=15, TAG_CLESS=16, 
+	TAG_CLFLX=17};
 
 enum BoundaryType {BNDRY_HYDRO=0, BNDRY_FIELD=1, BNDRY_GRAVITY=2, BNDRY_MGGRAV=3,
-                   BNDRY_MGGRAVF=4, BNDRY_FLCOR=5, BNDRY_EMFCOR=6};
-enum CCBoundaryType {HYDRO_CONS=0, HYDRO_PRIM=1};
-enum FluxCorrectionType {FLUX_HYDRO=0};
+                   BNDRY_MGGRAVF=4, BNDRY_FLCOR=5, BNDRY_EMFCOR=6, BNDRY_CLESS=7,
+									 BNDRY_FLCORCL=8};
+enum CCBoundaryType {HYDRO_CONS=0, HYDRO_PRIM=1, CLESS_CONS=2, CLESS_PRIM=3};
+enum FluxCorrectionType {FLUX_HYDRO=0, FLUX_CLESS=1};
 
 //----------------------------------------------------------------------------------------
 // function pointer prototypes for user-defined modules set at runtime
@@ -138,6 +153,8 @@ enum FluxCorrectionType {FLUX_HYDRO=0};
 typedef void (*BValFunc_t)(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
                            FaceField &b, Real time, Real dt,
                            int is, int ie, int js, int je, int ks, int ke, int ngh);
+typedef void (*BValFuncCL_t)(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
+   Real time, Real dt, int is, int ie, int js, int je, int ks, int ke); // cless-BC 
 typedef int (*AMRFlagFunc_t)(MeshBlock *pmb);
 typedef Real (*MeshGenFunc_t)(Real x, RegionSize rs);
 typedef void (*SrcTermFunc_t)(MeshBlock *pmb, const Real time, const Real dt,

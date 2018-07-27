@@ -27,6 +27,7 @@
 #include "../eos/eos.hpp"
 #include "../field/field.hpp"
 #include "../hydro/hydro.hpp"
+#include "../cless/cless.hpp"
 #include "../mesh/mesh.hpp"
 #include "../parameter_input.hpp"
 
@@ -324,6 +325,19 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin) {
           if (NON_BAROTROPIC_EOS) phydro->u(IEN,k,j,i) =
             wl[IPR]/(peos->GetGamma() - 1.0)
             + 0.5*wl[IDN]*(wl[IVX]*wl[IVX] + wl[IVY]*wl[IVY] + wl[IVZ]*wl[IVZ]);
+				
+					if (CLESS_ENABLED) {
+						pcless->u(IDN ,k,j,i) = phydro->u(IDN,k,j,i); 
+						pcless->u(IM1 ,k,j,i) = phydro->u(IM1,k,j,i);
+						pcless->u(IM2 ,k,j,i) = phydro->u(IM2,k,j,i);
+						pcless->u(IM3 ,k,j,i) = phydro->u(IM3,k,j,i);
+						pcless->u(IE11,k,j,i) = wl[IPR] + wl[IDN]*wl[IVX]*wl[IVX];
+						pcless->u(IE22,k,j,i) = wl[IPR] + wl[IDN]*wl[IVY]*wl[IVY];
+						pcless->u(IE33,k,j,i) = wl[IPR] + wl[IDN]*wl[IVZ]*wl[IVZ];
+						pcless->u(IE12,k,j,i) = wl[IPR] + wl[IDN]*wl[IVX]*wl[IVY];
+						pcless->u(IE13,k,j,i) = wl[IPR] + wl[IDN]*wl[IVX]*wl[IVZ];
+						pcless->u(IE23,k,j,i) = wl[IPR] + wl[IDN]*wl[IVY]*wl[IVZ];
+					}
         } else {
           phydro->u(IDN,k,j,i) = wr[IDN];
           phydro->u(IM1,k,j,i) = wr[IVX]*wr[IDN];
@@ -332,6 +346,19 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin) {
           if (NON_BAROTROPIC_EOS) phydro->u(IEN,k,j,i) =
             wr[IPR]/(peos->GetGamma() - 1.0)
             + 0.5*wr[IDN]*(wr[IVX]*wr[IVX] + wr[IVY]*wr[IVY] + wr[IVZ]*wr[IVZ]);
+					
+					if (CLESS_ENABLED) {
+						pcless->u(IDN ,k,j,i) = phydro->u(IDN,k,j,i); 
+						pcless->u(IM1 ,k,j,i) = phydro->u(IM1,k,j,i);
+						pcless->u(IM2 ,k,j,i) = phydro->u(IM2,k,j,i);
+						pcless->u(IM3 ,k,j,i) = phydro->u(IM3,k,j,i);
+						pcless->u(IE11,k,j,i) = wr[IPR] + wr[IDN]*wr[IVX]*wr[IVX];
+						pcless->u(IE22,k,j,i) = wr[IPR] + wr[IDN]*wr[IVY]*wr[IVY];
+						pcless->u(IE33,k,j,i) = wr[IPR] + wr[IDN]*wr[IVZ]*wr[IVZ];
+						pcless->u(IE12,k,j,i) = wr[IPR] + wr[IDN]*wr[IVX]*wr[IVY];
+						pcless->u(IE13,k,j,i) = wr[IPR] + wr[IDN]*wr[IVX]*wr[IVZ];
+						pcless->u(IE23,k,j,i) = wr[IPR] + wr[IDN]*wr[IVY]*wr[IVZ];
+					}
         }
       }
     }}
@@ -350,7 +377,20 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin) {
           if (NON_BAROTROPIC_EOS) phydro->u(IEN,k,j,i) =
             wl[IPR]/(peos->GetGamma() - 1.0)
             + 0.5*wl[IDN]*(wl[IVX]*wl[IVX] + wl[IVY]*wl[IVY] + wl[IVZ]*wl[IVZ]);
-        }
+					if (CLESS_ENABLED) {
+						pcless->u(IDN ,k,j,i) = phydro->u(IDN,k,j,i); 
+						pcless->u(IM2 ,k,j,i) = phydro->u(IM2,k,j,i);
+						pcless->u(IM3 ,k,j,i) = phydro->u(IM3,k,j,i);
+						pcless->u(IM1 ,k,j,i) = phydro->u(IM1,k,j,i);
+						pcless->u(IE22,k,j,i) = wl[IPR] + wl[IDN]*wl[IVX]*wl[IVX];
+						pcless->u(IE33,k,j,i) = wl[IPR] + wl[IDN]*wl[IVY]*wl[IVY];
+						pcless->u(IE11,k,j,i) = wl[IPR] + wl[IDN]*wl[IVZ]*wl[IVZ];
+						pcless->u(IE23,k,j,i) = wl[IPR] + wl[IDN]*wl[IVX]*wl[IVY];
+						pcless->u(IE12,k,j,i) = wl[IPR] + wl[IDN]*wl[IVX]*wl[IVZ];
+						pcless->u(IE13,k,j,i) = wl[IPR] + wl[IDN]*wl[IVY]*wl[IVZ];
+					}
+				}
+
       } else {
         for (int i=is; i<=ie; ++i) {
           phydro->u(IDN,k,j,i) = wr[IDN];
@@ -360,6 +400,18 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin) {
           if (NON_BAROTROPIC_EOS) phydro->u(IEN,k,j,i) =
             wr[IPR]/(peos->GetGamma() - 1.0)
             + 0.5*wr[IDN]*(wr[IVX]*wr[IVX] + wr[IVY]*wr[IVY] + wr[IVZ]*wr[IVZ]);
+					if (CLESS_ENABLED) {
+						pcless->u(IDN ,k,j,i) = phydro->u(IDN,k,j,i); 
+						pcless->u(IM2 ,k,j,i) = phydro->u(IM2,k,j,i);
+						pcless->u(IM3 ,k,j,i) = phydro->u(IM3,k,j,i);
+						pcless->u(IM1 ,k,j,i) = phydro->u(IM1,k,j,i);
+						pcless->u(IE22,k,j,i) = wr[IPR] + wr[IDN]*wr[IVX]*wr[IVX];
+						pcless->u(IE33,k,j,i) = wr[IPR] + wr[IDN]*wr[IVY]*wr[IVY];
+						pcless->u(IE11,k,j,i) = wr[IPR] + wr[IDN]*wr[IVZ]*wr[IVZ];
+						pcless->u(IE23,k,j,i) = wr[IPR] + wr[IDN]*wr[IVX]*wr[IVY];
+						pcless->u(IE12,k,j,i) = wr[IPR] + wr[IDN]*wr[IVX]*wr[IVZ];
+						pcless->u(IE13,k,j,i) = wr[IPR] + wr[IDN]*wr[IVY]*wr[IVZ];
+					}
         }
       }
     }}
@@ -456,6 +508,5 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin) {
       pfield->b.x3f(ke+1,j,i) = pfield->b.x3f(ke,j,i);
     }}
   }
-
   return;
 }

@@ -22,6 +22,7 @@
 #include "../coordinates/coordinates.hpp"
 #include "../field/field.hpp"
 #include "../hydro/hydro.hpp"
+#include "../cless/cless.hpp"
 #include "outputs.hpp"
 
 // Only proceed if HDF5 output enabled
@@ -120,7 +121,9 @@ void ATHDF5Output::WriteOutputFile(Mesh *pm, ParameterInput *pin, bool flag) {
       num_datasets += 1;
     num_variables = new int[num_datasets];
     int n_dataset = 0;
-    num_variables[n_dataset++] = NHYDRO;
+		// for cless variables it is easiest to just 
+		// consider them to be part of hydro
+    num_variables[n_dataset++] = NHYDRO+NCLESS;
     if (output_params.cartesian_vector)
       num_variables[n_dataset-1] += 3;
     if (SELF_GRAVITY_ENABLED)

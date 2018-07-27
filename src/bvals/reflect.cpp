@@ -371,3 +371,304 @@ void ReflectOuterX3(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
 
   return;
 }
+
+// Cless versions of reflecting BC  
+//----------------------------------------------------------------------------------------
+//! \fn void ReflectInnerX1(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
+//                          FaceField &b, Real time, Real dt,
+//                          int is, int ie, int js, int je, int ks, int ke)
+//  \brief REFLECTING boundary conditions, inner x1 boundary
+
+void ReflectInnerCLX1(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
+     Real time, Real dt, int is, int ie, int js, int je, int ks, int ke) {
+  // copy cless variables into ghost zones
+  for (int n=0; n<(NCLESS); ++n) {
+		if (n==(IVX)) {
+	    for (int k=ks; k<=ke; ++k) {
+  	  for (int j=js; j<=je; ++j) {
+#pragma omp simd
+	      for (int i=1; i<=(NGHOST); ++i) {
+		      prim(IVX,k,j,is-i) = -prim(IVX,k,j,(is+i-1));
+			  }
+		 }}
+		}
+		else if (n==(IP12)) {
+	    for (int k=ks; k<=ke; ++k) {
+  	  for (int j=js; j<=je; ++j) {
+#pragma omp simd
+	      for (int i=1; i<=(NGHOST); ++i) {
+		      prim(IP12,k,j,is-i) = -prim(IP12,k,j,(is+i-1));
+			  }
+		 }}
+		}
+		else if (n==(IP13)) {
+	    for (int k=ks; k<=ke; ++k) {
+  	  for (int j=js; j<=je; ++j) {
+#pragma omp simd
+	      for (int i=1; i<=(NGHOST); ++i) {
+		      prim(IP13,k,j,is-i) = -prim(IP13,k,j,(is+i-1));
+			  }
+		 }}
+		}
+		else {
+	    for (int k=ks; k<=ke; ++k) {
+  	  for (int j=js; j<=je; ++j) {
+#pragma omp simd
+	      for (int i=1; i<=(NGHOST); ++i) {
+		      prim(n,k,j,is-i) = prim(n,k,j,(is+i-1));
+			  }
+		 }}
+		}
+  }
+  return;
+}
+
+//----------------------------------------------------------------------------------------
+//! \fn void ReflectOuterX1(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
+//                         FaceField &b, Real time, Real dt,
+//                         int is, int ie, int js, int je, int ks, int ke)
+//  \brief REFLECTING boundary conditions, outer x1 boundary
+
+void ReflectOuterCLX1(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
+     Real time, Real dt, int is, int ie, int js, int je, int ks, int ke) {
+  // copy cless variables into ghost zones
+  for (int n=0; n<(NCLESS); ++n) {
+		if (n==(IVX)) {
+	    for (int k=ks; k<=ke; ++k) {
+  	  for (int j=js; j<=je; ++j) {
+#pragma omp simd
+	      for (int i=1; i<=(NGHOST); ++i) {
+		      prim(IVX,k,j,ie+i) = -prim(IVX,k,j,(ie-i+1));
+			  }
+		 }}
+		}
+		else if (n==(IP12)) {
+	    for (int k=ks; k<=ke; ++k) {
+  	  for (int j=js; j<=je; ++j) {
+#pragma omp simd
+	      for (int i=1; i<=(NGHOST); ++i) {
+		      prim(IP12,k,j,ie+i) = -prim(IP12,k,j,(ie-i+1));
+			  }
+		 }}
+		}
+		else if (n==(IP13)) {
+	    for (int k=ks; k<=ke; ++k) {
+  	  for (int j=js; j<=je; ++j) {
+#pragma omp simd
+	      for (int i=1; i<=(NGHOST); ++i) {
+		      prim(IP13,k,j,ie+i) = -prim(IP13,k,j,(ie-i+1));
+			  }
+		 }}
+		}
+		else {
+	    for (int k=ks; k<=ke; ++k) {
+  	  for (int j=js; j<=je; ++j) {
+#pragma omp simd
+	      for (int i=1; i<=(NGHOST); ++i) {
+		      prim(n,k,j,ie+i) = prim(n,k,j,(ie-i+1));
+			  }
+		 }}
+		}
+  }
+	return;
+}
+
+//----------------------------------------------------------------------------------------
+//! \fn void ReflectInnerX2(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
+//                          FaceField &b, Real time, Real dt,
+//                          int is, int ie, int js, int je, int ks, int ke)
+//  \brief REFLECTING boundary conditions, inner x2 boundary
+
+void ReflectInnerCLX2(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
+     Real time, Real dt, int is, int ie, int js, int je, int ks, int ke) {
+  // copy cless variables into ghost zones
+  for (int n=0; n<(NCLESS); ++n) {
+		if (n==(IVY)) {
+	    for (int k=ks; k<=ke; ++k) {
+  	  for (int j=1; j<=(NGHOST); ++j) {
+#pragma omp simd
+	      for (int i=is; i<=ie; ++i) {
+		      prim(IVY,k,js-j,i) = -prim(IVY,k,(js+j-1),i);
+			  }
+		 }}
+		}
+		else if (n==(IP12)) {
+	    for (int k=ks; k<=ke; ++k) {
+  	  for (int j=1; j<=(NGHOST); ++j) {
+#pragma omp simd
+	      for (int i=is; i<=ie; ++i) {
+		      prim(IP12,k,js-j,i) = -prim(IP12,k,(js+j-1),i);
+			  }
+		 }}
+		}
+		else if (n==(IP23)) {
+	    for (int k=ks; k<=ke; ++k) {
+  	  for (int j=1; j<=(NGHOST); ++j) {
+#pragma omp simd
+	      for (int i=is; i<=ie; ++i) {
+		      prim(IP23,k,js-j,i) = -prim(IP23,k,(js+j-1),i);
+			  }
+		 }}
+		}
+		else {
+	    for (int k=ks; k<=ke; ++k) {
+  	  for (int j=1; j<=(NGHOST); ++j) {
+#pragma omp simd
+	      for (int i=is; i<=ie; ++i) {
+		      prim(n,k,js-j,i) = prim(n,k,(js+j-1),i);
+			  }
+		 }}
+		}
+	}
+  return;
+}
+
+//----------------------------------------------------------------------------------------
+//! \fn void ReflectOuterX2(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
+//                          FaceField &b, Real time, Real dt,
+//                          int is, int ie, int js, int je, int ks, int ke)
+//  \brief REFLECTING boundary conditions, outer x2 boundary
+
+void ReflectOuterCLX2(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
+     Real time, Real dt, int is, int ie, int js, int je, int ks, int ke) {
+  // copy cless variables into ghost zones
+  for (int n=0; n<(NCLESS); ++n) {
+		if (n==(IVY)) {
+	    for (int k=ks; k<=ke; ++k) {
+  	  for (int j=1; j<=(NGHOST); ++j) {
+#pragma omp simd
+	      for (int i=is; i<=ie; ++i) {
+		      prim(IVY,k,je+j,i) = -prim(IVY,k,(je-j+1),i);
+			  }
+		 }}
+		}
+		else if (n==(IP12)) {
+	    for (int k=ks; k<=ke; ++k) {
+  	  for (int j=1; j<=(NGHOST); ++j) {
+#pragma omp simd
+	      for (int i=is; i<=ie; ++i) {
+		      prim(IP12,k,je+j,i) = -prim(IP12,k,(je-j+1),i);
+			  }
+		 }}
+		}
+		else if (n==(IP23)) {
+	    for (int k=ks; k<=ke; ++k) {
+  	  for (int j=1; j<=(NGHOST); ++j) {
+#pragma omp simd
+	      for (int i=is; i<=ie; ++i) {
+		      prim(IP23,k,je+j,i) = -prim(IP23,k,(je-j+1),i);
+			  }
+		 }}
+		}
+		else {
+	    for (int k=ks; k<=ke; ++k) {
+  	  for (int j=1; j<=(NGHOST); ++j) {
+#pragma omp simd
+	      for (int i=is; i<=ie; ++i) {
+		      prim(n,k,je+j,i) = prim(n,k,(je-j+1),i);
+			  }
+		 }}
+		}
+	}
+  return;
+}
+
+//----------------------------------------------------------------------------------------
+//! \fn void ReflectInnerX3(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
+//                          FaceField &b, Real time, Real dt,
+//                          int is, int ie, int js, int je, int ks, int ke)
+//  \brief REFLECTING boundary conditions, inner x3 boundary
+
+void ReflectInnerCLX3(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
+     Real time, Real dt, int is, int ie, int js, int je, int ks, int ke) {
+  // copy cless variables into ghost zones
+  for (int n=0; n<(NCLESS); ++n) {
+		if (n==(IVZ)) {
+	    for (int k=1; k<=(NGHOST); ++k) {
+  	  for (int j=js; j<=je; ++j) {
+#pragma omp simd
+	      for (int i=is; i<=ie; ++i) {
+		      prim(IVZ,ks-k,j,i) = -prim(IVZ,(ks+k-1),j,i);
+			  }
+		 }}
+		}
+		else if (n==(IP13)) {
+	    for (int k=1; k<=(NGHOST); ++k) {
+  	  for (int j=js; j<=je; ++j) {
+#pragma omp simd
+	      for (int i=is; i<=ie; ++i) {
+		      prim(IP13,ks-k,j,i) = -prim(IP13,(ks+k-1),j,i);
+			  }
+		 }}
+		}
+		else if (n==(IP23)) {
+	    for (int k=1; k<=(NGHOST); ++k) {
+  	  for (int j=js; j<=je; ++j) {
+#pragma omp simd
+	      for (int i=is; i<=ie; ++i) {
+		      prim(IP23,ks-k,j,i) = -prim(IP23,(ks+k-1),j,i);
+			  }
+		 }}
+		}
+		else {
+	    for (int k=1; k<=(NGHOST); ++k) {
+  	  for (int j=js; j<=je; ++j) {
+#pragma omp simd
+	      for (int i=is; i<=ie; ++i) {
+		      prim(n,ks-k,j,i) = prim(n,(ks+k-1),j,i);
+			  }
+		 }}
+		}
+	}  
+	return;
+}
+
+//----------------------------------------------------------------------------------------
+//! \fn void ReflectOuterX3(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
+//                          FaceField &b, Real time, Real dt,
+//                          int is, int ie, int js, int je, int ks, int ke)
+//  \brief REFLECTING boundary conditions, outer x3 boundary
+
+void ReflectOuterCLX3(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
+     Real time, Real dt, int is, int ie, int js, int je, int ks, int ke) {
+  // copy cless variables into ghost zones
+  for (int n=0; n<(NCLESS); ++n) {
+		if (n==(IVZ)) {
+	    for (int k=1; k<=(NGHOST); ++k) {
+  	  for (int j=js; j<=je; ++j) {
+#pragma omp simd
+	      for (int i=is; i<=ie; ++i) {
+		      prim(IVZ,ke+k,j,i) = -prim(IVZ,(ke-k+1),j,i);
+			  }
+		 }}
+		}
+		else if (n==(IP13)) {
+	    for (int k=1; k<=(NGHOST); ++k) {
+  	  for (int j=js; j<=je; ++j) {
+#pragma omp simd
+	      for (int i=is; i<=ie; ++i) {
+		      prim(IP13,ke+k,j,i) = -prim(IP13,(ke-k+1),j,i);
+			  }
+		 }}
+		}
+		else if (n==(IP23)) {
+	    for (int k=1; k<=(NGHOST); ++k) {
+  	  for (int j=js; j<=je; ++j) {
+#pragma omp simd
+	      for (int i=is; i<=ie; ++i) {
+		      prim(IP23,ke+k,j,i) = -prim(IP23,(ke-k+1),j,i);
+			  }
+		 }}
+		}
+		else {
+	    for (int k=1; k<=(NGHOST); ++k) {
+  	  for (int j=js; j<=je; ++j) {
+#pragma omp simd
+	      for (int i=is; i<=ie; ++i) {
+		      prim(n,ke+k,j,i) = prim(n,(ke-k+1),j,i);
+			  }
+		 }}
+		}
+	} 
+	return;
+}

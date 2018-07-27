@@ -19,6 +19,7 @@
 #include "../mesh/mesh.hpp"
 #include "../coordinates/coordinates.hpp"
 #include "../field/field.hpp"
+#include "../cless/cless.hpp"
 #include "hydro_diffusion/hydro_diffusion.hpp"
 #include "../field/field_diffusion/field_diffusion.hpp"
 
@@ -39,7 +40,7 @@ Real Hydro::NewBlockTimeStep(void) {
   MeshBlock *pmb=pmy_block;
   int is = pmb->is; int js = pmb->js; int ks = pmb->ks;
   int ie = pmb->ie; int je = pmb->je; int ke = pmb->ke;
-  AthenaArray<Real> w,bcc,b_x1f,b_x2f,b_x3f;
+  AthenaArray<Real> w,bcc,b_x1f,b_x2f,b_x3f, wcl;
   w.InitWithShallowCopy(pmb->phydro->w);
   if (MAGNETIC_FIELDS_ENABLED) {
     bcc.InitWithShallowCopy(pmb->pfield->bcc);
@@ -47,12 +48,16 @@ Real Hydro::NewBlockTimeStep(void) {
     b_x2f.InitWithShallowCopy(pmb->pfield->b.x2f);
     b_x3f.InitWithShallowCopy(pmb->pfield->b.x3f);
   }
+	if (CLESS_ENABLED) {
+		wcl.InitWithShallowCopy(pmb->pcless->w); 
+	}
 
   AthenaArray<Real> dt1, dt2, dt3;
   dt1.InitWithShallowCopy(dt1_);
   dt2.InitWithShallowCopy(dt2_);
   dt3.InitWithShallowCopy(dt3_);
-  Real wi[(NWAVE)];
+  Real wi[(NWAVE+NINT)];
+	Real wicl[(NWAVECL)]; 
 
   Real min_dt = (FLT_MAX);
 
@@ -68,9 +73,33 @@ Real Hydro::NewBlockTimeStep(void) {
           wi[IVX]=w(IVX,k,j,i);
           wi[IVY]=w(IVY,k,j,i);
           wi[IVZ]=w(IVZ,k,j,i);
-          if (NON_BAROTROPIC_EOS) wi[IPR]=w(IPR,k,j,i);
+          if (NON_BAROTROPIC_EOS) {
+						wi[IPR]=w(IPR,k,j,i);
+						if (DUAL_ENERGY) wi[IGE]=w(IGE,k,j,i);
+					}
+					
+					if (CLESS_ENABLED) { // cless + hydro
+						Real c1f, c2f, c3f; 
+						wicl[IDN ] = wcl(IDN ,k,j,i);
+						wicl[IVX ] = wcl(IVX ,k,j,i);
+						wicl[IVY ] = wcl(IVY ,k,j,i);
+						wicl[IVZ ] = wcl(IVZ ,k,j,i);
+						wicl[IP11] = wcl(IP11,k,j,i);
+						wicl[IP22] = wcl(IP22,k,j,i);
+						wicl[IP33] = wcl(IP33,k,j,i);
+						wicl[IP12] = wcl(IP12,k,j,i);
+						wicl[IP13] = wcl(IP13,k,j,i);
+						wicl[IP23] = wcl(IP23,k,j,i);
 
-          if (MAGNETIC_FIELDS_ENABLED) {
+						pmb->peos->SoundSpeedsCL(wicl,&c1f,&c2f,&c3f); 
+
+						Real cs = pmb->peos->SoundSpeed(wi); 
+
+						dt1(i) /= std::max( fabs(wi[IVX] + cs), fabs(wicl[IVX] + c1f) );
+						dt2(i) /= std::max( fabs(wi[IVY] + cs), fabs(wicl[IVY] + c2f) );
+						dt3(i) /= std::max( fabs(wi[IVZ] + cs), fabs(wicl[IVZ] + c3f) ); 
+					}
+          else if (MAGNETIC_FIELDS_ENABLED) { // hydro + mhd
 
             Real bx = bcc(IB1,k,j,i) + fabs(b_x1f(k,j,i)-bcc(IB1,k,j,i));
             wi[IBY] = bcc(IB2,k,j,i);
@@ -90,7 +119,8 @@ Real Hydro::NewBlockTimeStep(void) {
             cf = pmb->peos->FastMagnetosonicSpeed(wi,bx);
             dt3(i) /= (fabs(wi[IVZ]) + cf);
 
-          } else {
+          } 
+					else { // hydro only 
 
             Real cs = pmb->peos->SoundSpeed(wi);
             dt1(i) /= (fabs(wi[IVX]) + cs);

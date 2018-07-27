@@ -6,6 +6,9 @@ src/defs.hpp
 obj/
 bin/
 
+# Obsolete code directory
+.obsolete/
+
 # Compiled object files
 *.slo
 *.lo

@@ -16,6 +16,7 @@
 
 // Declarations
 class Hydro;
+class Cless; 
 class ParameterInput;
 struct FaceField;
 
@@ -36,6 +37,15 @@ public:
 #pragma omp declare simd simdlen(SIMD_WIDTH) uniform(this,prim,k,j) linear(i)
   void ApplyPrimitiveFloors(AthenaArray<Real> &prim, int k, int j, int i);
 
+	void SoundSpeedsCL(const Real prim[(NCLESS)], Real *c11, Real *c22, Real *c33);
+	void ConsclToPrimcl(AthenaArray<Real> &cons, const AthenaArray<Real> &prim_old,
+													AthenaArray<Real> &prim, Coordinates *pco, 
+													int il, int iu, int jl, int ju, int kl, int ku);
+	void PrimclToConscl(const AthenaArray<Real> &prim, 
+													AthenaArray<Real> &cons, Coordinates *pco, 
+													int il, int iu, int jl, int ju, int kl, int ku);
+	void ApplyPrimitiveFloorsCL(AthenaArray<Real> &prim, int k, int j, int i);
+
   // Sound speed functions in different regimes
   #if !RELATIVISTIC_DYNAMICS  // Newtonian: SR, GR defined as no-op
 #pragma omp declare simd simdlen(SIMD_WIDTH) uniform(this)
@@ -46,6 +56,7 @@ public:
 #pragma omp declare simd simdlen(SIMD_WIDTH) uniform(this)
       Real FastMagnetosonicSpeed(const Real prim[(NWAVE)], const Real bx);
     #endif  // !MAGNETIC_FIELDS_ENABLED
+
     void SoundSpeedsSR(Real, Real, Real, Real, Real *, Real *) {return;}
     void FastMagnetosonicSpeedsSR(const AthenaArray<Real> &,
         const AthenaArray<Real> &, int, int, int, int, int, AthenaArray<Real> &,
@@ -104,6 +115,11 @@ public:
   Real GetIsoSoundSpeed() const {return iso_sound_speed_;}
   Real GetDensityFloor() const {return density_floor_;}
   Real GetPressureFloor() const {return pressure_floor_;}
+	#ifdef DUAL_ENERGY
+	Real GetIeta1() const {return ieta1_;}
+	Real GetIeta2() const {return ieta2_;}
+	#endif // DUAL_ENERGY 
+	
 
 private:
   MeshBlock *pmy_block_;                 // ptr to MeshBlock containing this EOS
@@ -120,6 +136,9 @@ private:
   AthenaArray<Real> normal_mm_;          // normal-frame momenta, used in GR MHD
   AthenaArray<Real> normal_bb_;          // normal-frame fields, used in GR MHD
   AthenaArray<Real> normal_tt_;          // normal-frame M.B, used in GR MHD
+	#ifdef DUAL_ENERGY
+	Real ieta1_, ieta2_; 
+	#endif 
 };
 
 #endif // EOS_EOS_HPP_

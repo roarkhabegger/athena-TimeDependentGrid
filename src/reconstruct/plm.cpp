@@ -69,7 +69,7 @@ void Reconstruction::PiecewiseLinearX1(MeshBlock *pmb,
 
     // Apply van Leer limiter for uniform grid
     if (pmb->precon->uniform_limiter[X1DIR]) {
-      for (int n=0; n<(NWAVE); ++n) {
+      for (int n=0; n<(NWAVE+NINT+NSCALARS); ++n) {
 #pragma omp simd simdlen(SIMD_WIDTH)
         for (int i=il-1; i<=iu; ++i) {
           dw2(i) = dwl(n,i)*dwr(n,i);
@@ -80,7 +80,7 @@ void Reconstruction::PiecewiseLinearX1(MeshBlock *pmb,
 
     // Apply Mignone limiter for non-uniform grid
     } else {
-      for (int n=0; n<(NWAVE); ++n) {
+      for (int n=0; n<(NWAVE+NINT+NSCALARS); ++n) {
 #pragma omp simd simdlen(SIMD_WIDTH)
         for (int i=il-1; i<=iu; ++i) {
           dw2(i) = dwl(n,i)*dwr(n,i);
@@ -99,7 +99,7 @@ void Reconstruction::PiecewiseLinearX1(MeshBlock *pmb,
     }
 
     // compute ql_(i+1/2) and qr_(i-1/2) using monotonized slopes
-    for (int n=0; n<(NWAVE); ++n) {
+    for (int n=0; n<(NWAVE+NINT+NSCALARS); ++n) {
 #pragma omp simd simdlen(SIMD_WIDTH)
       for (int i=il-1; i<=iu; ++i) {
         wl(n,k,j,i+1) = wc(n,i) + ((pco->x1f(i+1)-pco->x1v(i))/pco->dx1f(i))*dwm(n,i);
@@ -171,7 +171,7 @@ void Reconstruction::PiecewiseLinearX2(MeshBlock *pmb,
 
     // Apply van Leer limiter for uniform grid
     if (pmb->precon->uniform_limiter[X2DIR]) {
-      for (int n=0; n<(NWAVE); ++n) {
+      for (int n=0; n<(NWAVE+NINT+NSCALARS); ++n) {
 #pragma omp simd simdlen(SIMD_WIDTH)
         for (int i=il; i<=iu; ++i) {
           dw2(i) = dwl(n,i)*dwr(n,i);
@@ -182,7 +182,7 @@ void Reconstruction::PiecewiseLinearX2(MeshBlock *pmb,
 
     // Apply Mignone limiter for non-uniform grid
     } else {
-      for (int n=0; n<(NWAVE); ++n) {
+      for (int n=0; n<(NWAVE+NINT+NSCALARS); ++n) {
 #pragma omp simd simdlen(SIMD_WIDTH)
         for (int i=il; i<=iu; ++i) {
           dw2(i) = dwl(n,i)*dwr(n,i);
@@ -201,7 +201,7 @@ void Reconstruction::PiecewiseLinearX2(MeshBlock *pmb,
     }
 
     // compute ql_(j+1/2) and qr_(j-1/2) using monotonized slopes
-    for (int n=0; n<(NWAVE); ++n) {
+    for (int n=0; n<(NWAVE+NINT+NSCALARS); ++n) {
 #pragma omp simd simdlen(SIMD_WIDTH)
       for (int i=il; i<=iu; ++i) {
         wl(n,k,j+1,i) = wc(n,i) + ((pco->x2f(j+1)-pco->x2v(j))/pco->dx2f(j))*dwm(n,i);
@@ -272,7 +272,7 @@ void Reconstruction::PiecewiseLinearX3(MeshBlock *pmb,
 
     // Apply van Leer limiter for uniform grid
     if (pmb->precon->uniform_limiter[X3DIR]) {
-      for (int n=0; n<(NWAVE); ++n) {
+      for (int n=0; n<(NWAVE+NINT+NSCALARS); ++n) {
 #pragma omp simd simdlen(SIMD_WIDTH)
         for (int i=il; i<=iu; ++i) {
           dw2(i) = dwl(n,i)*dwr(n,i);
@@ -283,7 +283,7 @@ void Reconstruction::PiecewiseLinearX3(MeshBlock *pmb,
 
     // Apply Mignone limiter for non-uniform grid
     } else {
-      for (int n=0; n<(NWAVE); ++n) {
+      for (int n=0; n<(NWAVE+NINT+NSCALARS); ++n) {
 #pragma omp simd simdlen(SIMD_WIDTH)
         for (int i=il; i<=iu; ++i) {
           dw2(i) = dwl(n,i)*dwr(n,i);
@@ -302,7 +302,7 @@ void Reconstruction::PiecewiseLinearX3(MeshBlock *pmb,
     }
 
     // compute ql_(k+1/2) and qr_(k-1/2) using monotonized slopes
-    for (int n=0; n<(NWAVE); ++n) {
+    for (int n=0; n<(NWAVE+NINT+NSCALARS); ++n) {
 #pragma omp simd simdlen(SIMD_WIDTH)
       for (int i=il; i<=iu; ++i) {
         wl(n,k+1,j,i) = wc(n,i) + ((pco->x3f(k+1)-pco->x3v(k))/pco->dx3f(k))*dwm(n,i);

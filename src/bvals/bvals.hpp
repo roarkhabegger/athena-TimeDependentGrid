@@ -25,6 +25,7 @@ class Mesh;
 class MeshBlock;
 class MeshBlockTree;
 class Hydro;
+class Cless; 
 class Field;
 class ParameterInput;
 class Coordinates;
@@ -48,6 +49,8 @@ enum BoundaryStatus {BNDRY_WAITING, BNDRY_ARRIVED, BNDRY_COMPLETED};
 
 // flags to mark which variables are reversed across polar boundary
 static bool flip_across_pole_hydro[] = {false, false, true, true, false};
+static bool flip_across_pole_cless[] = {false, false, true, true,
+																				false, true, true, false, false, false};
 static bool flip_across_pole_field[] = {false, true, true};
 
 //----------------------------------------------------------------------------------------
@@ -147,6 +150,34 @@ void PolarWedgeInnerX2(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim
 void PolarWedgeOuterX2(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
                     FaceField &b, Real time, Real dt,
                     int is, int ie, int js, int je, int ks, int ke, int ngh);
+
+// cless boundary functions 
+void OutflowInnerCLX1(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
+     Real time, Real dt, int is, int ie, int js, int je, int ks, int ke);
+void OutflowInnerCLX2(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
+     Real time, Real dt, int is, int ie, int js, int je, int ks, int ke);
+void OutflowInnerCLX3(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
+     Real time, Real dt, int is, int ie, int js, int je, int ks, int ke);
+void OutflowOuterCLX1(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
+     Real time, Real dt, int is, int ie, int js, int je, int ks, int ke);
+void OutflowOuterCLX2(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
+     Real time, Real dt, int is, int ie, int js, int je, int ks, int ke);
+void OutflowOuterCLX3(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
+		 Real time, Real dt, int is, int ie, int js, int je, int ks, int ke);
+
+void ReflectInnerCLX1(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
+     Real time, Real dt, int is, int ie, int js, int je, int ks, int ke);
+void ReflectInnerCLX2(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
+     Real time, Real dt, int is, int ie, int js, int je, int ks, int ke);
+void ReflectInnerCLX3(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
+     Real time, Real dt, int is, int ie, int js, int je, int ks, int ke);
+void ReflectOuterCLX1(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
+     Real time, Real dt, int is, int ie, int js, int je, int ks, int ke);
+void ReflectOuterCLX2(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
+     Real time, Real dt, int is, int ie, int js, int je, int ks, int ke);
+void ReflectOuterCLX3(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
+		 Real time, Real dt, int is, int ie, int js, int je, int ks, int ke);
+
 
 
 // function to return boundary flag given input string
@@ -300,6 +331,14 @@ public:
   void RemapFluxEMF(const int k, const int jinner, const int jouter, const Real eps,
                     const AthenaArray<Real> &U, AthenaArray<Real> &Flux);
 
+	// Cless 
+	void ApplyPhysicalBoundariesCL(AthenaArray<Real> &pdst, AthenaArray<Real> &cdst,
+       const Real time, const Real dt);
+  void ProlongateBoundariesCL(AthenaArray<Real> &pdst, AthenaArray<Real> &cdst,
+       const Real time, const Real dt);
+
+
+
 private:
   MeshBlock *pmy_block_;  // ptr to MeshBlock containing this BVals
   int nface_, nedge_;
@@ -307,7 +346,7 @@ private:
   int nedge_fine_[12];
   bool firsttime_;
 
-  BoundaryData bd_hydro_, bd_field_, bd_flcor_, bd_emfcor_;
+  BoundaryData bd_hydro_, bd_field_, bd_flcor_, bd_emfcor_, bd_cless_, bd_flcorcl_;
   enum BoundaryStatus *emf_north_flag_;
   enum BoundaryStatus *emf_south_flag_;
   Real **emf_north_send_, **emf_north_recv_;
@@ -321,6 +360,7 @@ private:
 #endif
 
   BValFunc_t BoundaryFunction_[6];
+	BValFuncCL_t BoundaryFunctionCL_[6]; // for cless 
 
 // Shearingbox
   ShearingBoundaryBlock shbb_;  // shearing block properties: lists etc.

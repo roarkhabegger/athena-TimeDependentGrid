@@ -297,7 +297,7 @@ int main(int argc, char *argv[]) {
 
   TaskList *ptlist;
   try {
-    ptlist = new TimeIntegratorTaskList(pinput, pmesh);
+    ptlist   = new TimeIntegratorTaskList(pinput, pmesh);
   }
   catch(std::bad_alloc& ba) {
     std::cout << "### FATAL ERROR in main" << std::endl << "memory allocation failed "

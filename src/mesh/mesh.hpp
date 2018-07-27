@@ -36,6 +36,7 @@ class TaskState;
 class Coordinates;
 class Reconstruction;
 class Hydro;
+class Cless;
 class Field;
 class Gravity;
 class MGGravityDriver;
@@ -54,6 +55,7 @@ class MeshBlock {
   friend class GravityBoundaryValues;
   friend class Mesh;
   friend class Hydro;
+	friend class Cless;
   friend class TaskList;
 #ifdef HDF5OUTPUT
   friend class ATHDF5Output;
@@ -100,6 +102,7 @@ public:
 
   // physics-related objects
   Hydro *phydro;
+	Cless *pcless;
   Field *pfield;
   Gravity *pgrav;
   EquationOfState *peos;
@@ -145,6 +148,7 @@ class Mesh {
   friend class MeshRefinement;
   friend class HydroSourceTerms;
   friend class Hydro;
+	friend class Cless; 
   friend class FFTDriver;
   friend class FFTGravityDriver;
   friend class TurbulenceDriver;
@@ -222,6 +226,7 @@ private:
   MeshGenFunc_t MeshGenerator_[3];
   SrcTermFunc_t UserSourceTerm_;
   BValFunc_t BoundaryFunction_[6];
+	BValFuncCL_t BoundaryFunctionCL_[6]; 
   AMRFlagFunc_t AMRFlag_;
   TimeStepFunc_t UserTimeStep_;
   HistoryOutputFunc_t *user_history_func_;

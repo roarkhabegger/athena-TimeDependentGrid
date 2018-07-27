@@ -23,6 +23,7 @@
 #include "../athena_arrays.hpp"
 #include "../field/field.hpp"
 #include "../hydro/hydro.hpp"
+#include "../cless/cless.hpp"
 #include "../globals.hpp"
 #include "../mesh/mesh.hpp"
 #include "../parameter_input.hpp"
@@ -172,6 +173,10 @@ void RestartOutput::WriteOutputFile(Mesh *pm, ParameterInput *pin, bool force_wr
     // NEW_PHYSICS: add output of additional physics to restarts here
     // also update MeshBlock::GetBlockSizeInBytes accordingly and MeshBlock constructor
     // for restarts.
+		if (CLESS_ENABLED) {
+			memcpy(pdata, pmb->pcless->u.data(), pmb->pcless->u.GetSizeInBytes());
+			pdata+=pmb->pcless->u.GetSizeInBytes(); 
+		}
 
     // pack the user MeshBlock data
     for (int n=0; n<pmb->nint_user_meshblock_data_; n++) {

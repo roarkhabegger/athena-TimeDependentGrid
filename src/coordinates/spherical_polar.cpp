@@ -577,3 +577,13 @@ void SphericalPolar::CoordSrcTerms(const Real dt, const AthenaArray<Real> *flux,
 
   return;
 }
+
+//----------------------------------------------------------------------------------------
+// Coordinate (Geometric) source term function for collisionless variables
+// (currently not implemented)
+
+void SphericalPolar::CoordSrcTermsCL(const Real dt, const AthenaArray<Real> *flux,
+                                     const AthenaArray<Real> &prim,
+                                     AthenaArray<Real> &u) {
+	return;
+}
