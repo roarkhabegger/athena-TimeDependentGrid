@@ -219,51 +219,25 @@ void Reconstruction::LeftEigenmatrixDotVector(MeshBlock *pmb, const int ivx,
   } else {
     // Adiabatic hydrodynamics -----------------------------------------------------------
     if (NON_BAROTROPIC_EOS) {
-			Real gamma = pmb->peos->GetGamma();
-			// With dual-energy 
-			if (DUAL_ENERGY) {
+      Real gamma = pmb->peos->GetGamma();
 #pragma omp simd
-				for (int i=il; i<=iu; ++i) {
-					Real asq = gamma*w(IPR,i)/w(IDN,i);
-					Real a   = std::sqrt(asq);
+      for (int i=il; i<=iu; ++i) {
+        Real asq = gamma*w(IPR,i)/w(IDN,i);
+        Real a   = std::sqrt(asq);
 
-					// Multiply row of L-eigenmatrix with vector using matrix elements from eq. A4
-					Real v_0 = 0.5*(vect(IPR,i)/asq - w(IDN,i)*vect(ivx,i)/a);
-					Real v_1 = vect(IDN,i) - vect(IPR,i)/asq;
-					Real v_2 = vect(ivy,i);
-					Real v_3 = vect(ivz,i);
-					Real v_4 = 0.5*(vect(IPR,i)/asq + w(IDN,i)*vect(ivx,i)/a);
-					Real v_5 = vect(IGE,i);
+        // Multiply row of L-eigenmatrix with vector using matrix elements from eq. A4
+        Real v_0 = 0.5*(vect(IPR,i)/asq - w(IDN,i)*vect(ivx,i)/a);
+        Real v_1 = vect(IDN,i) - vect(IPR,i)/asq;
+        Real v_2 = vect(ivy,i);
+        Real v_3 = vect(ivz,i);
+        Real v_4 = 0.5*(vect(IPR,i)/asq + w(IDN,i)*vect(ivx,i)/a);
 
-					vect(0,i) = v_0;
-					vect(1,i) = v_1;
-					vect(2,i) = v_2;
-					vect(3,i) = v_3;
-					vect(4,i) = v_4;
-					vect(5,i) = v_5; 
-				}
-			}
-			// Without dual-energy 
-			else {
-#pragma omp simd
-				for (int i=il; i<=iu; ++i) {
-					Real asq = gamma*w(IPR,i)/w(IDN,i);
-					Real a   = std::sqrt(asq);
-
-					// Multiply row of L-eigenmatrix with vector using matrix elements from eq. A4
-					Real v_0 = 0.5*(vect(IPR,i)/asq - w(IDN,i)*vect(ivx,i)/a);
-					Real v_1 = vect(IDN,i) - vect(IPR,i)/asq;
-					Real v_2 = vect(ivy,i);
-					Real v_3 = vect(ivz,i);
-					Real v_4 = 0.5*(vect(IPR,i)/asq + w(IDN,i)*vect(ivx,i)/a);
-
-					vect(0,i) = v_0;
-					vect(1,i) = v_1;
-					vect(2,i) = v_2;
-					vect(3,i) = v_3;
-					vect(4,i) = v_4;
-				}
-			}
+        vect(0,i) = v_0;
+        vect(1,i) = v_1;
+        vect(2,i) = v_2;
+        vect(3,i) = v_3;
+        vect(4,i) = v_4;
+      }
 
     // Isothermal hydrodynamics ----------------------------------------------------------
     } else {
@@ -484,54 +458,27 @@ void Reconstruction::RightEigenmatrixDotVector(MeshBlock *pmb, const int ivx,
     // Adiabatic hydrodynamics -----------------------------------------------------------
     if (NON_BAROTROPIC_EOS) {
       Real gamma = pmb->peos->GetGamma();
-			// With dual-energy
-			if (DUAL_ENERGY) {
 #pragma omp simd
-				for (int i=il; i<=iu; ++i) {
-					Real asq = gamma*w(IPR,i)/w(IDN,i);
-					Real a   = std::sqrt(asq);
+      for (int i=il; i<=iu; ++i) {
+        Real asq = gamma*w(IPR,i)/w(IDN,i);
+        Real a   = std::sqrt(asq);
 
-					// Multiply row of R-eigenmatrix with vector using matrix elements from eq. A3
-					// Components of vect() are addressed directly as they are input in permuted order
-					Real v_0 = vect(0,i) + vect(1,i) + vect(4,i);
-					Real v_1 = a*(vect(4,i) - vect(0,i))/w(IDN,i);
-					Real v_2 = vect(2,i);
-					Real v_3 = vect(3,i);
-					Real v_4 = asq*(vect(0,i) + vect(4,i));
-					Real v_5 = vect(5,i); 
+        // Multiply row of R-eigenmatrix with vector using matrix elements from eq. A3
+        // Components of vect() are addressed directly as they are input in permuted order
+        Real v_0 = vect(0,i) + vect(1,i) + vect(4,i);
+        Real v_1 = a*(vect(4,i) - vect(0,i))/w(IDN,i);
+        Real v_2 = vect(2,i);
+        Real v_3 = vect(3,i);
+        Real v_4 = asq*(vect(0,i) + vect(4,i));
 
-					// Permute components back into standard order for primitives on output
-					vect(IDN,i) = v_0;
-					vect(ivx,i) = v_1;
-					vect(ivy,i) = v_2;
-					vect(ivz,i) = v_3;
-					vect(IPR,i) = v_4;
-					vect(IGE,i) = v_5; 
-				}
-			}
-			// Without dual-energy
-			else {
-#pragma omp simd
-				for (int i=il; i<=iu; ++i) {
-					Real asq = gamma*w(IPR,i)/w(IDN,i);
-					Real a   = std::sqrt(asq);
+        // Permute components back into standard order for primitives on output
+        vect(IDN,i) = v_0;
+        vect(ivx,i) = v_1;
+        vect(ivy,i) = v_2;
+        vect(ivz,i) = v_3;
+        vect(IPR,i) = v_4;
+      }
 
-					// Multiply row of R-eigenmatrix with vector using matrix elements from eq. A3
-					// Components of vect() are addressed directly as they are input in permuted order
-					Real v_0 = vect(0,i) + vect(1,i) + vect(4,i);
-					Real v_1 = a*(vect(4,i) - vect(0,i))/w(IDN,i);
-					Real v_2 = vect(2,i);
-					Real v_3 = vect(3,i);
-					Real v_4 = asq*(vect(0,i) + vect(4,i));
-
-					// Permute components back into standard order for primitives on output
-					vect(IDN,i) = v_0;
-					vect(ivx,i) = v_1;
-					vect(ivy,i) = v_2;
-					vect(ivz,i) = v_3;
-					vect(IPR,i) = v_4;
-				}
-			}
     // Isothermal hydrodynamics ----------------------------------------------------------
     } else {
       Real iso_cs = pmb->peos->GetIsoSoundSpeed();

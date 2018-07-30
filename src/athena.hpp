@@ -103,6 +103,12 @@ enum {IVX=1, IVY=2, IVZ=3, IPR=4, IGE=5, IBY=(NHYDRO), IBZ=((NHYDRO)+1)};
 // array indices for face-centered electric fields returned by Riemann solver
 enum {X1E2=0, X1E3=1, X2E3=0, X2E1=1, X3E1=0, X3E2=1};
 
+// array indices for passive scalars (only goes to 10), this is mostly for pgen 
+enum {IS0=(NHYDRO-NSCALARS)  , IS1=(NHYDRO-NSCALARS)+1, IS2=(NHYDRO-NSCALARS)+2,
+			IS3=(NHYDRO-NSCALARS)+3, IS4=(NHYDRO-NSCALARS)+4, IS5=(NHYDRO-NSCALARS)+5,
+			IS6=(NHYDRO-NSCALARS)+6, IS7=(NHYDRO-NSCALARS)+7, IS8=(NHYDRO-NSCALARS)+8,
+			IS9=(NHYDRO-NSCALARS)+9};
+
 // array indices for metric and triangular matrices in GR
 enum {I00, I01, I02, I03, I11, I12, I13, I22, I23, I33, NMETRIC};
 enum {T00, T10, T11, T20, T21, T22, T30, T31, T32, T33, NTRIANGULAR};
