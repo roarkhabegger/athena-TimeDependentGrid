@@ -39,7 +39,8 @@ void Hydro::RiemannSolver(const int kl, const int ku, const int jl, const int ju
   AthenaArray<Real> &ey, AthenaArray<Real> &ez) {
   int ivy = IVX + ((ivx-IVX)+1)%3;
   int ivz = IVX + ((ivx-IVX)+2)%3;
-  Real wli[NWAVE],wri[NWAVE],wroe[NWAVE],fl[NWAVE],fr[NWAVE],flxi[NWAVE];
+  Real wli[NWAVE+NSCALARS+NINT],wri[NWAVE+NSCALARS+NINT];
+	Real wroe[NWAVE],fl[NWAVE],fr[NWAVE],flxi[NWAVE];
   gm1 = pmy_block->peos->GetGamma() - 1.0;
   iso_cs = pmy_block->peos->GetIsoSoundSpeed();
 
@@ -57,13 +58,24 @@ void Hydro::RiemannSolver(const int kl, const int ku, const int jl, const int ju
     wli[IVX]=wl(ivx,k,j,i);
     wli[IVY]=wl(ivy,k,j,i);
     wli[IVZ]=wl(ivz,k,j,i);
-    if (NON_BAROTROPIC_EOS) wli[IPR]=wl(IPR,k,j,i);
+		if (NON_BAROTROPIC_EOS) {
+			wli[IPR]=wl(IPR,k,j,i);
+			if (DUAL_ENERGY) {
+				wli[IGE]=wl(IGE,k,j,i);
+			}
+		}
+
 
     wri[IDN]=wr(IDN,k,j,i);
     wri[IVX]=wr(ivx,k,j,i);
     wri[IVY]=wr(ivy,k,j,i);
     wri[IVZ]=wr(ivz,k,j,i);
-    if (NON_BAROTROPIC_EOS) wri[IPR]=wr(IPR,k,j,i);
+		if (NON_BAROTROPIC_EOS) {
+			wri[IPR]=wr(IPR,k,j,i);
+			if (DUAL_ENERGY) {
+				wri[IGE]=wr(IGE,k,j,i);
+			}
+		}
 
 //--- Step 2.  Compute Roe-averaged data from left- and right-states
 
@@ -296,9 +308,43 @@ void Hydro::RiemannSolver(const int kl, const int ku, const int jl, const int ju
     flx(ivx,k,j,i) = flxi[IVX];
     flx(ivy,k,j,i) = flxi[IVY];
     flx(ivz,k,j,i) = flxi[IVZ];
-    if (NON_BAROTROPIC_EOS) flx(IEN,k,j,i) = flxi[IEN];
+		if (NON_BAROTROPIC_EOS) {
+			flx(IEN,k,j,i) = flxi[IEN];
+			if (DUAL_ENERGY) {
+				if (flxi[IDN] >= 0.0) {
+					flx(IIE,k,j,i) = flxi[IDN]*wli[IGE];
+				}
+				else {
+					flx(IIE,k,j,i) = flxi[IDN]*wri[IGE]; 
+				}
+			}
+		}
   }
   }}
+
+	// fluxes of passive scalars, computed from density flux 
+	for (int n=NHYDRO-NSCALARS; n<NHYDRO; n++) {
+		for (int k=kl; k<=ku; ++k) {
+		for (int j=jl; j<=ju; ++j) {
+#pragma omp simd
+			for (int i=il; i<=iu; ++i) {
+
+//--- Step 1.  Load L/R states into local variables
+				wli[n]=wl(n,k,j,i);
+		
+				wri[n]=wr(n,k,j,i);
+
+//--- Step 2. Compute flux from the pre-computed density flux
+				if (flx(IDN,k,j,i) >= 0) {
+					flx(n,k,j,i) = flx(IDN,k,j,i)*wli[n];
+				}
+				else {
+					flx(n,k,j,i) = flx(IDN,k,j,i)*wri[n]; 
+				}
+			}
+		}}
+	}
+
 
   return;
 }
