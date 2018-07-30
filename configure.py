@@ -13,6 +13,7 @@
 #   --eos=xxx         use xxx as the equation of state
 #   --flux=xxx        use xxx as the Riemann solver
 #   --nghost=xxx      set NGHOST=xxx
+#   --ns=xxx          set NSCALARS=xxx
 #   -b                enable magnetic fields
 #   -s                enable special relativity
 #   -g                enable general relativity
@@ -83,6 +84,11 @@ parser.add_argument('--flux',
 parser.add_argument('--nghost',
     default='2',
     help='set number of ghost zones')
+
+# --ns=[value] argument
+parser.add_argument('--ns',
+    default='0',
+    help='set number of passively advected scalar fields')
 
 # -b argument
 parser.add_argument('-b',
@@ -291,6 +297,12 @@ definitions['RSOLVER'] = makefile_options['RSOLVER_FILE'] = args['flux']
 # --nghost=[value] argument
 definitions['NUMBER_GHOST_CELLS'] = args['nghost']
 
+# --ns=[value] argument
+definitions['NSCAL_VARIABLE'] = args['ns']
+# add it to NHYDRO
+definitions['NHYDRO_VARIABLES'] = str(int(definitions['NHYDRO_VARIABLES']) + 
+                                      int(args['ns']) )  
+
 # -b argument
 # set variety of macros based on whether MHD/hydro or adi/iso are defined
 if args['b']:
@@ -340,7 +352,7 @@ else:
 if args['de']:
   definitions['DUAL_ENERGY'] = '1'
   makefile_options['EOS_FILE']     += '_de'
-  makefile_options['RSOLVER_FILE'] += '_de'
+#  makefile_options['RSOLVER_FILE'] += '_de'
 else:
   definitions['DUAL_ENERGY'] = '0'
 
@@ -585,6 +597,7 @@ print('  Linker flags:            ' + makefile_options['LINKER_FLAGS'] + ' ' \
     + makefile_options['LIBRARY_FLAGS'])
 print('  Precision:               ' + ('single' if args['float'] else 'double'))
 print('  Number of ghost cells:   ' + args['nghost'])
+print('  Passive scalar fields:   ' + args['ns'])
 print('  MPI parallelism:         ' + ('ON' if args['mpi'] else 'OFF'))
 print('  OpenMP parallelism:      ' + ('ON' if args['omp'] else 'OFF'))
 print('  FFT:                     ' + ('ON' if args['fft'] else 'OFF'))
