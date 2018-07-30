@@ -129,7 +129,14 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin) {
       if (RELATIVISTIC_DYNAMICS)  // this should only ever be SR with this file
         phydro->u(IEN,k,j,i) += den;
     }
+
+		if (NSCALARS > 0) {
+			for (int n=NHYDRO-NSCALARS; n<NHYDRO; ++n) {
+				phydro->u(n,k,j,i) = den;
+			}
+		}
   }}}
+
 
   // initialize interface B and total energy
   if (MAGNETIC_FIELDS_ENABLED) {
