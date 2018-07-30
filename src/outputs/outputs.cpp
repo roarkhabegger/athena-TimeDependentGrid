@@ -486,6 +486,20 @@ void OutputType::LoadOutputData(MeshBlock *pmb) {
     }
   } // endif (SELF_GRAVITY_ENABLED)
 
+	if (NSCALARS > 0) {
+		if (output_params.variable.compare("prim") == 0 ||
+			  output_params.variable.compare("cons") == 0 ) {
+			for (int n=(NHYDRO-NSCALARS); n<NHYDRO; ++n) {
+				pod = new OutputData;
+				pod->type = "SCALARS";
+				pod->name = "s" + std::to_string(n-NHYDRO+NSCALARS); 
+				pod->data.InitWithShallowSlice(phyd->u,4,n,1);
+				AppendOutputDataNode(pod);
+				num_vars_++; 
+			}
+		}
+	}
+
 
   if (MAGNETIC_FIELDS_ENABLED) {
     // vector of cell-centered magnetic field
