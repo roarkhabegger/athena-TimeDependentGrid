@@ -77,7 +77,24 @@ void EquationOfState::ConservedToPrimitive(AthenaArray<Real> &cons,
 			u_e = (w_p > pressure_floor_) ?  u_e : ((pressure_floor_/gm1) + ke);
 			w_p = (w_p > pressure_floor_) ?  w_p : pressure_floor_;
     }
-  }}
+	}}
+
+	// passive scalars 
+	for (int n=(NHYDRO-NSCALARS); n<NHYDRO; ++n) {
+		for (int k=kl; k<=ku; ++k) {
+		for (int j=jl; j<=ju; ++j) {
+#pragma omp simd
+			for (int i=il; i<=iu; ++i) {
+				Real& u_s = cons(n  ,k,j,i);
+				Real& u_d = cons(IDN,k,j,i);
+				Real   di = 1./u_d; 
+				
+				Real& w_s = prim(n,k,j,i);
+
+				w_s = u_s*di;
+			}
+		}}
+  }
 
   return;
 }
@@ -120,6 +137,24 @@ void EquationOfState::PrimitiveToConserved(const AthenaArray<Real> &prim,
       u_e = w_p*igm1 + 0.5*w_d*(SQR(w_vx) + SQR(w_vy) + SQR(w_vz));
     }
   }}
+
+	// passive scalars 
+	for (int n=(NHYDRO-NSCALARS); n<NHYDRO; ++n) { 
+#pragma omp simd
+		for (int k=kl; k<=ku; ++k) {
+		for (int j=jl; j<=ju; ++j) {
+#pragma novector
+			for (int i=il; i<=iu; ++i) {
+				Real& u_s = cons(n,k,j,i);
+
+				const Real& w_s = prim(n  ,k,j,i);
+				const Real& w_d = prim(IDN,k,j,i);
+
+				u_s = w_s*w_d; 
+			}
+		}}
+	}
+
 
   return;
 }
