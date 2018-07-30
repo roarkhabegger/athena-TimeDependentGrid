@@ -123,8 +123,9 @@ def get_appquant(quant):
     elif quant == 'ediff':
         app_quant = ['Eint','Etot','mom1','mom2','mom3','dens'] 
     else:
-        print('[get_appquant]: quant %s not understood, exiting... ' %(quant))
-        quit() 
+        app_quant = [quant] 
+        print('[get_appquant]: quant %s might be an athena++ quantity, trying it ... '
+              %(quant))
 
     derived = False
 
@@ -232,9 +233,7 @@ def get_labels(quant,dim,log=False):
                   'phi':'$\Phi_G$',
                   'cs':'c$_s$', 
                   'v':'v$_{tot}$',
-                  's1':'$\Sigma_c$','s1c':'$M_c (R < 0.5 \; {\\rm [kpc])}/M_c$',
-                  'jl':'$\lambda_J$','vlos':'$v_{\\rm los}$',
-                    # Collisionless variables 
+                   # Collisionless variables 
                   'dcl':'$\\rho_{\\rm cl}$', 
                   'v1cl':'v$_{1,\\rm cl}$','v2cl':'v$_{2,\\rm cl}$',
                   'v3cl':'v$_{3,\\rm cl}$','M1cl':'M$_{1,\\rm cl}$',
@@ -247,6 +246,10 @@ def get_labels(quant,dim,log=False):
                   'E12':'E$_{12}$','E23':'E$_{23}$','E13':'P$_{13}$',
                   'detP':'det(P$_{ij}$', 'detE':'det(E$_{ij}$',
                   'normP':'$|| P_{ij} ||_F$', 'normE':'$|| E_{ij} ||_F$'}
+
+    # create label for passive scalar (quant = 'sn', w/ n as int) 
+    if quant[0] == 's':
+        lab_quants[quant] = 'Passive scalar %i' %( int(quant[1]) ) 
 
     # Define dictionary for units 
     units = ' [comp units]' 
