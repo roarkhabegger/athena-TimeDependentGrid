@@ -92,6 +92,15 @@ Reconstruction::Reconstruction(MeshBlock *pmb, ParameterInput *pin) {
   scr3_ni_.NewAthenaArray(NWAVE+NINT+NSCALARS,ncells1);
   scr4_ni_.NewAthenaArray(NWAVE+NINT+NSCALARS,ncells1);
 
+	if (CLESS_ENABLED) {
+		scrcl01_i_.NewAthenaArray(ncells1);
+		scrcl02_i_.NewAthenaArray(ncells1);
+		scrcl1_ni_.NewAthenaArray(NWAVECL,ncells1);
+		scrcl2_ni_.NewAthenaArray(NWAVECL,ncells1);
+		scrcl3_ni_.NewAthenaArray(NWAVECL,ncells1);
+		scrcl4_ni_.NewAthenaArray(NWAVECL,ncells1);
+	}
+
   if (xorder == 4) {
     scr03_i_.NewAthenaArray(ncells1);
     scr04_i_.NewAthenaArray(ncells1);
@@ -110,7 +119,25 @@ Reconstruction::Reconstruction(MeshBlock *pmb, ParameterInput *pin) {
     scr6_ni_.NewAthenaArray(NWAVE+NINT+NSCALARS,ncells1);
     scr7_ni_.NewAthenaArray(NWAVE+NINT+NSCALARS,ncells1);
     scr8_ni_.NewAthenaArray(NWAVE+NINT+NSCALARS,ncells1);
+		if (CLESS_ENABLED) {
+			scrcl03_i_.NewAthenaArray(ncells1);
+			scrcl04_i_.NewAthenaArray(ncells1);
+			scrcl05_i_.NewAthenaArray(ncells1);
+			scrcl06_i_.NewAthenaArray(ncells1);
+			scrcl07_i_.NewAthenaArray(ncells1);
+			scrcl08_i_.NewAthenaArray(ncells1);
+			scrcl09_i_.NewAthenaArray(ncells1);
+			scrcl10_i_.NewAthenaArray(ncells1);
+			scrcl11_i_.NewAthenaArray(ncells1);
+			scrcl12_i_.NewAthenaArray(ncells1);
+			scrcl13_i_.NewAthenaArray(ncells1);
+			scrcl14_i_.NewAthenaArray(ncells1);
 
+			scrcl5_ni_.NewAthenaArray(NWAVECL,ncells1);
+			scrcl6_ni_.NewAthenaArray(NWAVECL,ncells1);
+			scrcl7_ni_.NewAthenaArray(NWAVECL,ncells1);
+			scrcl8_ni_.NewAthenaArray(NWAVECL,ncells1);
+		}
     // Precompute PPM coefficients in x1-direction ---------------------------------------
     c1i.NewAthenaArray(ncells1);
     c2i.NewAthenaArray(ncells1);
@@ -355,6 +382,33 @@ Reconstruction::~Reconstruction() {
   scr6_ni_.DeleteAthenaArray();
   scr7_ni_.DeleteAthenaArray();
   scr8_ni_.DeleteAthenaArray();
+
+	if (CLESS_ENABLED) {
+	  scrcl01_i_.DeleteAthenaArray();
+	  scrcl02_i_.DeleteAthenaArray();
+		scrcl1_ni_.DeleteAthenaArray();
+		scrcl2_ni_.DeleteAthenaArray();
+	  scrcl3_ni_.DeleteAthenaArray();
+		scrcl4_ni_.DeleteAthenaArray();
+
+		scrcl03_i_.DeleteAthenaArray();
+		scrcl04_i_.DeleteAthenaArray();
+		scrcl05_i_.DeleteAthenaArray();
+		scrcl06_i_.DeleteAthenaArray();
+		scrcl07_i_.DeleteAthenaArray();
+		scrcl08_i_.DeleteAthenaArray();
+		scrcl09_i_.DeleteAthenaArray();
+		scrcl10_i_.DeleteAthenaArray();
+		scrcl11_i_.DeleteAthenaArray();
+		scrcl12_i_.DeleteAthenaArray();
+		scrcl13_i_.DeleteAthenaArray();
+		scrcl14_i_.DeleteAthenaArray();
+
+		scrcl5_ni_.DeleteAthenaArray();
+		scrcl6_ni_.DeleteAthenaArray();
+		scrcl7_ni_.DeleteAthenaArray();
+		scrcl8_ni_.DeleteAthenaArray();
+	}
 
   c1i.DeleteAthenaArray();
   c2i.DeleteAthenaArray();

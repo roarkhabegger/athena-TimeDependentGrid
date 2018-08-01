@@ -58,6 +58,9 @@ void OutflowInnerX1(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
     }}
   }
 
+	if (CLESS_ENABLED) {
+		AthenaArray<Real> &primcl=pmb->pcless->w
+
   return;
 }
 

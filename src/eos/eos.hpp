@@ -33,7 +33,8 @@ public:
   void PrimitiveToConserved(const AthenaArray<Real> &prim, const AthenaArray<Real> &bc,
        AthenaArray<Real> &cons, Coordinates *pco,
        int il, int iu, int jl, int ju, int kl, int ku);
-  void ApplyPrimitiveFloors(AthenaArray<Real> &prim, int k, int j, int i);
+  
+	void ApplyPrimitiveFloors(AthenaArray<Real> &prim, int k, int j, int i);
 
   // Sound speed functions in different regimes
   #if !RELATIVISTIC_DYNAMICS  // Newtonian: SR, GR defined as no-op
@@ -43,6 +44,26 @@ public:
     #else  // MHD
       Real FastMagnetosonicSpeed(const Real prim[(NWAVE)], const Real bx);
     #endif  // !MAGNETIC_FIELDS_ENABLED
+
+		#if !CLESS_ENABLED // hydro: CLESS defined as no-op 
+			void SoundSpeedsCL(const Real[], Real *, Real *, Real *) {return;}
+			void ConsclToPrimcl(AthenaArray<Real> &, const AthenaArray<Real> &,
+													AthenaArray<Real> &, Coordinates *, 
+													int, int, int, int, int, int) {return;}
+			void PrimclToConscl(const AthenaArray<Real> &,
+													AthenaArray<Real> &, Coordinates *, 
+													int, int, int, int, int, int) {return;}
+			void ApplyPrimitiveFloorsCL(AthenaArray<Real> &, int, int, int) {return;}
+		#else  // CLESS
+			Real SoundSpeedsCL(const Real prim[(NCLESS)], Real *c11, Real *c22, Real *c33);
+			void ConsclToPrimcl(AthenaArray<Real> &cons, const AthenaArray<Real> &prim_old,
+													AthenaArray<Real> &prim, Coordinates *pco, 
+													int il, int iu, int jl, int ju, int kl, int ku);
+			void PrimclToConscl(const AthenaArray<Real> &prim, 
+													AthenaArray<Real> &cons, Coordinates *pco, 
+													int il, int iu, int jl, int ju, int kl, int ku);
+			void ApplyPrimitiveFloorsCL(AthenaArray<Real> &prim, int k, int j, int i);
+		#endif // !CLESS_ENABLED
     void SoundSpeedsSR(Real, Real, Real, Real, Real *, Real *) {return;}
     void FastMagnetosonicSpeedsSR(const AthenaArray<Real> &,
         const AthenaArray<Real> &, int, int, int, int, int, AthenaArray<Real> &,

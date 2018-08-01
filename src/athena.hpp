@@ -97,8 +97,14 @@ typedef struct EdgeField {
 enum {IDN=0, IM1=1, IM2=2, IM3=3, IEN=4, IIE=5};
 enum {IB1=0, IB2=1, IB3=2};
 
+// array indices for cless variables
+enum {IE11=4,IE22=5,IE33=6,IE12=7,IE13=8,IE23=9};
+
 // array indices for 1D primitives: velocity, transverse components of field
 enum {IVX=1, IVY=2, IVZ=3, IPR=4, IGE=5, IBY=(NHYDRO), IBZ=((NHYDRO)+1)};
+
+// array indices for cless variables
+enum {IP11=4,IP22=5,IP33=6,IP12=7,IP13=8,IP23=9};
 
 // array indices for face-centered electric fields returned by Riemann solver
 enum {X1E2=0, X1E3=1, X2E3=0, X2E1=1, X3E1=0, X3E2=1};

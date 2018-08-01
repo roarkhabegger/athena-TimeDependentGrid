@@ -31,6 +31,12 @@
 // Riemann solver
 #define RIEMANN_SOLVER "@RSOLVER@"
 
+// Riemann solver for collisionless 
+#define RIEMANN_CL_SOLVER "@RSOLVER_CL@"
+
+// include collision variables? default=0 (false)
+#define CLESS_ENABLED @CLESSHD_ENABLED@
+
 // include magnetic fields? default=0 (false)
 #define MAGNETIC_FIELDS_ENABLED @MAGNETIC_FIELDS_ENABLED@
 
@@ -78,10 +84,12 @@
 // macros associated with numerical algorithm (rarely modified)
 
 #define NHYDRO @NHYDRO_VARIABLES@
+#define NCLESS @NCLESS_VARIABLES@ 
 #define NINT @NINT_VARIABLE@
 #define NSCALARS @NSCAL_VARIABLE@
 #define NFIELD @NFIELD_VARIABLES@
 #define NWAVE @NWAVE_VALUE@
+#define NWAVECL @NWAVE_CLESS@ 
 #define NGHOST @NUMBER_GHOST_CELLS@
 #define MAX_NSTEP 5
 

@@ -12,9 +12,11 @@
 #   --coord=xxx       use xxx as the coordinate system
 #   --eos=xxx         use xxx as the equation of state
 #   --flux=xxx        use xxx as the Riemann solver
+#   --fluxcl=xxx      use xxx as the Riemann solver for CLESSHD 
 #   --nghost=xxx      set NGHOST=xxx
 #   --ns=xxx          set NSCALARS=xxx
 #   -b                enable magnetic fields
+#   -cl               enable collisionless-solver
 #   -s                enable special relativity
 #   -g                enable general relativity
 #   -t                enable interface frame transformations for GR
@@ -80,6 +82,12 @@ parser.add_argument('--flux',
     choices=['default','hlle','hllc','hlld','roe','llf'],
     help='select Riemann solver')
 
+# --fluxcl=[name] argument
+parser.add_argument('--fluxcl',
+    default='default',
+    choices=['default','hlle','roe'],
+    help='select Riemann solver for collisionless solver')
+
 # --nghost=[value] argument
 parser.add_argument('--nghost',
     default='2',
@@ -95,6 +103,12 @@ parser.add_argument('-b',
     action='store_true',
     default=False,
     help='enable magnetic field')
+
+# -cl argument
+parser.add_argument('-cl',
+    action='store_true',
+    default=False,
+    help='enable collisionless solver')
 
 # -s argument
 parser.add_argument('-s',
@@ -231,6 +245,10 @@ if args['flux'] == 'default':
   else:
     args['flux'] = 'hllc'
 
+# Set default flux for CLESSHD
+if args['fluxcl'] == 'default':
+    args['fluxcl'] = 'hlle'
+
 # Check Riemann solver compatibility
 if args['flux'] == 'hllc' and args['eos'] == 'isothermal':
   raise SystemExit('### CONFIGURE ERROR: HLLC flux cannot be used with isothermal EOS')
@@ -262,7 +280,6 @@ if args['eos'] == 'isothermal':
     raise SystemExit('### CONFIGURE ERROR: '\
         + 'Isothermal EOS is incompatible with dual-energy')
 
-
 #--- Step 3. Set definitions and Makefile options based on above arguments ---------------
 
 # Prepare dictionaries of substitutions to be made
@@ -291,8 +308,22 @@ if args['eos'] == 'isothermal':
   definitions['NHYDRO_VARIABLES'] = '4'
   definitions['NINT_VARIABLE'] = '0' 
 
+# set number of collisionless variables, if using it
+if args['cl']:
+    definitions['CLESSHD_ENABLED'] = '1'
+    definitions['NCLESS_VARIABLES'] = '10'
+    definitions['NWAVE_CLESS'] = '10'
+else:
+    definitions['CLESSHD_ENABLED'] = '0' 
+    definitions['NCLESS_VARIABLES'] = '0' 
+    definitions['NWAVE_CLESS'] = '0'
+
 # --flux=[name] argument
 definitions['RSOLVER'] = makefile_options['RSOLVER_FILE'] = args['flux']
+
+# --fluxcl=[name] argument
+definitions['RSOLVER_CL'] = makefile_options['RSOLVER_CL_FILE'] = args['fluxcl']+'_cl' 
+makefile_options['RSOLVER_CL_DIR'] = '' 
 
 # --nghost=[value] argument
 definitions['NUMBER_GHOST_CELLS'] = args['nghost']
@@ -585,8 +616,10 @@ print('  Problem generator:       ' + args['prob'])
 print('  Coordinate system:       ' + args['coord'])
 print('  Equation of state:       ' + args['eos'])
 print('  Riemann solver:          ' + args['flux'])
+print('  CL Riemann solver:       ' + args['fluxcl'])
 print('  Self Gravity:            ' + ('OFF' if args['grav'] == 'none' else args['grav']))
 print('  Magnetic fields:         ' + ('ON' if args['b'] else 'OFF'))
+print('  Collisionless variables: ' + ('ON' if args['cl'] else 'OFF'))
 print('  Special relativity:      ' + ('ON' if args['s'] else 'OFF'))
 print('  General relativity:      ' + ('ON' if args['g'] else 'OFF'))
 print('  Frame transformations:   ' + ('ON' if args['t'] else 'OFF'))
