@@ -26,7 +26,7 @@
 //  \brief Adds flux divergence to weighted average of conservative variables from
 //  previous step(s) of time integrator algorithm
 
-void Cless::AddFluxDivergenceToAverage(AthenaArray<Real> &w, AthenaArray<Real> &bcc,
+void Cless::AddFluxDivergenceToAverage(AthenaArray<Real> &w, 
                                        const Real wght, AthenaArray<Real> &u_out) {
   MeshBlock *pmb=pmy_block;
   AthenaArray<Real> &x1flux=flux[X1DIR];

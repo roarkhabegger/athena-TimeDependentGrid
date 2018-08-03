@@ -29,6 +29,7 @@
 #include "../bvals/bvals.hpp"
 #include "../coordinates/coordinates.hpp"
 #include "../hydro/hydro.hpp"
+#include "../cless/cless.hpp"
 #include "../eos/eos.hpp"
 #include "../field/field.hpp"
 #include "../fft/athena_fft.hpp"
@@ -238,6 +239,7 @@ Mesh::Mesh(ParameterInput *pin, int mesh_test) {
 
   for (int dir=0; dir<6; dir++)
     BoundaryFunction_[dir]=NULL;
+		BoundaryFunctionCL_[dir]=NULL; 
   AMRFlag_=NULL;
   UserSourceTerm_=NULL;
   UserTimeStep_=NULL;
@@ -638,6 +640,7 @@ Mesh::Mesh(ParameterInput *pin, IOWrapper& resfile, int mesh_test) {
 
   for (int dir=0; dir<6; dir++)
     BoundaryFunction_[dir]=NULL;
+		BoundaryFunctionCL_[dir]=NULL; 
   AMRFlag_=NULL;
   UserSourceTerm_=NULL;
   UserTimeStep_=NULL;
@@ -1301,6 +1304,7 @@ void Mesh::Initialize(int res_flag, ParameterInput *pin) {
 {
     MeshBlock *pmb;
     Hydro *phydro;
+		Cless *pcless;
     Field *pfield;
     BoundaryValues *pbval;
 
@@ -1319,7 +1323,9 @@ void Mesh::Initialize(int res_flag, ParameterInput *pin) {
       pbval->SendCellCenteredBoundaryBuffers(pmb->phydro->u, HYDRO_CONS);
       if (MAGNETIC_FIELDS_ENABLED)
         pbval->SendFieldBoundaryBuffers(pmb->pfield->b);
-    }
+			}
+			if (CLESS_ENABLED) 
+				pbval->SendCellCenteredBoundaryBuffers(pmb->pcless->u, CLESS_CONS);
 
     // wait to receive conserved variables
 #pragma omp for private(pmb,pbval)
@@ -1331,6 +1337,8 @@ void Mesh::Initialize(int res_flag, ParameterInput *pin) {
       // send and receive shearingbox boundary conditions
       if (SHEARING_BOX)
         pbval->SendHydroShearingboxBoundaryBuffersForInit(pmb->phydro->u, true);
+			if (CLESS_ENABLED)
+				pbval->ReceiveCellCenteredBoundaryBuffersWithWait(pmb->pcless->u, CLESS_CONS);
       pbval->ClearBoundaryForInit(true);
     }
 
@@ -1363,9 +1371,14 @@ void Mesh::Initialize(int res_flag, ParameterInput *pin) {
 #pragma omp for private(pmb,pbval,phydro,pfield)
     for (int i=0; i<nmb; ++i) {
       pmb=pmb_array[i]; pbval=pmb->pbval, phydro=pmb->phydro, pfield=pmb->pfield;
-      if (multilevel==true)
+      if (multilevel==true) {
         pbval->ProlongateBoundaries(phydro->w, phydro->u, pfield->b, pfield->bcc,
                                     time, 0.0);
+				if (CLESS_ENABLED) {
+					pcless=pmb->pcless;
+					pbval->ProlongateBoundariesCL(pcless->w, pcless->u, time, 0.0); 
+				}
+			}
 
       int il=pmb->is, iu=pmb->ie, jl=pmb->js, ju=pmb->je, kl=pmb->ks, ku=pmb->ke;
       if (pbval->nblevel[1][1][0]!=-1) il-=NGHOST;
@@ -1383,6 +1396,12 @@ void Mesh::Initialize(int res_flag, ParameterInput *pin) {
                                       il, iu, jl, ju, kl, ku);
       pbval->ApplyPhysicalBoundaries(phydro->w, phydro->u, pfield->b, pfield->bcc,
                                      time, 0.0);
+			if (CLESS_ENABLED) {
+				pmb->peos->ConsclToPrimcl(pcless->u, pcless->w1, 
+																	pcless->w, pmb->pcoord, 
+																	il, iu, jl, ju, kl, ku);
+				pbval->ApplyPhysicalBoundariesCL(pcless->w, pcless->u, time, 0.0); 
+			}
     }
 
     // Calc initial diffusion coefficients

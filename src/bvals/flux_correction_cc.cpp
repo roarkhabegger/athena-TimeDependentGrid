@@ -25,6 +25,7 @@
 #include "../field/field.hpp"
 #include "../globals.hpp"
 #include "../hydro/hydro.hpp"
+#include "../cless/cless.hpp"
 #include "../mesh/mesh.hpp"
 #include "../parameter_input.hpp"
 #include "../utils/buffer_utils.hpp"
@@ -51,6 +52,14 @@ void BoundaryValues::SendFluxCorrection(enum FluxCorrectionType type) {
     x2flux.InitWithShallowCopy(pmb->phydro->flux[X2DIR]);
     x3flux.InitWithShallowCopy(pmb->phydro->flux[X3DIR]);
     pbd=&bd_flcor_;
+  }
+
+  if (type==FLUX_CLESS) {
+    ns=0, ne=NCLESS-1;
+    x1flux.InitWithShallowCopy(pmb->pcless->flux[X1DIR]);
+    x2flux.InitWithShallowCopy(pmb->pcless->flux[X2DIR]);
+    x3flux.InitWithShallowCopy(pmb->pcless->flux[X3DIR]);
+    pbd=&bd_flcorcl_;
   }
 
   for (int n=0; n<nneighbor; n++) {
@@ -143,6 +152,8 @@ void BoundaryValues::SendFluxCorrection(enum FluxCorrectionType type) {
         pbl=pmb->pmy_mesh->FindMeshBlock(nb.gid);
         if (type==FLUX_HYDRO)
           ptarget=&(pbl->pbval->bd_flcor_);
+				if (type==FLUX_CLESS)
+					ptarget=&(pbl->pbval->bd_flcorcl_); 
         std::memcpy(ptarget->recv[nb.targetid], sbuf, p*sizeof(Real));
         ptarget->flag[nb.targetid]=BNDRY_ARRIVED;
       }
@@ -173,6 +184,13 @@ bool BoundaryValues::ReceiveFluxCorrection(enum FluxCorrectionType type) {
     x1flux.InitWithShallowCopy(pmb->phydro->flux[X1DIR]);
     x2flux.InitWithShallowCopy(pmb->phydro->flux[X2DIR]);
     x3flux.InitWithShallowCopy(pmb->phydro->flux[X3DIR]);
+  }
+
+  if (type==FLUX_CLESS) {
+    ns=0, ne=NCLESS-1;
+    x1flux.InitWithShallowCopy(pmb->pcless->flux[X1DIR]);
+    x2flux.InitWithShallowCopy(pmb->pcless->flux[X2DIR]);
+    x3flux.InitWithShallowCopy(pmb->pcless->flux[X3DIR]);
   }
 
   for (int n=0; n<nneighbor; n++) {

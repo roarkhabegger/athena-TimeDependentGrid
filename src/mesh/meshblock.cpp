@@ -30,6 +30,7 @@
 #include "../globals.hpp"
 #include "../gravity/gravity.hpp"
 #include "../hydro/hydro.hpp"
+#include "../cless/cless.hpp"
 #include "../parameter_input.hpp"
 #include "../utils/buffer_utils.hpp"
 #include "../reconstruct/reconstruction.hpp"
@@ -131,6 +132,7 @@ MeshBlock::MeshBlock(int igid, int ilid, LogicalLocation iloc, RegionSize input_
   // physics-related objects: may depend on Coordinates for diffusion terms
   phydro = new Hydro(this, pin);
   if (MAGNETIC_FIELDS_ENABLED) pfield = new Field(this, pin);
+	if (CLESS_ENABLED) pcless = new Cless(this, pin); 
   peos = new EquationOfState(this, pin);
 
   // Create user mesh data
@@ -227,6 +229,7 @@ MeshBlock::MeshBlock(int igid, int ilid, Mesh *pm, ParameterInput *pin,
 
   // (re-)create physics-related objects in MeshBlock
   phydro = new Hydro(this, pin);
+	if (CLESS_ENABLED) pcless = new Cless(this, pin); 
   if (MAGNETIC_FIELDS_ENABLED) pfield = new Field(this, pin);
   peos = new EquationOfState(this, pin);
   InitUserMeshBlockData(pin);
@@ -237,6 +240,7 @@ MeshBlock::MeshBlock(int igid, int ilid, Mesh *pm, ParameterInput *pin,
   // load it into the half-step arrays too
   memcpy(phydro->u1.data(), &(mbdata[os]), phydro->u1.GetSizeInBytes());
   os += phydro->u.GetSizeInBytes();
+
   if (GENERAL_RELATIVITY) {
     memcpy(phydro->w.data(), &(mbdata[os]), phydro->w.GetSizeInBytes());
     os += phydro->w.GetSizeInBytes();
@@ -255,7 +259,14 @@ MeshBlock::MeshBlock(int igid, int ilid, Mesh *pm, ParameterInput *pin,
     os += pfield->b.x3f.GetSizeInBytes();
   }
 
+
   // NEW_PHYSICS: add load of new physics from restart file here
+	if (CLESS_ENABLED) {
+		memcpy(pcless->u.data(), &(mbdata[os]), pcless->u.GetSizeInBytes());
+		memcpy(pcless->u1.data(),&(mbdata[os]), pcless->u1.GetSizeInBytes());
+		os += pcless->u.GetSizeInBytes(); 
+	}
+
   if (SELF_GRAVITY_ENABLED >= 1) {
     memcpy(pgrav->phi.data(), &(mbdata[os]), pgrav->phi.GetSizeInBytes());
     os += pgrav->phi.GetSizeInBytes();
@@ -293,6 +304,7 @@ MeshBlock::~MeshBlock() {
   delete peos;
   if (SELF_GRAVITY_ENABLED) delete pgrav;
   if (SELF_GRAVITY_ENABLED==1) delete pgbval;
+	if (CLESS_ENABLED) delete pcless; 
 
   // delete user output variables array
   if (nuser_out_var > 0) {
@@ -400,6 +412,8 @@ size_t MeshBlock::GetBlockSizeInBytes(void) {
     size+=pgrav->phi.GetSizeInBytes();
 
   // NEW_PHYSICS: modify the size counter here when new physics is introduced
+	if (CLESS_ENABLED)
+		size+=pcless->u.GetSizeInBytes(); 
 
   // calculate user MeshBlock data size
   for (int n=0; n<nint_user_meshblock_data_; n++)

@@ -23,6 +23,8 @@
 #include "../hydro/hydro.hpp"
 #include "../hydro/srcterms/hydro_srcterms.hpp"
 #include "../hydro/hydro_diffusion/hydro_diffusion.hpp"
+#include "../cless/cless.hpp"
+#include "../cless/cless_srcterms.hpp"
 #include "../mesh/mesh.hpp"
 #include "../parameter_input.hpp"
 #include "../reconstruct/reconstruction.hpp"
@@ -218,6 +220,8 @@ TimeIntegratorTaskList::TimeIntegratorTaskList(ParameterInput *pin, Mesh *pm)
       AddTimeIntegratorTask(CALC_HYDFLX,(START_ALLRECV|DIFFUSE_HYD|DIFFUSE_FLD));
     else
       AddTimeIntegratorTask(CALC_HYDFLX,(START_ALLRECV|DIFFUSE_HYD));
+		if (CLESS_ENABLED)
+			AddTimeIntegratorTask(CALC_CLFLX, CALC_HYDFLX); 
     if (pm->multilevel==true) { // SMR or AMR
       AddTimeIntegratorTask(SEND_HYDFLX,CALC_HYDFLX);
       AddTimeIntegratorTask(RECV_HYDFLX,CALC_HYDFLX);
@@ -225,7 +229,21 @@ TimeIntegratorTaskList::TimeIntegratorTaskList(ParameterInput *pin, Mesh *pm)
     } else {
       AddTimeIntegratorTask(INT_HYD, CALC_HYDFLX);
     }
-    AddTimeIntegratorTask(SRCTERM_HYD,INT_HYD);
+		if (CLESS_ENABLED) {
+			if (pm->multilevel==true) {
+				AddTimeIntegratorTask(SEND_CLFLX, CALC_CLFLX);
+				AddTimeIntegratorTask(RECV_CLFLX, CALC_CLFLX);
+				AddTimeIntegratorTask(INT_CL, RECV_CLFLX);
+			}
+			else {
+				AddTimeIntegratorTask(INT_CL, CALC_CLFLX); 
+			} 
+			AddTimeIntegratorTask(SRCTERM_CL,INT_CL);
+			AddTimeIntegratorTask(SRCTERM_HYD, SRCTERM_CL);
+		}
+		else {
+			AddTimeIntegratorTask(SRCTERM_HYD, INT_HYD); 
+		}
     AddTimeIntegratorTask(UPDATE_DT,SRCTERM_HYD);
     AddTimeIntegratorTask(SEND_HYD,UPDATE_DT);
     AddTimeIntegratorTask(RECV_HYD,START_ALLRECV);
@@ -233,6 +251,10 @@ TimeIntegratorTaskList::TimeIntegratorTaskList(ParameterInput *pin, Mesh *pm)
       AddTimeIntegratorTask(SEND_HYDSH,RECV_HYD);
       AddTimeIntegratorTask(RECV_HYDSH,RECV_HYD);
     }
+		if (CLESS_ENABLED) {
+			AddTimeIntegratorTask(SEND_CL, RECV_HYD);
+			AddTimeIntegratorTask(RECV_CL, RECV_HYD); 
+		}
 
     // compute MHD fluxes, integrate field
     if (MAGNETIC_FIELDS_ENABLED) { // MHD
@@ -256,13 +278,15 @@ TimeIntegratorTaskList::TimeIntegratorTaskList(ParameterInput *pin, Mesh *pm)
       }
     }
 
-
-
     // prolongate, compute new primitives
     if (MAGNETIC_FIELDS_ENABLED) { // MHD
       if (pm->multilevel==true) { // SMR or AMR
         AddTimeIntegratorTask(PROLONG,(SEND_HYD|RECV_HYD|SEND_FLD|RECV_FLD));
         AddTimeIntegratorTask(CON2PRIM,PROLONG);
+				if (CLESS_ENABLED) {
+					AddTimeIntegratorTask(PROLONGCL, (SEND_HYD|RECV_HYD|SEND_CL|RECV_CL));
+					AddTimeIntegratorTask(CON2PRIMCL, PROLONGCL);
+				}
       } else {
         if (SHEARING_BOX) {
           AddTimeIntegratorTask(CON2PRIM,(INT_HYD|RECV_HYD|INT_FLD|RECV_FLD|
@@ -270,23 +294,35 @@ TimeIntegratorTaskList::TimeIntegratorTaskList(ParameterInput *pin, Mesh *pm)
         } else {
           AddTimeIntegratorTask(CON2PRIM,(INT_HYD|RECV_HYD|INT_FLD|RECV_FLD));
         }
+				if (CLESS_ENABLED) {
+					AddTimeIntegratorTask(CON2PRIMCL, (INT_HYD|RECV_HYD|INT_CL|RECV_CL));
+				}
       }
     } else {  // HYDRO
       if (pm->multilevel==true) { // SMR or AMR
         AddTimeIntegratorTask(PROLONG,(SEND_HYD|RECV_HYD));
         AddTimeIntegratorTask(CON2PRIM,PROLONG);
+				if (CLESS_ENABLED) {
+					AddTimeIntegratorTask(PROLONGCL, (SEND_HYD|RECV_HYD|SEND_CL|RECV_CL));
+					AddTimeIntegratorTask(CON2PRIMCL, PROLONGCL);
+				}
       } else {
         if (SHEARING_BOX) {
           AddTimeIntegratorTask(CON2PRIM,(INT_HYD|RECV_HYD|RECV_HYDSH));
         } else {
           AddTimeIntegratorTask(CON2PRIM,(INT_HYD|RECV_HYD));
         }
+				if (CLESS_ENABLED) {
+					AddTimeIntegratorTask(CON2PRIMCL, (INT_HYD|RECV_HYD|INT_CL|RECV_CL));
+				}
       }
     }
 
-
     // everything else
     AddTimeIntegratorTask(PHY_BVAL,CON2PRIM);
+		if (CLESS_ENABLED) { 
+			AddTimeIntegratorTask(PHY_BVALCL, CON2PRIMCL); 
+		}
 //    if (SELF_GRAVITY_ENABLED == 1) {
 //      AddTimeIntegratorTask(CORR_GFLX,PHY_BVAL);
 //      AddTimeIntegratorTask(USERWORK,CORR_GFLX);
@@ -504,6 +540,56 @@ void TimeIntegratorTaskList::AddTimeIntegratorTask(uint64_t id, uint64_t dep) {
 				static_cast<enum TaskStatus (TaskList::*)(MeshBlock*,int)>
 				(&TimeIntegratorTaskList::InternalEnergyCheck);
 			break; 
+		case (CALC_CLFLX):
+			task_list_[ntasks].TaskFunc=
+				static_cast<enum TaskStatus (TaskList::*)(MeshBlock*,int)>
+				(&TimeIntegratorTaskList::ClessCalculateFluxes);
+			break; 
+		case (INT_CL):
+			task_list_[ntasks].TaskFunc=
+				static_cast<enum TaskStatus (TaskList::*)(MeshBlock*,int)>
+				(&TimeIntegratorTaskList::ClessIntegrate);
+			break; 
+		case (SRCTERM_CL):
+			task_list_[ntasks].TaskFunc=
+				static_cast<enum TaskStatus (TaskList::*)(MeshBlock*,int)>
+				(&TimeIntegratorTaskList::ClessSourceTerms);
+			break;
+		case (SEND_CL):
+			task_list_[ntasks].TaskFunc=
+				static_cast<enum TaskStatus (TaskList::*)(MeshBlock*,int)>
+				(&TimeIntegratorTaskList::ClessSend);
+			break;
+		case (RECV_CL):
+			task_list_[ntasks].TaskFunc=
+				static_cast<enum TaskStatus (TaskList::*)(MeshBlock*,int)>
+				(&TimeIntegratorTaskList::ClessRecv);
+			break;
+		case (PROLONGCL):
+			task_list_[ntasks].TaskFunc=
+				static_cast<enum TaskStatus (TaskList::*)(MeshBlock*,int)>
+				(&TimeIntegratorTaskList::ClessProlongation);
+			break;
+		case (CON2PRIMCL):
+			task_list_[ntasks].TaskFunc=
+				static_cast<enum TaskStatus (TaskList::*)(MeshBlock*,int)>
+				(&TimeIntegratorTaskList::ClessPrimitives);
+			break;
+		case (PHY_BVALCL):
+			task_list_[ntasks].TaskFunc=
+				static_cast<enum TaskStatus (TaskList::*)(MeshBlock*,int)>
+				(&TimeIntegratorTaskList::ClessPhysicalBoundary);
+			break;
+		case (SEND_CLFLX):
+			task_list_[ntasks].TaskFunc=
+				static_cast<enum TaskStatus (TaskList::*)(MeshBlock*,int)>
+				(&TimeIntegratorTaskList::ClessFluxCorrectSend);
+			break;
+		case (RECV_CLFLX):
+			task_list_[ntasks].TaskFunc=
+				static_cast<enum TaskStatus (TaskList::*)(MeshBlock*,int)>
+				(&TimeIntegratorTaskList::ClessFluxCorrectReceive);
+			break;
 
     default:
       std::stringstream msg;
@@ -638,6 +724,8 @@ enum TaskStatus TimeIntegratorTaskList::FieldIntegrate(MeshBlock *pmb, int step)
   return TASK_FAIL;
 }
 
+
+
 //----------------------------------------------------------------------------------------
 // Functions to add source terms
 
@@ -660,6 +748,7 @@ enum TaskStatus TimeIntegratorTaskList::HydroSourceTerms(MeshBlock *pmb, int ste
   }
   return TASK_NEXT;
 }
+
 
 //----------------------------------------------------------------------------------------
 // Functions to calculate hydro diffusion fluxes
@@ -731,6 +820,8 @@ enum TaskStatus TimeIntegratorTaskList::FieldSend(MeshBlock *pmb, int step) {
   }
   return TASK_SUCCESS;
 }
+
+
 
 //----------------------------------------------------------------------------------------
 // Functions to receive conserved variables between MeshBlocks
@@ -825,6 +916,169 @@ enum TaskStatus TimeIntegratorTaskList::EMFShearRemap(MeshBlock *pmb, int step) 
 }
 
 //--------------------------------------------------------------------------------------
+// Functions for collisionless variables, keep them all in same place 
+
+enum TaskStatus TimeIntegratorTaskList::ClessCalculateFluxes(MeshBlock *pmb, int step) {
+  Cless *pcless=pmb->pcless;
+
+  if (step <= nsub_steps) {
+    if ((step == 1) && (integrator == "vl2")) {
+      pcless->CalculateFluxes(pcless->w, 1);
+      return TASK_NEXT;
+    } else {
+      pcless->CalculateFluxes(pcless->w, pmb->precon->xorder);
+      return TASK_NEXT;
+    }
+  }
+  return TASK_FAIL;
+}
+
+enum TaskStatus TimeIntegratorTaskList::ClessIntegrate(MeshBlock *pmb, int step) {
+  Cless *pc=pmb->pcless;
+  if (step <= nsub_steps) {
+    // This time-integrator-specific averaging operation logic is identical to FieldInt
+    Real ave_wghts[3];
+    ave_wghts[0] = 1.0;
+    ave_wghts[1] = step_wghts[step-1].delta;
+    ave_wghts[2] = 0.0;
+    pc->WeightedAveU(pc->u1,pc->u,pc->u2,ave_wghts);
+
+    ave_wghts[0] = step_wghts[step-1].gamma_1;
+    ave_wghts[1] = step_wghts[step-1].gamma_2;
+    ave_wghts[2] = step_wghts[step-1].gamma_3;
+    pc->WeightedAveU(pc->u,pc->u1,pc->u2,ave_wghts);
+    pc->AddFluxDivergenceToAverage(pc->w,step_wghts[step-1].beta,pc->u);
+
+    return TASK_NEXT;
+  }
+
+  return TASK_FAIL;
+}
+enum TaskStatus TimeIntegratorTaskList::ClessSourceTerms(MeshBlock *pmb, int step) {
+  Cless *pc=pmb->pcless;
+
+  // return if there are no source terms to be added
+  if (pc->psrc->cless_sourceterms_defined == false) return TASK_NEXT;
+
+  if (step <= nsub_steps) {
+    // Time at beginning of step for u()
+    Real time=pmb->pmy_mesh->time + pmb->step_dt[0];
+    // Scaled coefficient for RHS update
+    Real dt = (step_wghts[(step-1)].beta)*(pmb->pmy_mesh->dt);
+    pc->psrc->AddClessSourceTerms(time,dt,pc->flux,pc->w,pc->u);
+  } else {
+    // Evaluate the source terms at the beginning of the
+    return TASK_FAIL;
+  }
+  return TASK_NEXT;
+}
+
+enum TaskStatus TimeIntegratorTaskList::ClessSend(MeshBlock *pmb, int step) {
+  if (step <= nsub_steps) {
+    pmb->pbval->SendCellCenteredBoundaryBuffers(pmb->pcless->u, CLESS_CONS);
+  } else {
+    return TASK_FAIL;
+  }
+  return TASK_SUCCESS;
+}
+
+enum TaskStatus TimeIntegratorTaskList::ClessReceive(MeshBlock *pmb, int step) {
+  bool ret;
+  if (step <= nsub_steps) {
+    ret=pmb->pbval->ReceiveCellCenteredBoundaryBuffers(pmb->pcless->u, CLESS_CONS);
+  } else {
+    return TASK_FAIL;
+  }
+
+  if (ret==true) {
+    return TASK_SUCCESS;
+  } else {
+    return TASK_FAIL;
+  }
+}
+
+
+enum TaskStatus TimeIntegratorTaskList::ClessPrimitives(MeshBlock *pmb, int step) {
+  Cless *pcless=pmb->pcless;
+  BoundaryValues *pbval=pmb->pbval;
+  int il=pmb->is, iu=pmb->ie, jl=pmb->js, ju=pmb->je, kl=pmb->ks, ku=pmb->ke;
+  if (pbval->nblevel[1][1][0] != -1) il-=NGHOST;
+  if (pbval->nblevel[1][1][2] != -1) iu+=NGHOST;
+  if (pbval->nblevel[1][0][1] != -1) jl-=NGHOST;
+  if (pbval->nblevel[1][2][1] != -1) ju+=NGHOST;
+  if (pbval->nblevel[0][1][1] != -1) kl-=NGHOST;
+  if (pbval->nblevel[2][1][1] != -1) ku+=NGHOST;
+
+  if (step <= nsub_steps) {
+    // At beginning of this task, phydro->w contains previous substep W(U) output
+    // and phydro->w1 is used as a register to store the current substep output.
+    // For the second order integrators VL2 and RK2, the prim_old initial guess for the
+    // Newton-Raphson solver in GR EOS uses the following abscissae:
+    // step=1: W at t^n and
+    // step=2: W at t^{n+1/2} (VL2) or t^{n+1} (RK2)
+    pmb->peos->ConsclToPrimcl(pcless->u, pcless->w, 
+															pcless->w1, pmb->pcoord,
+                              il, iu, jl, ju, kl, ku);
+    // swap AthenaArray data pointers so that w now contains the updated w_out
+    pcless->w.SwapAthenaArray(pcless->w1);
+  } else {
+    return TASK_FAIL;
+  }
+
+  return TASK_SUCCESS;
+}
+
+enum TaskStatus TimeIntegratorTaskList::ClessProlongation(MeshBlock *pmb, int step) {
+  Cless *pcless=pmb->pcless;
+  BoundaryValues *pbval=pmb->pbval;
+
+  if (step <= nsub_steps) {
+    // Time at the end of step for u()
+    Real time=pmb->pmy_mesh->time + pmb->step_dt[0];
+    // Scaled coefficient for RHS time-advance in substep
+    Real dt = (step_wghts[(step-1)].beta)*(pmb->pmy_mesh->dt);
+    pbval->ProlongateBoundariesCL(pcless->w,  pcless->u,
+                                time, dt);
+  } else {
+    return TASK_FAIL;
+  }
+
+  return TASK_SUCCESS;
+}
+
+enum TaskStatus TimeIntegratorTaskList::ClessPhysicalBoundary(MeshBlock *pmb, int step) {
+  Cless *pcless=pmb->pcless;
+  BoundaryValues *pbval=pmb->pbval;
+
+  if (step <= nsub_steps) {
+    // Time at the end of step for u()
+    Real time=pmb->pmy_mesh->time + pmb->step_dt[0];
+    // Scaled coefficient for RHS time-advance in substep
+    Real dt = (step_wghts[(step-1)].beta)*(pmb->pmy_mesh->dt);
+    pbval->ApplyPhysicalBoundariesCL(pcless->w,  pcless->u,
+                                     time, dt);
+  } else {
+    return TASK_FAIL;
+  }
+
+  return TASK_SUCCESS;
+}
+
+
+enum TaskStatus TimeIntegratorTaskList::ClessFluxCorrectSend(MeshBlock *pmb, int step) {
+  pmb->pbval->SendFluxCorrection(FLUX_CLESS);
+  return TASK_SUCCESS;
+}
+
+enum TaskStatus TimeIntegratorTaskList::ClessFluxCorrectReceive(MeshBlock *pmb, int step) {
+  if (pmb->pbval->ReceiveFluxCorrection(FLUX_CLESS) == true) {
+    return TASK_NEXT;
+  } else {
+    return TASK_FAIL;
+  }
+}
+
+//--------------------------------------------------------------------------------------
 // Functions for everything else
 
 enum TaskStatus TimeIntegratorTaskList::Prolongation(MeshBlock *pmb, int step) {
@@ -845,6 +1099,8 @@ enum TaskStatus TimeIntegratorTaskList::Prolongation(MeshBlock *pmb, int step) {
 
   return TASK_SUCCESS;
 }
+
+
 
 enum TaskStatus TimeIntegratorTaskList::Primitives(MeshBlock *pmb, int step) {
   Hydro *phydro=pmb->phydro;
@@ -877,6 +1133,8 @@ enum TaskStatus TimeIntegratorTaskList::Primitives(MeshBlock *pmb, int step) {
   return TASK_SUCCESS;
 }
 
+
+
 enum TaskStatus TimeIntegratorTaskList::PhysicalBoundary(MeshBlock *pmb, int step) {
   Hydro *phydro=pmb->phydro;
   Field *pfield=pmb->pfield;
@@ -895,6 +1153,7 @@ enum TaskStatus TimeIntegratorTaskList::PhysicalBoundary(MeshBlock *pmb, int ste
 
   return TASK_SUCCESS;
 }
+
 
 enum TaskStatus TimeIntegratorTaskList::UserWork(MeshBlock *pmb, int step) {
   if (step != nsub_steps) return TASK_SUCCESS; // only do on last sub-step
@@ -964,6 +1223,14 @@ enum TaskStatus TimeIntegratorTaskList::StartupIntegrator(MeshBlock *pmb, int st
       ave_wghts[2] = 0.0;
       pf->WeightedAveB(pf->b1,pf->b,pf->b,ave_wghts);
     }
+		if (CLESS_ENABLED) { // CLESS
+			Cless *pc=pmb->pcless;
+			Real ave_sghts[3];
+			ave_wghts[0] = 0.0;
+			ave_wghts[1] = 0.0;
+			ave_wghts[2] = 0.0;
+			pc->WeightedAveU(pc->u1,pc->u,pc->u,ave_wghts); 
+		}
     // 2nd set of registers, including u1, need to be initialized to 0 each cycle
     Real ave_wghts[3];
     ave_wghts[0] = 0.0;

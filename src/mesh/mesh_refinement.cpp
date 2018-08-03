@@ -88,6 +88,10 @@ MeshRefinement::MeshRefinement(MeshBlock *pmb, ParameterInput *pin) {
     coarse_b_.x3f.NewAthenaArray(ncc3+1,ncc2,ncc1);
     coarse_bcc_.NewAthenaArray(3,ncc3,ncc2,ncc1);
   }
+	if (CLESS_ENABLED) {
+		coarse_conscl_.NewAthenaArray(NCLESS,ncc3,ncc2,ncc1);
+		coarse_primcl_.NewAthenaArray(NCLESS,ncc3,ncc2,ncc1); 
+	}
 }
 
 
@@ -124,6 +128,10 @@ MeshRefinement::~MeshRefinement() {
     coarse_b_.x3f.DeleteAthenaArray();
     coarse_bcc_.DeleteAthenaArray();
   }
+	if (CLESS_ENABLED) {
+	  coarse_cons_.DeleteAthenaArray();
+	  coarse_prim_.DeleteAthenaArray();
+	}
   delete pcoarsec;
 }
 

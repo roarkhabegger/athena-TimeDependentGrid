@@ -153,6 +153,16 @@ void BoundaryValues::SendCellCenteredBoundaryBuffers(AthenaArray<Real> &src,
         cbuf.InitWithShallowCopy(pmb->pmr->coarse_prim_);
     }
   }
+	if (type==CLESS_CONS || type==CLESS_PRIM) {
+		pdf=&bd_cless_;
+		ns=0, ne=NCLESS-1;
+		if (pmb->pmy_mesh->multilevel) {
+			if (type==CLESS_CONS)
+				cbuf.InitWithShallowCopy(pmb->pmr->coarse_conscl_);
+			if (type==CLESS_PRIM)
+				cbuf.InitWithShallowCopy(pmb->pmr->coarse_primcl_); 
+		}
+	}
 
   for (int n=0; n<nneighbor; n++) {
     NeighborBlock& nb = neighbor[n];
@@ -413,6 +423,18 @@ bool BoundaryValues::ReceiveCellCenteredBoundaryBuffers(AthenaArray<Real> &dst,
     }
   }
 
+	if (type==CLESS_CONS || type==CLESS_PRIM) {
+		pdf=&bd_cless_;
+		ns=0, ne=NCLESS-1;
+		flip=flip_across_pole_cless;
+		if (pmb->pmy_mesh->multilevel) {
+			if (type==CLESS_CONS)
+				cbuf.InitWithShallowCopy(pmb->pmr->coarse_conscl_);
+			if (type==CLESS_PRIM)
+				cbuf.InitWithShallowCopy(pmb->pmr->coarse_primcl_); 
+		}
+	}
+
   for (int n=0; n<nneighbor; n++) {
     NeighborBlock& nb = neighbor[n];
     if (pbd->flag[nb.bufid]==BNDRY_COMPLETED) continue;
@@ -475,6 +497,18 @@ void BoundaryValues::ReceiveCellCenteredBoundaryBuffersWithWait(AthenaArray<Real
         cbuf.InitWithShallowCopy(pmb->pmr->coarse_prim_);
     }
   }
+
+	if (type==CLESS_CONS || type==CLESS_PRIM) {
+		pdf=&bd_cless_;
+		ns=0, ne=NCLESS-1;
+		flip=flip_across_pole_cless;
+		if (pmb->pmy_mesh->multilevel) {
+			if (type==CLESS_CONS)
+				cbuf.InitWithShallowCopy(pmb->pmr->coarse_conscl_);
+			if (type==CLESS_PRIM)
+				cbuf.InitWithShallowCopy(pmb->pmr->coarse_primcl_); 
+		}
+	}
 
   for (int n=0; n<nneighbor; n++) {
     NeighborBlock& nb = neighbor[n];
