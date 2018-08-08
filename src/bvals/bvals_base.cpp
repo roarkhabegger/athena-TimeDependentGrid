@@ -27,8 +27,8 @@
 #include "bvals.hpp"
 
 // forward declaration of static members of this class
-NeighborIndexes BoundaryBase::ni[56];
-int BoundaryBase::bufid[56];
+NeighborIndexes BoundaryBase::ni[68];
+int BoundaryBase::bufid[68];
 bool BoundaryBase::called_ = false;
 int BoundaryBase::maxneighbor_ ;
 

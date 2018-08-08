@@ -26,7 +26,7 @@
 //  \brief Adds flux divergence to weighted average of conservative variables from
 //  previous step(s) of time integrator algorithm
 
-void Cless::AddFluxDivergenceToAverage(AthenaArray<Real> &w, 
+void Cless::AddFluxDivergenceToAverageCL(AthenaArray<Real> &w, 
                                        const Real wght, AthenaArray<Real> &u_out) {
   MeshBlock *pmb=pmy_block;
   AthenaArray<Real> &x1flux=flux[X1DIR];
@@ -93,7 +93,7 @@ void Cless::AddFluxDivergenceToAverage(AthenaArray<Real> &w,
   }
 
   // add coordinate (geometric) source terms
-  pmb->pcoord->CoordSrcTerms((wght*pmb->pmy_mesh->dt),pmb->pcless->flux,w,bcc,u_out);
+  //pmb->pcoord->CoordSrcTerms((wght*pmb->pmy_mesh->dt),pmb->pcless->flux,w,bcc,u_out);
 
   return;
 }
@@ -102,7 +102,7 @@ void Cless::AddFluxDivergenceToAverage(AthenaArray<Real> &w,
 //! \fn  void Cless::WeightedAveU
 //  \brief Compute weighted average of cell-averaged U in time integrator step
 
-void Cless::WeightedAveU(AthenaArray<Real> &u_out, AthenaArray<Real> &u_in1,
+void Cless::WeightedAveUCL(AthenaArray<Real> &u_out, AthenaArray<Real> &u_in1,
                          AthenaArray<Real> &u_in2, const Real wght[3]) {
   MeshBlock *pmb=pmy_block;
   int is = pmb->is; int js = pmb->js; int ks = pmb->ks;

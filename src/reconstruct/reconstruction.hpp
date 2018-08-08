@@ -82,54 +82,6 @@ public:
     const int jl, const int ju  , const int il, const int iu, const AthenaArray<Real> &w,
     const AthenaArray<Real> &bcc, AthenaArray<Real> &wl, AthenaArray<Real> &wr);
 
-	#if !CLESS_ENABLED // hydro, cless defined as no-op 
-	 // collisionless reconstruction functions 
-	static void LeftEigenmatrixDotVectorCL(MeshBlock *, const int,
-    const int, const int, const AthenaArray<Real> &,
-    AthenaArray<Real> &) {return;}
-  static void RightEigenmatrixDotVectorCL(MeshBlock *, const int,
-    const int, const int, const AthenaArray<Real> &,
-    AthenaArray<Real> &) {return;}
-
-	// reconstruction functions of various orders in each dimension for cless vars
-  static void DonorCellCLX1(MeshBlock *, const int, const int,
-    const int, const int, const int, const int, const AthenaArray<Real> &,
-    AthenaArray<Real> &, AthenaArray<Real> &) {return;}
-
-  static void DonorCellCLX2(MeshBlock *, const int, const int,
-    const int, const int, const int, const int, const AthenaArray<Real> &,
-    AthenaArray<Real> &, AthenaArray<Real> &) {return;}
-
-  static void DonorCellCLX3(MeshBlock *, const int, const int,
-    const int, const int, const int, const int, const AthenaArray<Real> &,
-    AthenaArray<Real> &, AthenaArray<Real> &) {return;}
-
-  static void PiecewiseLinearCLX1(MeshBlock *, const int, const int,
-    const int, const int, const int, const int, const AthenaArray<Real> &,
-    AthenaArray<Real> &, AthenaArray<Real> &) {return;}
-
-  static void PiecewiseLinearCLX2(MeshBlock *, const int, const int,
-    const int, const int, const int, const int, const AthenaArray<Real> &,
-    AthenaArray<Real> &, AthenaArray<Real> &) {return;}
-
-  static void PiecewiseLinearCLX3(MeshBlock *, const int, const int,
-    const int, const int, const int, const int, const AthenaArray<Real> &,
-    AthenaArray<Real> &, AthenaArray<Real> &) {return;}
-
-  static void PiecewiseParabolicCLX1(MeshBlock *, const int, const int,
-    const int, const int, const int, const int, const AthenaArray<Real> &,
-    AthenaArray<Real> &, AthenaArray<Real> &) {return;}
-
-  static void PiecewiseParabolicCLX2(MeshBlock *, const int, const int,
-    const int, const int, const int, const int, const AthenaArray<Real> &,
-    AthenaArray<Real> &, AthenaArray<Real> &) {return;}
-
-  static void PiecewiseParabolicCLX3(MeshBlock *, const int, const int,
-    const int, const int, const int, const int, const AthenaArray<Real> &,
-    AthenaArray<Real> &, AthenaArray<Real> &) {return;}
-
-	#else // hydro + cless 
-
 	// collisionless reconstruction functions 
 	static void LeftEigenmatrixDotVectorCL(MeshBlock *pmb, const int ivx,
     const int il, const int iu, const AthenaArray<Real> &w,
@@ -174,8 +126,6 @@ public:
   static void PiecewiseParabolicCLX3(MeshBlock *pmb, const int kl, const int ku,
     const int jl, const int ju, const int il, const int iu, const AthenaArray<Real> &w,
     AthenaArray<Real> &wl, AthenaArray<Real> &wr);
-	#endif // !CLESS_ENABLED 
-
 
 
 private:

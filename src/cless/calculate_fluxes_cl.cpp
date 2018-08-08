@@ -28,7 +28,7 @@
 //! \fn  void Hydro::CalculateFluxes
 //  \brief Calculate Hydrodynamic Fluxes using the Riemann solver
 
-void Cless::CalculateFluxes(AthenaArray<Real> &w, int order) {
+void Cless::CalculateFluxesCL(AthenaArray<Real> &w, int order) {
   MeshBlock *pmb=pmy_block;
   AthenaArray<Real> &x1flux=flux[X1DIR];
   AthenaArray<Real> &x2flux=flux[X2DIR];
@@ -60,7 +60,7 @@ void Cless::CalculateFluxes(AthenaArray<Real> &w, int order) {
   }
 
   // compute fluxes, store directly into 3D arrays
-  RiemannSolver(kl,ku,jl,ju,is,ie+1,IVX,IP12,wl,wr,x1flux);
+  RiemannSolverCL(kl,ku,jl,ju,is,ie+1,IVX,IP12,wl,wr,x1flux);
 
 
 //----------------------------------------------------------------------------------------
@@ -73,7 +73,7 @@ void Cless::CalculateFluxes(AthenaArray<Real> &w, int order) {
     
 		// reconstruct L/R states at j
     if (order == 1) {
-      pmb->precon->DonorCellCLX2(pmb,kl,ku,js,je+1,il,iu,w,bcc,wl,wr);
+      pmb->precon->DonorCellCLX2(pmb,kl,ku,js,je+1,il,iu,w,wl,wr);
     } else if (order == 2) {
       pmb->precon->PiecewiseLinearCLX2(pmb,kl,ku,js,je+1,il,iu,w,wl,wr);
     } else {
@@ -81,7 +81,7 @@ void Cless::CalculateFluxes(AthenaArray<Real> &w, int order) {
     }
 
     // compute fluxes, store directly into 3D arrays
-    RiemannSolver(kl,ku,js,je+1,il,iu,IVY,IP23,wl,wr,x2flux);
+    RiemannSolverCL(kl,ku,js,je+1,il,iu,IVY,IP23,wl,wr,x2flux);
 
     // compute weights for GS07 CT algorithm
   }
@@ -104,12 +104,12 @@ void Cless::CalculateFluxes(AthenaArray<Real> &w, int order) {
     }
 
     // compute fluxes, store directly into 3D arrays
-    RiemannSolver(ks,ke+1,jl,ju,il,iu,IVZ,IP13,wl,wr,x3flux);
+    RiemannSolverCL(ks,ke+1,jl,ju,il,iu,IVZ,IP13,wl,wr,x3flux);
 
     // compute weights for GS07 CT algorithm
   }
 
-  if (SELF_GRAVITY_ENABLED) AddGravityFlux(); // add gravity flux directly
+  if (SELF_GRAVITY_ENABLED) AddGravityFluxCL(); // add gravity flux directly
   
 	return;
 }

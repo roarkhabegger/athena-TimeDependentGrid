@@ -11,14 +11,14 @@
 #include "../../athena_arrays.hpp"
 #include "../../mesh/mesh.hpp"
 #include "../../coordinates/coordinates.hpp"
-#include "../hydro.hpp"
+#include "../cless.hpp"
 #include "../../gravity/gravity.hpp"
 
 //----------------------------------------------------------------------------------------
 //! \fn void ClessSourceTerms::SelfGravity
 //  \brief Adds source terms for self-gravitational acceleration to conserved variables
 
-void ClessSourceTerms::SelfGravity(const Real dt,const AthenaArray<Real> *flux,
+void ClessSourceTerms::SelfGravityCL(const Real dt,const AthenaArray<Real> *flux,
   const AthenaArray<Real> &prim, AthenaArray<Real> &cons) {
   MeshBlock *pmb = pmy_cless_->pmy_block;
   if (SELF_GRAVITY_ENABLED && NON_BAROTROPIC_EOS) {

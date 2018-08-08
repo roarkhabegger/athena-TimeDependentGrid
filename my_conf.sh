@@ -4,6 +4,7 @@ python configure.py\
 			 --flux roe\
 			 --include /usr/include/hdf5/serial/ \
 			 --nghost=2 \
-			 -cl \
+			 -debug \
 			 -hdf5 \
+			 #-cl \
 #			 --hdf5_path=/usr/lib/x86_64-linux-gnu/

@@ -30,10 +30,10 @@ ClessSourceTerms::ClessSourceTerms(Cless *pcl, ParameterInput *pin) {
 
   if (SELF_GRAVITY_ENABLED) cless_sourceterms_defined = true;
 
-	if (DUAL_ENERGY) cless_sourceterms_defined = true; 
+	//if (DUAL_ENERGY) cless_sourceterms_defined = true; 
 
-  UserSourceTerm = pcl->pmy_block->pmy_mesh->UserSourceTerm_;
-  if (UserSourceTerm != NULL) cless_sourceterms_defined = true;
+  //UserSourceTermCL = pcl->pmy_block->pmy_mesh->UserSourceTerm_;
+  //if (UserSourceTermCL != NULL) cless_sourceterms_defined = true;
 }
 
 // destructor
@@ -47,16 +47,16 @@ ClessSourceTerms::~ClessSourceTerms() {
 
 void ClessSourceTerms::AddClessSourceTerms(const Real time, const Real dt,
      const AthenaArray<Real> *flux, const AthenaArray<Real> &prim,
-     const AthenaArray<Real> &bcc, AthenaArray<Real> &cons) {
+     AthenaArray<Real> &cons) {
   MeshBlock *pmb = pmy_cless_->pmy_block;
 
   // Add new source terms here
-  if (SELF_GRAVITY_ENABLED) SelfGravity(dt, flux, prim, cons);
+  if (SELF_GRAVITY_ENABLED) SelfGravityCL(dt, flux, prim, cons);
 	
   // MyNewSourceTerms()
   //  user-defined source terms
-  if (UserSourceTerm != NULL)
-    UserSourceTerm(pmb, time,dt,prim,bcc,cons);
+  //if (UserSourceTermCL != NULL)
+  //  UserSourceTermCL(pmb, time,dt,prim,bcc,cons);
 
   return;
 }

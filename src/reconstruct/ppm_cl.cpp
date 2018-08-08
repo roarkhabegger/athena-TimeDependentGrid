@@ -34,6 +34,7 @@
 #include "../coordinates/coordinates.hpp"
 #include "../eos/eos.hpp"
 #include "../hydro/hydro.hpp"
+#include "../cless/cless.hpp"
 #include "../mesh/mesh.hpp"
 #include "reconstruction.hpp"
 
@@ -54,7 +55,7 @@
 
 void Reconstruction::PiecewiseParabolicCLX1(MeshBlock *pmb,
   const int kl, const int ku, const int jl, const int ju, const int il, const int iu,
-  const AthenaArray<Real> &w, const AthenaArray<Real> &bcc,
+  const AthenaArray<Real> &w, 
   AthenaArray<Real> &wl, AthenaArray<Real> &wr) {
   Reconstruction* prec = pmb->precon;
   // CS08 constant used in second derivative limiter, >1 , independent of h
@@ -338,7 +339,7 @@ void Reconstruction::PiecewiseParabolicCLX1(MeshBlock *pmb,
 
 void Reconstruction::PiecewiseParabolicCLX2(MeshBlock *pmb,
   const int kl, const int ku, const int jl, const int ju, const int il, const int iu,
-  const AthenaArray<Real> &w, const AthenaArray<Real> &bcc,
+  const AthenaArray<Real> &w, 
   AthenaArray<Real> &wl, AthenaArray<Real> &wr) {
   Reconstruction* prec = pmb->precon;
   // CS08 constant used in second derivative limiter, >1 , independent of h
@@ -621,7 +622,7 @@ void Reconstruction::PiecewiseParabolicCLX2(MeshBlock *pmb,
 
 void Reconstruction::PiecewiseParabolicCLX3(MeshBlock *pmb,
   const int kl, const int ku, const int jl, const int ju, const int il, const int iu,
-  const AthenaArray<Real> &w, const AthenaArray<Real> &bcc,
+  const AthenaArray<Real> &w, 
   AthenaArray<Real> &wl, AthenaArray<Real> &wr) {
   Reconstruction* prec = pmb->precon;
   // CS08 constant used in second derivative limiter, >1 , independent of h

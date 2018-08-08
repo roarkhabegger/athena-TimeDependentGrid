@@ -65,6 +65,7 @@
 #include "../field/field.hpp"
 #include "../gravity/gravity.hpp"
 #include "../hydro/hydro.hpp"
+#include "../cless/cless.hpp"
 #include "../mesh/mesh.hpp"
 #include "../parameter_input.hpp"
 #include "outputs.hpp"
@@ -300,6 +301,7 @@ Outputs::~Outputs() {
 void OutputType::LoadOutputData(MeshBlock *pmb) {
   Hydro *phyd = pmb->phydro;
   Field *pfld = pmb->pfield;
+	Cless *pcle = pmb->pcless; 
   Gravity *pgrav = pmb->pgrav;
   num_vars_ = 0;
   OutputData *pod;
@@ -500,6 +502,16 @@ void OutputType::LoadOutputData(MeshBlock *pmb) {
 		}
 	}
 
+	if (CLESS_ENABLED) {
+		if (output_params.variable.compare("cons") == 0) {
+			pod = new OutputData;
+			pod->type = "SCALARS";
+			pod->name = "dcl"; 
+			pod->data.InitWithShallowSlice(pcle->u,4,IDN,1);
+			AppendOutputDataNode(pod);
+			num_vars_++; 
+		}
+	}
 
   if (MAGNETIC_FIELDS_ENABLED) {
     // vector of cell-centered magnetic field

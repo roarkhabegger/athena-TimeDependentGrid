@@ -22,7 +22,7 @@ struct IntegratorWeight;
 //  \brief cless data and functions
 
 class Cless {
-friend class Hydro;
+//friend class Hydro;
 public:
   Cless(MeshBlock *pmb, ParameterInput *pin);
   ~Cless();
@@ -38,19 +38,19 @@ public:
   ClessSourceTerms *psrc;
   
 	// functions
-  void WeightedAveU(AthenaArray<Real> &u_out, AthenaArray<Real> &u_in1,
+  void WeightedAveUCL(AthenaArray<Real> &u_out, AthenaArray<Real> &u_in1,
     AthenaArray<Real> &u_in2, const Real wght[3]);
-  void AddFluxDivergenceToAverage(AthenaArray<Real> &w,
+  void AddFluxDivergenceToAverageCL(AthenaArray<Real> &w,
     const Real wght, AthenaArray<Real> &u_out);
-  void CalculateFluxes(AthenaArray<Real> &w, int order);
-  void RiemannSolver(const int kl, const int ku, const int jl, const int ju,
+  void CalculateFluxesCL(AthenaArray<Real> &w, int order);
+  void RiemannSolverCL(const int kl, const int ku, const int jl, const int ju,
     const int il, const int iu, const int ivx, const int ip12, 
     AthenaArray<Real> &wl, AthenaArray<Real> &wr, AthenaArray<Real> &flx);
 
-  void AddGravityFlux(void);
-  void AddGravityFluxWithGflx(void);
-  void CalculateGravityFlux(AthenaArray<Real> &phi_in);
-  void CorrectGravityFlux(void);
+  void AddGravityFluxCL(void);
+  void AddGravityFluxWithGflxCL(void);
+  void CalculateGravityFluxCL(AthenaArray<Real> &phi_in);
+  void CorrectGravityFluxCL(void);
 
 private:
   // scratch space used to compute fluxes

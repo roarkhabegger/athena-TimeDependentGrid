@@ -50,6 +50,7 @@ BoundaryValues::BoundaryValues(MeshBlock *pmb, enum BoundaryFlag *input_bcs,
   for (int i=0; i<6; i++) {
     BoundaryFunction_[i]=NULL;
 		BoundaryFunctionCL_[i]=NULL; 
+	}
 
 // Set BC functions for each of the 6 boundaries in turn ---------------------------------
   // Inner x1
@@ -251,6 +252,7 @@ BoundaryValues::BoundaryValues(MeshBlock *pmb, enum BoundaryFlag *input_bcs,
   }
 	if (CLESS_ENABLED) {
 		InitBoundaryData(bd_cless_, BNDRY_CLESS);
+		//if (pmy_mesh_->multilevel=true)
 		InitBoundaryData(bd_flcorcl_, BNDRY_FLCORCL); 
 	}
 
@@ -531,8 +533,8 @@ BoundaryValues::~BoundaryValues() {
   }
 	if (CLESS_ENABLED) {
 		DestroyBoundaryData(bd_cless_);
-		if (pmy_mesh_->multilevel==true) 
-			DestroyBoundaryData(bd_flcorcl_); 
+	//	if (pmy_mesh_->multilevel==true) 
+		DestroyBoundaryData(bd_flcorcl_); 
 	}
 
   if (MAGNETIC_FIELDS_ENABLED) {
@@ -1320,6 +1322,8 @@ void BoundaryValues::StartReceivingAll(const Real time) {
       }
 			if (CLESS_ENABLED) {
 				MPI_Start(&(bd_cless_.req_recv[nb.bufid]));
+				if (nb.type==NEIGHBOR_FACE && nb.level>mylevel)
+					MPI_Start(&(bd_flcorcl_.req_recv[nb.bufid]));
 			}
     }
   }
@@ -1458,6 +1462,8 @@ void BoundaryValues::ClearBoundaryAll(void) {
     }
 		if (CLESS_ENABLED) {
 			bd_cless_.flag[nb.bufid] = BNDRY_WAITING; 
+			if (nb.type==NEIGHBOR_FACE) 
+				bd_flcorcl_.flag[nb.bufid] = BNDRY_WAITING;
 		}
 #ifdef MPI_PARALLEL
     if (nb.rank!=Globals::my_rank) {
@@ -1668,7 +1674,7 @@ void BoundaryValues::ApplyPhysicalBoundariesCL(AthenaArray<Real> &pdst,
 	if (BoundaryFunctionCL_[INNER_X1] != NULL) {
 		BoundaryFunctionCL_[INNER_X1](pmb, pco, pdst, time, dt,
 																	pmb->is, pmb->ie, bjs, bje, bks, bke);
-		pmb->peos->PrimclToConscl(pdst, bcdst, cdst, pco,
+		pmb->peos->PrimclToConscl(pdst, cdst, pco,
 			pmb->is-NGHOST, pmb->is-1, bjs, bje, bks, bke);
 	}
 
@@ -1985,7 +1991,8 @@ void BoundaryValues::ProlongateBoundaries(AthenaArray<Real> &pdst,
 void BoundaryValues::ProlongateBoundariesCL(AthenaArray<Real> &pdst,
      AthenaArray<Real> &cdst, 
      const Real time, const Real dt) {
-  MeshBlock *pmb=pmy_block_;
+  
+	MeshBlock *pmb=pmy_block_;
   MeshRefinement *pmr=pmb->pmr;
   int64_t &lx1=pmb->loc.lx1;
   int64_t &lx2=pmb->loc.lx2;

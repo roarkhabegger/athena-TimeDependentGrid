@@ -237,9 +237,10 @@ Mesh::Mesh(ParameterInput *pin, int mesh_test) {
     MeshGenerator_[X3DIR]=UniformMeshGeneratorX3;
   }
 
-  for (int dir=0; dir<6; dir++)
+  for (int dir=0; dir<6; dir++) {
     BoundaryFunction_[dir]=NULL;
 		BoundaryFunctionCL_[dir]=NULL; 
+	}
   AMRFlag_=NULL;
   UserSourceTerm_=NULL;
   UserTimeStep_=NULL;
@@ -638,9 +639,10 @@ Mesh::Mesh(ParameterInput *pin, IOWrapper& resfile, int mesh_test) {
     MeshGenerator_[X3DIR]=UniformMeshGeneratorX3;
   }
 
-  for (int dir=0; dir<6; dir++)
+  for (int dir=0; dir<6; dir++) {
     BoundaryFunction_[dir]=NULL;
 		BoundaryFunctionCL_[dir]=NULL; 
+	}
   AMRFlag_=NULL;
   UserSourceTerm_=NULL;
   UserTimeStep_=NULL;
@@ -1323,10 +1325,10 @@ void Mesh::Initialize(int res_flag, ParameterInput *pin) {
       pbval->SendCellCenteredBoundaryBuffers(pmb->phydro->u, HYDRO_CONS);
       if (MAGNETIC_FIELDS_ENABLED)
         pbval->SendFieldBoundaryBuffers(pmb->pfield->b);
-			}
 			if (CLESS_ENABLED) 
 				pbval->SendCellCenteredBoundaryBuffers(pmb->pcless->u, CLESS_CONS);
-
+		}
+		
     // wait to receive conserved variables
 #pragma omp for private(pmb,pbval)
     for (int i=0; i<nmb; ++i) {
@@ -1368,14 +1370,14 @@ void Mesh::Initialize(int res_flag, ParameterInput *pin) {
     }
 
     // Now do prolongation, compute primitives, apply BCs
-#pragma omp for private(pmb,pbval,phydro,pfield)
+#pragma omp for private(pmb,pbval,phydro,pfield,pcless)
     for (int i=0; i<nmb; ++i) {
       pmb=pmb_array[i]; pbval=pmb->pbval, phydro=pmb->phydro, pfield=pmb->pfield;
+			pcless=pmb->pcless; 
       if (multilevel==true) {
         pbval->ProlongateBoundaries(phydro->w, phydro->u, pfield->b, pfield->bcc,
                                     time, 0.0);
 				if (CLESS_ENABLED) {
-					pcless=pmb->pcless;
 					pbval->ProlongateBoundariesCL(pcless->w, pcless->u, time, 0.0); 
 				}
 			}
@@ -1955,6 +1957,10 @@ void Mesh::AdaptiveMeshRefinement(ParameterInput *pin) {
             BufferUtility::Pack3DData(pb->pfield->b.x3f, sendbuf[k],
                                       is, ie, js, je, ks, ke+f3, p);
           }
+					if (CLESS_ENABLED) {
+						BufferUtility::Pack4DData(pb->pcless->u, sendbuf[k], 0, NCLESS-1,
+																			is, ie, js, je, ks, ke, p); 
+					}
           int tag=CreateAMRMPITag(nn+l-nslist[newrank[nn+l]], 0, 0, 0);
           MPI_Isend(sendbuf[k], bsc2f, MPI_ATHENA_REAL, newrank[nn+l],
                     tag, MPI_COMM_WORLD, &(req_send[k]));
@@ -1985,6 +1991,12 @@ void Mesh::AdaptiveMeshRefinement(ParameterInput *pin) {
           BufferUtility::Pack3DData(pmr->coarse_b_.x3f, sendbuf[k],
                          pb->cis, pb->cie, pb->cjs, pb->cje, pb->cks, pb->cke+f3, p);
         }
+				if (CLESS_ENABLED) {
+	        pmr->RestrictCellCenteredValues(pb->pcless->u, pmr->coarse_conscl_,
+		           0, NCLESS-1, pb->cis, pb->cie, pb->cjs, pb->cje, pb->cks, pb->cke);
+				  BufferUtility::Pack4DData(pmr->coarse_conscl_, sendbuf[k], 0, NCLESS-1,
+                       pb->cis, pb->cie, pb->cjs, pb->cje, pb->cks, pb->cke, p);
+				}
         int tag=CreateAMRMPITag(nn-nslist[newrank[nn]], ox1, ox2, ox3);
         MPI_Isend(sendbuf[k], bsf2c, MPI_ATHENA_REAL, newrank[nn],
                   tag, MPI_COMM_WORLD, &(req_send[k]));
@@ -2088,6 +2100,19 @@ void Mesh::AdaptiveMeshRefinement(ParameterInput *pin) {
               }
             }
           }
+					if (CLESS_ENABLED) {
+						pmr->RestrictCellCenteredValues(pob->pcless->u, pmr->coarse_conscl_,
+								 0, NCLESS-1, pob->cis, pob->cie, pob->cjs, pob->cje, pob->cks, pob->cke);
+						AthenaArray<Real> &src=pmr->coarse_conscl_;
+						AthenaArray<Real> &dst=pmb->pcless->u;
+						for (int nv=0; nv<NCLESS; nv++) {
+							for (int k=ks, fk=pob->cks; fk<=pob->cke; k++, fk++) {
+								for (int j=js, fj=pob->cjs; fj<=pob->cje; j++, fj++) {
+									for (int i=is, fi=pob->cis; fi<=pob->cie; i++, fi++)
+										dst(nv, k, j, i)=src(nv, fk, fj, fi);
+						}}}
+					}
+
         }
       } else if ((loclist[on].level < newloc[n].level) &&
                  (ranklist[on]==Globals::my_rank)) {
@@ -2137,6 +2162,20 @@ void Mesh::AdaptiveMeshRefinement(ParameterInput *pin) {
           pmr->ProlongateInternalField(pmb->pfield->b, pob->cis, pob->cie,
                                        pob->cjs, pob->cje, pob->cks, pob->cke);
         }
+				if (CLESS_ENABLED) {
+					AthenaArray<Real> &src=pob->pcless->u;
+					AthenaArray<Real> &dst=pmr->coarse_conscl_;
+					// fill the coarse buffer
+					for (int nv=0; nv<NCLESS; nv++) {
+						for (int k=ks, ck=cks; k<=ke; k++, ck++) {
+							for (int j=js, cj=cjs; j<=je; j++, cj++) {
+								for (int i=is, ci=cis; i<=ie; i++, ci++)
+									dst(nv, k, j, i)=src(nv, ck, cj, ci);
+					}}}
+					pmr->ProlongateCellCenteredValues(dst, pmb->pcless->u, 0, NCLESS-1,
+						             pob->cis, pob->cie, pob->cjs, pob->cje, pob->cks, pob->cke);
+
+				}
       }
     }
   }
@@ -2187,6 +2226,10 @@ void Mesh::AdaptiveMeshRefinement(ParameterInput *pin) {
             }
           }
         }
+				if (CLESS_ENABLED) {
+	        BufferUtility::Unpack4DData(recvbuf[k], pb->pcless->u, 0, NCLESS-1,
+		                     pb->is, pb->ie, pb->js, pb->je, pb->ks, pb->ke, p);
+				}
         k++;
       } else if (oloc.level>nloc.level) { // f2c
         for (int l=0; l<nlbl; l++) {
@@ -2222,6 +2265,10 @@ void Mesh::AdaptiveMeshRefinement(ParameterInput *pin) {
               }
             }
           }
+					if (CLESS_ENABLED) {
+	          BufferUtility::Unpack4DData(recvbuf[k], pb->pcless->u, 0, NCLESS-1,
+		                       is, ie, js, je, ks, ke, p);
+					}
           k++;
         }
       } else { // c2f
@@ -2251,6 +2298,12 @@ void Mesh::AdaptiveMeshRefinement(ParameterInput *pin) {
           pmr->ProlongateInternalField(pb->pfield->b, pb->cis, pb->cie,
                                        pb->cjs, pb->cje, pb->cks, pb->cke);
         }
+				if (CLESS_ENABLED) {
+					BufferUtility::Unpack4DData(recvbuf[k], pmr->coarse_conscl_,
+                                    0, NCLESS-1, is, ie, js, je, ks, ke, p);
+					pmr->ProlongateCellCenteredValues(pmr->coarse_conscl_, pb->pcless->u, 0, NCLESS-1,
+																		 pb->cis, pb->cie, pb->cjs, pb->cje, pb->cks, pb->cke);
+				}
         k++;
       }
     }

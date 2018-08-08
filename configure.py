@@ -591,6 +591,7 @@ makefile_options['PROBLEM_FILE'] += '.cpp'
 makefile_options['COORDINATES_FILE'] += '.cpp'
 makefile_options['EOS_FILE'] += '.cpp'
 makefile_options['RSOLVER_FILE'] += '.cpp'
+makefile_options['RSOLVER_CL_FILE'] += '.cpp' 
 
 # Read templates
 with open(defsfile_input, 'r') as current_file:

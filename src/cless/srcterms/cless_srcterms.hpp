@@ -30,11 +30,11 @@ public:
 
   // functions
   void AddClessSourceTerms(const Real time, const Real dt, const AthenaArray<Real> *flx,
-    const AthenaArray<Real> &p, const AthenaArray<Real> &b, AthenaArray<Real> &c);
-  void SelfGravity(const Real dt, const AthenaArray<Real> *flx,
     const AthenaArray<Real> &p, AthenaArray<Real> &c);
-  void EnrollSrcTermFunction(SrcTermFunc_t my_func);
-  SrcTermFunc_t UserSourceTerm;
+  void SelfGravityCL(const Real dt, const AthenaArray<Real> *flx,
+    const AthenaArray<Real> &p, AthenaArray<Real> &c);
+  //void EnrollSrcTermFunction(SrcTermFunc_t my_func);
+  //SrcTermFunc_t UserSourceTermCL;
 
 private:
   Cless *pmy_cless_;  // ptr to Cless containing this ClessSourceTerms

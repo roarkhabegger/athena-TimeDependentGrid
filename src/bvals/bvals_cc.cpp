@@ -23,6 +23,7 @@
 #include "../athena_arrays.hpp"
 #include "../mesh/mesh.hpp"
 #include "../hydro/hydro.hpp"
+#include "../cless/cless.hpp"
 #include "../eos/eos.hpp"
 #include "../field/field.hpp"
 #include "../coordinates/coordinates.hpp"
@@ -154,7 +155,7 @@ void BoundaryValues::SendCellCenteredBoundaryBuffers(AthenaArray<Real> &src,
     }
   }
 	if (type==CLESS_CONS || type==CLESS_PRIM) {
-		pdf=&bd_cless_;
+		pbd=&bd_cless_;
 		ns=0, ne=NCLESS-1;
 		if (pmb->pmy_mesh->multilevel) {
 			if (type==CLESS_CONS)
@@ -179,6 +180,8 @@ void BoundaryValues::SendCellCenteredBoundaryBuffers(AthenaArray<Real> &src,
     if (nb.rank == Globals::my_rank) {
       if (type==HYDRO_CONS || type==HYDRO_PRIM)
         ptarget=&(pbl->pbval->bd_hydro_);
+			if (type==CLESS_CONS || type==CLESS_PRIM) 
+				ptarget=&(pbl->pbval->bd_cless_); 
       std::memcpy(ptarget->recv[nb.targetid], pbd->send[nb.bufid], ssize*sizeof(Real));
       ptarget->flag[nb.targetid]=BNDRY_ARRIVED;
     }
@@ -423,8 +426,9 @@ bool BoundaryValues::ReceiveCellCenteredBoundaryBuffers(AthenaArray<Real> &dst,
     }
   }
 
+
 	if (type==CLESS_CONS || type==CLESS_PRIM) {
-		pdf=&bd_cless_;
+		pbd=&bd_cless_;
 		ns=0, ne=NCLESS-1;
 		flip=flip_across_pole_cless;
 		if (pmb->pmy_mesh->multilevel) {
@@ -499,7 +503,7 @@ void BoundaryValues::ReceiveCellCenteredBoundaryBuffersWithWait(AthenaArray<Real
   }
 
 	if (type==CLESS_CONS || type==CLESS_PRIM) {
-		pdf=&bd_cless_;
+		pbd=&bd_cless_;
 		ns=0, ne=NCLESS-1;
 		flip=flip_across_pole_cless;
 		if (pmb->pmy_mesh->multilevel) {
@@ -524,6 +528,7 @@ void BoundaryValues::ReceiveCellCenteredBoundaryBuffersWithWait(AthenaArray<Real
       SetCellCenteredBoundaryFromFiner(dst, ns, ne, pbd->recv[nb.bufid], nb, flip);
     pbd->flag[nb.bufid] = BNDRY_COMPLETED; // completed
   }
+
   if (block_bcs[INNER_X2]==POLAR_BNDRY || block_bcs[OUTER_X2]==POLAR_BNDRY)
     PolarSingleCellCentered(dst, ns, ne);
 

@@ -30,7 +30,7 @@ Cless::Cless(MeshBlock *pmb, ParameterInput *pin) {
   if (pmy_block->block_size.nx3 > 1) ncells3 = pmy_block->block_size.nx3 + 2*(NGHOST);
 
   // Allocate memory registers for primitive/conserved variables for time-integrator
-	if (CLESSHD) {
+	if (CLESS_ENABLED) {
 		u.NewAthenaArray(NCLESS,ncells3,ncells2,ncells1);
 		w.NewAthenaArray(NCLESS,ncells3,ncells2,ncells1);
 		u1.NewAthenaArray(NCLESS,ncells3,ncells2,ncells1);

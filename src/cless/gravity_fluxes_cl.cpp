@@ -17,7 +17,7 @@
 //! \fn void Cless::AddGravityFlux(void)
 //  \brief Add gravity flux using new potential directly
 
-void Cless::AddGravityFlux(void) {
+void Cless::AddGravityFluxCL(void) {
   MeshBlock *pmb=pmy_block;
   Coordinates *pco=pmb->pcoord;
   Real four_pi_G=pmb->pgrav->four_pi_G, grav_mean_rho=pmb->pgrav->grav_mean_rho;
@@ -123,7 +123,7 @@ void Cless::AddGravityFlux(void) {
 //  \brief Adds gravity flux to hydro flux using pre-calculated gflx.
 //         Implemented for one poisson solver call. (old Athena style)
 
-void Cless::AddGravityFluxWithGflx(void) {
+void Cless::AddGravityFluxWithGflxCL(void) {
   MeshBlock *pmb=pmy_block;
 
   int is = pmb->is; int js = pmb->js; int ks = pmb->ks;
@@ -162,7 +162,7 @@ void Cless::AddGravityFluxWithGflx(void) {
 //  \brief Calcuates gravity flux to hydro flux
 //         Implemented for one poisson solver call. (old Athena style)
 
-void Cless::CalculateGravityFlux(AthenaArray<Real> &phi_in) {
+void Cless::CalculateGravityFluxCL(AthenaArray<Real> &phi_in) {
   MeshBlock *pmb=pmy_block;
   Coordinates *pco=pmb->pcoord;
   Real four_pi_G=pmb->pgrav->four_pi_G, grav_mean_rho=pmb->pgrav->grav_mean_rho;
@@ -322,7 +322,7 @@ void Cless::CalculateGravityFlux(AthenaArray<Real> &phi_in) {
 //  \brief Correct the fluxes using the updated gravitational fluxes
 //         Implemented for one poisson solver call. (old Athena style)
 
-void Cless::CorrectGravityFlux(void) {
+void Cless::CorrectGravityFluxCL(void) {
   MeshBlock *pmb=pmy_block;
   AthenaArray<Real> &x1gflx=gflx[X1DIR];
   AthenaArray<Real> &x2gflx=gflx[X2DIR];

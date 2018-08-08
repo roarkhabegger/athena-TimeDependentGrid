@@ -11,6 +11,7 @@
 #include "../athena.hpp"
 #include "../athena_arrays.hpp"
 #include "../hydro/hydro.hpp"
+#include "../cless/cless.hpp"
 #include "../mesh/mesh.hpp"
 #include "../coordinates/coordinates.hpp"
 #include "../eos/eos.hpp"
@@ -146,8 +147,8 @@ void Reconstruction::PiecewiseLinearCLX2(MeshBlock *pmb,
     // Project slopes to characteristic variables, if necessary
     // Note order of characteristic fields in output vect corresponds to (IVY,IVZ,IVX)
     if (pmb->precon->characteristic_reconstruction) {
-      LeftEigenmatrixDotVector(pmb,IVY,il,iu,wc,dwl);
-      LeftEigenmatrixDotVector(pmb,IVY,il,iu,wc,dwr);
+      LeftEigenmatrixDotVectorCL(pmb,IVY,il,iu,wc,dwl);
+      LeftEigenmatrixDotVectorCL(pmb,IVY,il,iu,wc,dwr);
     }
 
     // Apply van Leer limiter for uniform grid
@@ -178,7 +179,7 @@ void Reconstruction::PiecewiseLinearCLX2(MeshBlock *pmb,
 
     // Project limited slope back to primitive variables, if necessary
     if (pmb->precon->characteristic_reconstruction) {
-      RightEigenmatrixDotVector(pmb,IVY,il,iu,wc,dwm);
+      RightEigenmatrixDotVectorCL(pmb,IVY,il,iu,wc,dwm);
     }
 
     // compute ql_(j+1/2) and qr_(j-1/2) using monotonized slopes

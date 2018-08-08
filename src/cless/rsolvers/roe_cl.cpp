@@ -33,7 +33,7 @@ static Real gm1, iso_cs;
 //----------------------------------------------------------------------------------------
 //! \func
 
-void Hydro::RiemannSolver(const int kl, const int ku, const int jl, const int ju,
+void Hydro::RiemannSolverCL(const int kl, const int ku, const int jl, const int ju,
   const int il, const int iu, const int ivx, const AthenaArray<Real> &bx,
   AthenaArray<Real> &wl, AthenaArray<Real> &wr, AthenaArray<Real> &flx,
   AthenaArray<Real> &ey, AthenaArray<Real> &ez) {

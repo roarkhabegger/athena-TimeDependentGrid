@@ -34,7 +34,7 @@
 //----------------------------------------------------------------------------------------
 //! \func
 
-void Cless::RiemannSolver(const int kl, const int ku, const int jl, const int ju,
+void Cless::RiemannSolverCL(const int kl, const int ku, const int jl, const int ju,
   const int il, const int iu, const int ivx, const int ip12,
   AthenaArray<Real> &wl, AthenaArray<Real> &wr, AthenaArray<Real> &flx) {
 	// get proper directional dependence 

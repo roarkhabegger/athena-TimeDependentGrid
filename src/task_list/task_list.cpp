@@ -8,6 +8,7 @@
 
 // needed for vector of pointers in DoTaskListOneSubstep()
 #include <vector>
+#include <iostream>
 
 // Athena++ classes headers
 #include "../athena.hpp"
@@ -46,6 +47,10 @@ enum TaskListStatus TaskList::DoAllAvailableTasks(MeshBlock *pmb, int step,
   for (int i=ts.indx_first_task; i<ntasks; i++) {
     Task &taski=task_list_[i];
 
+		std::cout << "i=" << i << " task_id=" << taski.task_id 
+							<< " tasks_left=" << ts.num_tasks_left 
+							<< std::endl;
+
     if ((taski.task_id & ts.finished_tasks) == 0LL) { // task not done
       // check if dependency clear
       if (((taski.dependency & ts.finished_tasks) == taski.dependency)) {
@@ -58,6 +63,7 @@ enum TaskListStatus TaskList::DoAllAvailableTasks(MeshBlock *pmb, int step,
           if (ret==TASK_NEXT) continue;
           return TL_RUNNING;
         }
+
       }
       skip++; // increment number of tasks processed
 

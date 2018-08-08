@@ -10,6 +10,7 @@
 // C/C++ headers
 #include <cmath>   // sqrt()
 #include <cfloat>  // FLT_MIN
+#include <iostream> // std
 
 // Athena++ headers
 #include "eos.hpp"
@@ -56,6 +57,9 @@ void EquationOfState::ConsclToPrimcl(AthenaArray<Real> &cons,
       Real& w_p12 = prim(IP12,k,j,i);
 			Real& w_p13 = prim(IP13,k,j,i);
 			Real& w_p23 = prim(IP23,k,j,i);
+
+			//std::cout << "[ConsclToPrimcl]: k " << k << " j " << j  << " i "  << i << " u_d=" << u_d
+			// 	  			<< " w_p11: " << prim(IP11,k,j,i) << std::endl;
 			
 
       // apply density floor, without changing momentum or energy
@@ -65,7 +69,7 @@ void EquationOfState::ConsclToPrimcl(AthenaArray<Real> &cons,
       Real di = 1.0/u_d;
       w_vx = u_m1*di;
       w_vy = u_m2*di;
-      w_vz  = u_m3*di;
+      w_vz = u_m3*di;
 
       Real ke11 = di*( u_m1*u_m1 );
 			Real ke22 = di*( u_m2*u_m2 );
@@ -134,6 +138,11 @@ void EquationOfState::PrimclToConscl(const AthenaArray<Real> &prim,
       const Real& w_p12 = prim(IP12,k,j,i);
 			const Real& w_p13 = prim(IP13,k,j,i);
 			const Real& w_p23 = prim(IP23,k,j,i);
+
+			//std::cout << "[PrimclToConscl]: k " << k << " j " << j  << " i "  << i << " u_d=" << u_d
+			// 	  			<< " w_p11: " << prim(IP11,k,j,i) << std::endl;
+
+
 
       u_d   = w_d;
       u_m1  = w_vx*w_d;
