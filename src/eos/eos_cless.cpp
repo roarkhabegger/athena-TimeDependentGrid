@@ -142,8 +142,6 @@ void EquationOfState::PrimclToConscl(const AthenaArray<Real> &prim,
 			//std::cout << "[PrimclToConscl]: k " << k << " j " << j  << " i "  << i << " u_d=" << u_d
 			// 	  			<< " w_p11: " << prim(IP11,k,j,i) << std::endl;
 
-
-
       u_d   = w_d;
       u_m1  = w_vx*w_d;
       u_m2  = w_vy*w_d;

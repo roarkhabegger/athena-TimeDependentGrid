@@ -20,21 +20,21 @@ cfl_number  = 0.3        # The Courant, Friedrichs, & Lewy (CFL) Number
 nlim        = -1         # cycle limit
 tlim        = 1.0        # time limit
 integrator  = vl2        # time integration algorithm
-xorder      = 3c         # order of spatial reconstruction
+xorder      = 2         # order of spatial reconstruction
 ncycle_out  = 1          # interval for stdout summary info
 
 <mesh>
-nx1        = 128         # Number of zones in X1-direction
+nx1        = 64         # Number of zones in X1-direction
 x1min      = -0.5       # minimum value of X1
 x1max      = 0.5        # maximum value of X1
-ix1_bc     = periodic   # inner-X1 boundary flag
-ox1_bc     = periodic   # outer-X1 boundary flag
+ix1_bc     = outflow   # inner-X1 boundary flag
+ox1_bc     = outflow   # outer-X1 boundary flag
 
-nx2        = 128        # Number of zones in X2-direction
+nx2        = 64        # Number of zones in X2-direction
 x2min      = -0.5      # minimum value of X2
 x2max      = 0.5       # maximum value of X2
-ix2_bc     = periodic   # inner-X2 boundary flag
-ox2_bc     = periodic   # outer-X2 boundary flag
+ix2_bc     = outflow   # inner-X2 boundary flag
+ox2_bc     = outflow   # outer-X2 boundary flag
 
 nx3        = 1         # Number of zones in X3-direction
 x3min      = -0.5       # minimum value of X3
@@ -43,6 +43,19 @@ ix3_bc     = periodic   # inner-X3 boundary flag
 ox3_bc     = periodic   # outer-X3 boundary flag
 
 num_threads = 1
+
+#refinement = static
+
+#<meshblock> 
+#nx1 = 64
+#nx2 = 64
+
+#<refinement1>
+#x1min = -0.25
+#x1max =  0.25
+#x2min = -0.25
+#x2max =  0.25
+#level = 3
 
 
 #<meshblock>
@@ -53,8 +66,8 @@ num_threads = 1
 <hydro>
 gamma           = 1.666666666667 # gamma = C_p/C_v
 iso_sound_speed = 0.4082482905   # equavalent to sqrt(gamma*p/d) for p=0.1, d=1
-ieta1           = 1e-30					 # i1 parameter for dual-energy
-ieta2           = 1e30 					 # i2 parameter for dual-energy
+ieta1           = 1e-3					 # i1 parameter for dual-energy
+ieta2           = 1e-1 					 # i2 parameter for dual-energy
 
 <problem>
 compute_error = false  # check whether blast is spherical at end

@@ -510,6 +510,68 @@ void OutputType::LoadOutputData(MeshBlock *pmb) {
 			pod->data.InitWithShallowSlice(pcle->u,4,IDN,1);
 			AppendOutputDataNode(pod);
 			num_vars_++; 
+
+			pod = new OutputData;
+			pod->type = "VECTORS";
+			pod->name = "Mcl";
+			pod->data.InitWithShallowSlice(pcle->u,4,IM1,3);
+			AppendOutputDataNode(pod);
+			num_vars_+=3;
+			if (output_params.cartesian_vector) {
+				AthenaArray<Real> src;
+				src.InitWithShallowSlice(pcle->u,4,IM1,3);
+				pod = new OutputData;
+				pod->type = "VECTORS";
+				pod->name = "Mcl_xyz";
+				pod->data.NewAthenaArray(3,pcle->u.GetDim3(),pcle->u.GetDim2(),pcle->u.GetDim1());
+				CalculateCartesianVector(src, pod->data, pmb->pcoord);
+				AppendOutputDataNode(pod);
+				num_vars_+=3;
+			}
+
+			// output Eij as scalars 
+			pod = new OutputData;
+			pod->type = "SCALARS";
+			pod->name = "E11"; 
+			pod->data.InitWithShallowSlice(pcle->u,4,IE11,1);
+			AppendOutputDataNode(pod);
+			num_vars_++; 
+
+			pod = new OutputData;
+			pod->type = "SCALARS";
+			pod->name = "E22"; 
+			pod->data.InitWithShallowSlice(pcle->u,4,IE22,1);
+			AppendOutputDataNode(pod);
+			num_vars_++; 
+
+			pod = new OutputData;
+			pod->type = "SCALARS";
+			pod->name = "E33"; 
+			pod->data.InitWithShallowSlice(pcle->u,4,IE33,1);
+			AppendOutputDataNode(pod);
+			num_vars_++; 
+
+			pod = new OutputData;
+			pod->type = "SCALARS";
+			pod->name = "E12"; 
+			pod->data.InitWithShallowSlice(pcle->u,4,IE12,1);
+			AppendOutputDataNode(pod);
+			num_vars_++; 
+
+			pod = new OutputData;
+			pod->type = "SCALARS";
+			pod->name = "E13"; 
+			pod->data.InitWithShallowSlice(pcle->u,4,IE13,1);
+			AppendOutputDataNode(pod);
+			num_vars_++; 
+
+			pod = new OutputData;
+			pod->type = "SCALARS";
+			pod->name = "E23"; 
+			pod->data.InitWithShallowSlice(pcle->u,4,IE23,1);
+			AppendOutputDataNode(pod);
+			num_vars_++; 
+
 		}
 	}
 

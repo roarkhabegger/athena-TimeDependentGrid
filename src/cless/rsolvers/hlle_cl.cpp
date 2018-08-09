@@ -147,29 +147,29 @@ void Cless::RiemannSolverCL(const int kl, const int ku, const int jl, const int 
     fl[IVZ ] = wli[IDN]*wli[IVZ]*vxl + wli[IP13];
     fr[IVZ ] = wri[IDN]*wri[IVZ]*vxr + wri[IP13];
 
-		fl[IP11] = (wli[IP11] + wli[IVX]*wli[IVX])*vxl + 2.0*wli[IP11]*wli[IVX]; 
-		fr[IP11] = (wri[IP11] + wri[IVX]*wri[IVX])*vxr + 2.0*wri[IP11]*wri[IVX]; 
+		fl[IP11] = (wli[IP11] + wli[IDN]*wli[IVX]*wli[IVX])*vxl + 2.0*wli[IP11]*wli[IVX]; 
+		fr[IP11] = (wri[IP11] + wri[IDN]*wri[IVX]*wri[IVX])*vxr + 2.0*wri[IP11]*wri[IVX]; 
 
-		fl[IP22] = (wli[IP22] + wli[IVY]*wli[IVY])*vxl + 2.0*wli[IP22]*wli[IVY]; 
-		fr[IP22] = (wri[IP22] + wri[IVY]*wri[IVY])*vxr + 2.0*wri[IP22]*wri[IVY]; 
+		fl[IP22] = (wli[IP22] + wli[IDN]*wli[IVY]*wli[IVY])*vxl + 2.0*wli[IP12]*wli[IVY]; 
+		fr[IP22] = (wri[IP22] + wri[IDN]*wri[IVY]*wri[IVY])*vxr + 2.0*wri[IP12]*wri[IVY]; 
 		
-		fl[IP33] = (wli[IP33] + wli[IVZ]*wli[IVZ])*vxl + 2.0*wli[IP33]*wli[IVZ]; 
-		fr[IP33] = (wri[IP33] + wri[IVZ]*wri[IVZ])*vxr + 2.0*wri[IP33]*wri[IVZ]; 
+		fl[IP33] = (wli[IP33] + wli[IDN]*wli[IVZ]*wli[IVZ])*vxl + 2.0*wli[IP13]*wli[IVZ]; 
+		fr[IP33] = (wri[IP33] + wri[IDN]*wri[IVZ]*wri[IVZ])*vxr + 2.0*wri[IP13]*wri[IVZ]; 
 
-		fl[IP12] = (wli[IP12] + wli[IVX]*wli[IVY])*vxl + ( wli[IP12]*wli[IVX] 
-																									 +   wli[IP11]*wli[IVY] );
-		fr[IP12] = (wri[IP12] + wri[IVX]*wri[IVY])*vxr + ( wri[IP12]*wri[IVX] 
-																									 +   wri[IP11]*wri[IVY] );
+		fl[IP12] = (wli[IP12] + wli[IDN]*wli[IVX]*wli[IVY])*vxl + ( wli[IP12]*wli[IVX] 
+																									          +   wli[IP11]*wli[IVY] );
+		fr[IP12] = (wri[IP12] + wri[IDN]*wri[IVX]*wri[IVY])*vxr + ( wri[IP12]*wri[IVX] 
+																									          +   wri[IP11]*wri[IVY] );
 
-		fl[IP13] = (wli[IP13] + wli[IVX]*wli[IVZ])*vxl + ( wli[IP13]*wli[IVX] 
-																									 +   wli[IP11]*wli[IVZ] );
-		fr[IP13] = (wri[IP13] + wri[IVX]*wri[IVZ])*vxr + ( wri[IP13]*wri[IVX] 
-																									 +   wri[IP11]*wri[IVZ] );
+		fl[IP13] = (wli[IP13] + wli[IDN]*wli[IVX]*wli[IVZ])*vxl + ( wli[IP13]*wli[IVX] 
+																									          +   wli[IP11]*wli[IVZ] );
+		fr[IP13] = (wri[IP13] + wri[IDN]*wri[IVX]*wri[IVZ])*vxr + ( wri[IP13]*wri[IVX] 
+																									          +   wri[IP11]*wri[IVZ] );
 
-		fl[IP23] = (wli[IP23] + wli[IVY]*wli[IVZ])*vxl + ( wli[IP13]*wli[IVY] 
-																									 +   wli[IP12]*wli[IVZ] );
-		fr[IP23] = (wri[IP23] + wri[IVY]*wri[IVZ])*vxr + ( wri[IP13]*wri[IVY] 
-																									 +   wri[IP12]*wri[IVZ] );
+		fl[IP23] = (wli[IP23] + wli[IDN]*wli[IVY]*wli[IVZ])*vxl + ( wli[IP13]*wli[IVY] 
+																									          +   wli[IP12]*wli[IVZ] );
+		fr[IP23] = (wri[IP23] + wri[IDN]*wri[IVY]*wri[IVZ])*vxr + ( wri[IP13]*wri[IVY] 
+																									          +   wri[IP12]*wri[IVZ] );
 
 
 //--- Step 6. Compute the HLLE flux at interface.

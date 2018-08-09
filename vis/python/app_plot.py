@@ -122,6 +122,48 @@ def get_appquant(quant):
         app_quant = ['Etot','mom1','mom2','mom3','dens']
     elif quant == 'ediff':
         app_quant = ['Eint','Etot','mom1','mom2','mom3','dens'] 
+
+    # Conserved cless quantities 
+    elif quant == 'dcl':
+        app_quant = ['dcl']
+    elif quant == 'Mcl1':
+        app_quant = ['Mcl1']
+    elif quant == 'Mcl2':
+        app_quant = ['Mcl2']
+    elif quant == 'Mcl3':
+        app_quant = ['Mcl3']
+    elif quant == 'E11':
+        app_quant = ['E11']
+    elif quant == 'E22':
+        app_quant = ['E22']
+    elif quant == 'E33':
+        app_quant = ['E33']
+    elif quant == 'E12':
+        app_quant = ['E12']
+    elif quant == 'E13':
+        app_quant = ['E13']
+    elif quant == 'E23':
+        app_quant = ['E23']
+    # primitive cless quantities 
+    elif quant == 'vcl1':
+        app_quant = ['Mcl1','dcl']
+    elif quant == 'vcl2':
+        app_quant = ['Mcl2','dcl']
+    elif quant == 'vcl3':
+        app_quant = ['Mcl3','dcl']
+    elif quant == 'P11':
+        app_quant = ['E11','Mcl1','dcl']
+    elif quant == 'P22':
+        app_quant = ['E22','Mcl2','dcl']
+    elif quant == 'P33':
+        app_quant = ['E33','Mcl2','dcl']
+    elif quant == 'P12':
+        app_quant = ['E12','Mcl1','Mcl2','dcl']
+    elif quant == 'P13':
+        app_quant = ['E13','Mcl1','Mcl3','dcl']
+    elif quant == 'P23':
+        app_quant = ['E23','Mcl2','Mcl3','dcl']
+
     else:
         app_quant = [quant] 
         print('[get_appquant]: quant %s might be an athena++ quantity, trying it ... '
@@ -143,7 +185,7 @@ def get_quant(file,quant,lev,derived=False,myquant='None'):
     data = ar.athdf(file,quantities=quant,level=lev)
 
     if derived:
-        if myquant == 'v1' or myquant == 'v2' or quant == 'v3':
+        if myquant == 'v1' or myquant == 'v2' or myquant == 'v3':
             qdat = data[quant[0]]/data[quant[1]]
         elif myquant == 'eint':
             qdat = data[quant[0]] - 0.5 * (data[quant[1]]**2. + 
@@ -159,6 +201,13 @@ def get_quant(file,quant,lev,derived=False,myquant='None'):
             rms  = np.sqrt(np.sum( (eint-ie)**2.)/eint.size)
 
             print('[get_quant]: time = %1.3f ediff_RMS = %13.5e' % (data['Time'], rms))
+        # Cless derived quants
+        elif myquant == 'vcl1' or myquant == 'vcl2' or myquant == 'vcl3':
+            qdat = data[quant[0]]/data[quant[1]]
+        elif myquant == 'P11' or myquant == 'P22' or myquant == 'P33':
+            qdat = data[quant[0]] - (data[quant[1]]*data[quant[1]])/data[quant[2]]
+        elif myquant == 'P12' or myquant == 'P13' or myquant == 'P23':
+            qdat = data[quant[0]] - (data[quant[1]]*data[quant[2]])/data[quant[3]]
     else:
         qdat = data[quant[0]] 
 
@@ -235,10 +284,10 @@ def get_labels(quant,dim,log=False):
                   'v':'v$_{tot}$',
                    # Collisionless variables 
                   'dcl':'$\\rho_{\\rm cl}$', 
-                  'v1cl':'v$_{1,\\rm cl}$','v2cl':'v$_{2,\\rm cl}$',
-                  'v3cl':'v$_{3,\\rm cl}$','M1cl':'M$_{1,\\rm cl}$',
-                  'vcl':'v$_{\\rm cl}$','Mcl':'M$_{\\rm cl}$', 
-                  'M2cl':'M$_{2,\\rm cl}$','M3cl':'M$_{3,\\rm cl}$',
+                  'vcl1':'v$_{1,\\rm cl}$','vcl2':'v$_{2,\\rm cl}$',
+                  'vcl3':'v$_{3,\\rm cl}$','M1cl':'M$_{1,\\rm cl}$',
+                  'vcl':'v$_{\\rm cl}$','Mcl1':'M$_{1,\\rm cl}$', 
+                  'Mcl2':'M$_{2,\\rm cl}$','Mcl3':'M$_{3,\\rm cl}$',
                   'P11':'P$_{11}$','P22':'P$_{22}$','P33':'P$_{33}$',
                   'p11':'P$_{ie,11}$','p22':'P$_{ie,22}$','p33':'P$_{ie,33}$',
                   'P12':'P$_{12}$','P23':'P$_{23}$','P13':'P$_{13}$',

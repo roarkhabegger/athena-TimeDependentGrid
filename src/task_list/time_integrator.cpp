@@ -220,8 +220,6 @@ TimeIntegratorTaskList::TimeIntegratorTaskList(ParameterInput *pin, Mesh *pm)
       AddTimeIntegratorTask(CALC_HYDFLX,(START_ALLRECV|DIFFUSE_HYD|DIFFUSE_FLD));
     else
       AddTimeIntegratorTask(CALC_HYDFLX,(START_ALLRECV|DIFFUSE_HYD));
-		//if (CLESS_ENABLED)
-		//	AddTimeIntegratorTask(CALC_CLFLX, (START_ALLRECV|DIFFUSE_HYD)); 
     if (pm->multilevel==true) { // SMR or AMR
       AddTimeIntegratorTask(SEND_HYDFLX,CALC_HYDFLX);
       AddTimeIntegratorTask(RECV_HYDFLX,CALC_HYDFLX);
@@ -229,32 +227,15 @@ TimeIntegratorTaskList::TimeIntegratorTaskList(ParameterInput *pin, Mesh *pm)
     } else {
       AddTimeIntegratorTask(INT_HYD, CALC_HYDFLX);
     }
-	//	if (CLESS_ENABLED) {
-			//if (pm->multilevel==true) {
-			//	AddTimeIntegratorTask(SEND_CLFLX, CALC_CLFLX);
-			//	AddTimeIntegratorTask(RECV_CLFLX, CALC_CLFLX);
-			//	AddTimeIntegratorTask(INT_CL, RECV_CLFLX);
-		//	}
-			//else {
-			//	AddTimeIntegratorTask(INT_CL, CALC_CLFLX); 
-			//} 
-			//AddTimeIntegratorTask(SRCTERM_CL,INT_CL);
-			//AddTimeIntegratorTask(SRCTERM_HYD, SRCTERM_CL);
-		//}
-		//else {
-			AddTimeIntegratorTask(SRCTERM_HYD, INT_HYD); 
-		//}
-    AddTimeIntegratorTask(UPDATE_DT,SRCTERM_HYD);
+		AddTimeIntegratorTask(SRCTERM_HYD, INT_HYD); 
+    
+		AddTimeIntegratorTask(UPDATE_DT,SRCTERM_HYD);
     AddTimeIntegratorTask(SEND_HYD,UPDATE_DT);
     AddTimeIntegratorTask(RECV_HYD,START_ALLRECV);
     if (SHEARING_BOX) { // Shearingbox BC for Hydro
       AddTimeIntegratorTask(SEND_HYDSH,RECV_HYD);
       AddTimeIntegratorTask(RECV_HYDSH,RECV_HYD);
     }
-		//if (CLESS_ENABLED) {
-		//	AddTimeIntegratorTask(SEND_CL, UPDATE_DT);
-		//	AddTimeIntegratorTask(RECV_CL, START_ALLRECV); 
-		//}
 
     // compute MHD fluxes, integrate field
     if (MAGNETIC_FIELDS_ENABLED) { // MHD
@@ -283,10 +264,6 @@ TimeIntegratorTaskList::TimeIntegratorTaskList(ParameterInput *pin, Mesh *pm)
       if (pm->multilevel==true) { // SMR or AMR
         AddTimeIntegratorTask(PROLONG,(SEND_HYD|RECV_HYD|SEND_FLD|RECV_FLD));
         AddTimeIntegratorTask(CON2PRIM,PROLONG);
-				//if (CLESS_ENABLED) {
-				//	AddTimeIntegratorTask(PROLONGCL, (SEND_HYD|RECV_HYD|SEND_CL|RECV_CL));
-				//	AddTimeIntegratorTask(CON2PRIMCL, PROLONGCL);
-				//}
       } else {
         if (SHEARING_BOX) {
           AddTimeIntegratorTask(CON2PRIM,(INT_HYD|RECV_HYD|INT_FLD|RECV_FLD|
@@ -294,35 +271,22 @@ TimeIntegratorTaskList::TimeIntegratorTaskList(ParameterInput *pin, Mesh *pm)
         } else {
           AddTimeIntegratorTask(CON2PRIM,(INT_HYD|RECV_HYD|INT_FLD|RECV_FLD));
         }
-				//if (CLESS_ENABLED) {
-				//	AddTimeIntegratorTask(CON2PRIMCL, (INT_HYD|RECV_HYD|INT_CL|RECV_CL));
-				//}
       }
     } else {  // HYDRO
       if (pm->multilevel==true) { // SMR or AMR
         AddTimeIntegratorTask(PROLONG,(SEND_HYD|RECV_HYD));
         AddTimeIntegratorTask(CON2PRIM,PROLONG);
-				//if (CLESS_ENABLED) {
-				//	AddTimeIntegratorTask(PROLONGCL, (SEND_HYD|RECV_HYD|SEND_CL|RECV_CL));
-				//	AddTimeIntegratorTask(CON2PRIMCL, PROLONGCL);
-			  //	}
       } else {
         if (SHEARING_BOX) {
           AddTimeIntegratorTask(CON2PRIM,(INT_HYD|RECV_HYD|RECV_HYDSH));
         } else {
           AddTimeIntegratorTask(CON2PRIM,(INT_HYD|RECV_HYD));
         }
-			//	if (CLESS_ENABLED) {
-			//		AddTimeIntegratorTask(CON2PRIMCL, (INT_CL|RECV_CL));
-			//	}
       }
     }
 
     // everything else
     AddTimeIntegratorTask(PHY_BVAL,CON2PRIM);
-		//if (CLESS_ENABLED) { 
-		//	AddTimeIntegratorTask(PHY_BVALCL, CON2PRIMCL); 
-		//}
 
     AddTimeIntegratorTask(USERWORK,PHY_BVAL);
 		
@@ -663,7 +627,7 @@ enum TaskStatus TimeIntegratorTaskList::HydroIntegrate(MeshBlock *pmb, int step)
     ph->AddFluxDivergenceToAverage(ph->w,pf->bcc,step_wghts[step-1].beta,ph->u);
 
 		if (CLESS_ENABLED) {
-			pc->WeightedAveUCL(pc->u1,pc->u,pc->u2,ave_wghts);
+			pc->WeightedAveUCL(pc->u,pc->u1,pc->u2,ave_wghts);
 			pc->AddFluxDivergenceToAverageCL(pc->w,step_wghts[step-1].beta,pc->u);
 		}
 

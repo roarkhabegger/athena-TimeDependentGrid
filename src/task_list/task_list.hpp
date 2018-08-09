@@ -153,17 +153,6 @@ public:
   enum TaskStatus GravSolve(MeshBlock *pmb, int step);
   enum TaskStatus GravFluxCorrection(MeshBlock *pmb, int step);
 
-	//enum TaskStatus ClessCalculateFluxes(MeshBlock *pmb, int step); 
-	//enum TaskStatus ClessIntegrate(MeshBlock *pmb, int step); 
-	//enum TaskStatus ClessSourceTerms(MeshBlock *pmb, int step); 
-	//enum TaskStatus ClessSend(MeshBlock *pmb, int step);
-	//enum TaskStatus ClessReceive(MeshBlock *pmb, int step);
-	//enum TaskStatus ClessProlongation(MeshBlock *pmb, int step);
-  //enum TaskStatus ClessPrimitives(MeshBlock *pmb, int step);
-  //enum TaskStatus ClessPhysicalBoundary(MeshBlock *pmb, int step);
-	//enum TaskStatus ClessFluxCorrectSend(MeshBlock *pmb, int step);
-	//enum TaskStatus ClessFluxCorrectReceive(MeshBlock *pmb, int step);
-
   enum TaskStatus StartupIntegrator(MeshBlock *pmb, int step);
   enum TaskStatus UpdateTimeStep(MeshBlock *pmb, int step);
 };
@@ -247,19 +236,6 @@ namespace HydroIntegratorTaskNames {
 
 	const uint64_t SYNC_IE=1LL<<57;
 	const uint64_t CHECK_IE=1LL<<58;
-
-	//const uint64_t CALC_CLFLX=1LL<<59;
-	//const uint64_t INT_CL=1LL<<60;
-	//const uint64_t SRCTERM_CL=1LL<<61;
-	//const uint64_t SEND_CL=1LL<<62;
-	//const uint64_t RECV_CL=1LL<<63;
-	// here we must reset and use "11" in different bit positions
-	//const uint64_t PROLONGCL=3LL<<0; 
-	//const uint64_t CON2PRIMCL=3LL<<1;
-	//const uint64_t PHY_BVALCL=3LL<<2;
-	//const uint64_t SEND_CLFLX=3LL<<3;
-	//const uint64_t RECV_CLFLX=3LL<<4; 
-
 }; // namespace HydroIntegratorTaskNames
 
 

@@ -1163,10 +1163,9 @@ void BoundaryValues::Initialize(void) {
 					MPI_Request_free(&bd_cless_.req_recv[nb.bufid]);
 				MPI_Recv_init(bd_cless_.recv[nb.bufid],rsize,MPI_ATHENA_REAL,
 											nb.rank,tag,MPI_COMM_WORLD,&(bd_cless_.req_recv[nb.bufid]));
-				}
 			}
-    }
-  }
+		}
+	}
 
   // Initialize polar neighbor communications to other ranks
   if (MAGNETIC_FIELDS_ENABLED) {

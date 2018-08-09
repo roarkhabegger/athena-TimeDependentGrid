@@ -37,7 +37,6 @@ public:
   
 	void ApplyPrimitiveFloors(AthenaArray<Real> &prim, int k, int j, int i);
 
-
 	void SoundSpeedsCL(const Real prim[(NCLESS)], Real *c11, Real *c22, Real *c33);
 	void ConsclToPrimcl(AthenaArray<Real> &cons, const AthenaArray<Real> &prim_old,
 													AthenaArray<Real> &prim, Coordinates *pco, 
