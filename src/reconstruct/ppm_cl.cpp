@@ -111,11 +111,11 @@ void Reconstruction::PiecewiseParabolicCLX1(MeshBlock *pmb,
     // Project cell-averages to characteristic variables, if necessary
     // Note order of characteristic fields in output vect corresponds to (IVX,IVY,IVZ)
     if (pmb->precon->characteristic_reconstruction) {
-      LeftEigenmatrixDotVectorCL(pmb,IVX,il-1,iu,wc,q_im2);
-      LeftEigenmatrixDotVectorCL(pmb,IVX,il-1,iu,wc,q_im1);
-      LeftEigenmatrixDotVectorCL(pmb,IVX,il-1,iu,wc,q);
-      LeftEigenmatrixDotVectorCL(pmb,IVX,il-1,iu,wc,q_ip1);
-      LeftEigenmatrixDotVectorCL(pmb,IVX,il-1,iu,wc,q_ip2);
+      LeftEigenmatrixDotVectorCL(pmb,IVX,IP12,il-1,iu,wc,q_im2);
+      LeftEigenmatrixDotVectorCL(pmb,IVX,IP12,il-1,iu,wc,q_im1);
+      LeftEigenmatrixDotVectorCL(pmb,IVX,IP12,il-1,iu,wc,q);
+      LeftEigenmatrixDotVectorCL(pmb,IVX,IP12,il-1,iu,wc,q_ip1);
+      LeftEigenmatrixDotVectorCL(pmb,IVX,IP12,il-1,iu,wc,q_ip2);
     }
 
 //--- Step 1. ----------------------------------------------------------------------------
@@ -312,8 +312,8 @@ void Reconstruction::PiecewiseParabolicCLX1(MeshBlock *pmb,
 
     // Project limited slope back to primitive variables, if necessary
     if (pmb->precon->characteristic_reconstruction) {
-      RightEigenmatrixDotVectorCL(pmb,IVX,il-1,iu,wc,ql_iph);
-      RightEigenmatrixDotVectorCL(pmb,IVX,il-1,iu,wc,qr_imh);
+      RightEigenmatrixDotVectorCL(pmb,IVX,IP12,il-1,iu,wc,ql_iph);
+      RightEigenmatrixDotVectorCL(pmb,IVX,IP12,il-1,iu,wc,qr_imh);
     }
 
     // compute ql_(i+1/2) and qr_(i-1/2)
@@ -395,11 +395,11 @@ void Reconstruction::PiecewiseParabolicCLX2(MeshBlock *pmb,
     // Project cell-averages to characteristic variables, if necessary
     // Note order of characteristic fields in output vect corresponds to (IVY,IVZ,IVX)
     if (pmb->precon->characteristic_reconstruction) {
-      LeftEigenmatrixDotVectorCL(pmb,IVY,il,iu,wc,q_jm2);
-      LeftEigenmatrixDotVectorCL(pmb,IVY,il,iu,wc,q_jm1);
-      LeftEigenmatrixDotVectorCL(pmb,IVY,il,iu,wc,q);
-      LeftEigenmatrixDotVectorCL(pmb,IVY,il,iu,wc,q_jp1);
-      LeftEigenmatrixDotVectorCL(pmb,IVY,il,iu,wc,q_jp2);
+      LeftEigenmatrixDotVectorCL(pmb,IVY,IP23,il,iu,wc,q_jm2);
+      LeftEigenmatrixDotVectorCL(pmb,IVY,IP23,il,iu,wc,q_jm1);
+      LeftEigenmatrixDotVectorCL(pmb,IVY,IP23,il,iu,wc,q);
+      LeftEigenmatrixDotVectorCL(pmb,IVY,IP23,il,iu,wc,q_jp1);
+      LeftEigenmatrixDotVectorCL(pmb,IVY,IP23,il,iu,wc,q_jp2);
     }
 
 //--- Step 1. ----------------------------------------------------------------------------
@@ -595,8 +595,8 @@ void Reconstruction::PiecewiseParabolicCLX2(MeshBlock *pmb,
 
     // Project limited slope back to primitive variables, if necessary
     if (pmb->precon->characteristic_reconstruction) {
-      RightEigenmatrixDotVectorCL(pmb,IVY,il,iu,wc,ql_jph);
-      RightEigenmatrixDotVectorCL(pmb,IVY,il,iu,wc,qr_jmh);
+      RightEigenmatrixDotVectorCL(pmb,IVY,IP23,il,iu,wc,ql_jph);
+      RightEigenmatrixDotVectorCL(pmb,IVY,IP23,il,iu,wc,qr_jmh);
     }
 
     // compute ql_(j+1/2) and qr_(j-1/2)
@@ -678,11 +678,11 @@ void Reconstruction::PiecewiseParabolicCLX3(MeshBlock *pmb,
     // Project cell-averages to characteristic variables, if necessary
     // Note order of characteristic fields in output vect corresponds to (IVZ,IVX,IVY)
     if (pmb->precon->characteristic_reconstruction) {
-      LeftEigenmatrixDotVectorCL(pmb,IVZ,il,iu,wc,q_km2);
-      LeftEigenmatrixDotVectorCL(pmb,IVZ,il,iu,wc,q_km1);
-      LeftEigenmatrixDotVectorCL(pmb,IVZ,il,iu,wc,q);
-      LeftEigenmatrixDotVectorCL(pmb,IVZ,il,iu,wc,q_kp1);
-      LeftEigenmatrixDotVectorCL(pmb,IVZ,il,iu,wc,q_kp2);
+      LeftEigenmatrixDotVectorCL(pmb,IVZ,IP13,il,iu,wc,q_km2);
+      LeftEigenmatrixDotVectorCL(pmb,IVZ,IP13,il,iu,wc,q_km1);
+      LeftEigenmatrixDotVectorCL(pmb,IVZ,IP13,il,iu,wc,q);
+      LeftEigenmatrixDotVectorCL(pmb,IVZ,IP13,il,iu,wc,q_kp1);
+      LeftEigenmatrixDotVectorCL(pmb,IVZ,IP13,il,iu,wc,q_kp2);
     }
 
 //--- Step 1. ----------------------------------------------------------------------------
@@ -881,8 +881,8 @@ void Reconstruction::PiecewiseParabolicCLX3(MeshBlock *pmb,
 
     // Project limited slope back to primitive variables, if necessary
     if (pmb->precon->characteristic_reconstruction) {
-      RightEigenmatrixDotVectorCL(pmb,IVZ,il,iu,wc,ql_kph);
-      RightEigenmatrixDotVectorCL(pmb,IVZ,il,iu,wc,qr_kmh);
+      RightEigenmatrixDotVectorCL(pmb,IVZ,IP13,il,iu,wc,ql_kph);
+      RightEigenmatrixDotVectorCL(pmb,IVZ,IP13,il,iu,wc,qr_kmh);
     }
 
     // compute ql_(k+1/2) and qr_(k-1/2)

@@ -81,7 +81,7 @@ void Cless::RiemannSolverCL(const int kl, const int ku, const int jl, const int 
 		wri[IP23]=wr(ip23,k,j,i);
 		
 
-//--- Step2.  Compute Roe-averaged state
+//--- Step 2.  Compute Roe-averaged state
 
     Real sqrtdl = std::sqrt(wli[IDN]);
     Real sqrtdr = std::sqrt(wri[IDN]);

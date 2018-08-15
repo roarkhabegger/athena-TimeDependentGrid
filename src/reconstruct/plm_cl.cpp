@@ -59,8 +59,8 @@ void Reconstruction::PiecewiseLinearCLX1(MeshBlock *pmb,
     // Project slopes to characteristic variables, if necessary
     // Note order of characteristic fields in output vect corresponds to (IVX,IVY,IVZ)
     if (pmb->precon->characteristic_reconstruction) {
-      LeftEigenmatrixDotVectorCL(pmb,IVX,il-1,iu,wc,dwl);
-      LeftEigenmatrixDotVectorCL(pmb,IVX,il-1,iu,wc,dwr);
+      LeftEigenmatrixDotVectorCL(pmb,IVX,IP12,il-1,iu,wc,dwl);
+      LeftEigenmatrixDotVectorCL(pmb,IVX,IP12,il-1,iu,wc,dwr);
     }
 
     // Apply van Leer limiter for uniform grid
@@ -91,7 +91,7 @@ void Reconstruction::PiecewiseLinearCLX1(MeshBlock *pmb,
 
     // Project limited slope back to primitive variables, if necessary
     if (pmb->precon->characteristic_reconstruction) {
-      RightEigenmatrixDotVectorCL(pmb,IVX,il-1,iu,wc,dwm);
+      RightEigenmatrixDotVectorCL(pmb,IVX,IP12,il-1,iu,wc,dwm);
     }
 
     // compute ql_(i+1/2) and qr_(i-1/2) using monotonized slopes
@@ -147,8 +147,8 @@ void Reconstruction::PiecewiseLinearCLX2(MeshBlock *pmb,
     // Project slopes to characteristic variables, if necessary
     // Note order of characteristic fields in output vect corresponds to (IVY,IVZ,IVX)
     if (pmb->precon->characteristic_reconstruction) {
-      LeftEigenmatrixDotVectorCL(pmb,IVY,il,iu,wc,dwl);
-      LeftEigenmatrixDotVectorCL(pmb,IVY,il,iu,wc,dwr);
+      LeftEigenmatrixDotVectorCL(pmb,IVY,IP23,il,iu,wc,dwl);
+      LeftEigenmatrixDotVectorCL(pmb,IVY,IP23,il,iu,wc,dwr);
     }
 
     // Apply van Leer limiter for uniform grid
@@ -179,7 +179,7 @@ void Reconstruction::PiecewiseLinearCLX2(MeshBlock *pmb,
 
     // Project limited slope back to primitive variables, if necessary
     if (pmb->precon->characteristic_reconstruction) {
-      RightEigenmatrixDotVectorCL(pmb,IVY,il,iu,wc,dwm);
+      RightEigenmatrixDotVectorCL(pmb,IVY,IP23,il,iu,wc,dwm);
     }
 
     // compute ql_(j+1/2) and qr_(j-1/2) using monotonized slopes
@@ -233,8 +233,8 @@ void Reconstruction::PiecewiseLinearCLX3(MeshBlock *pmb,
     // Project slopes to characteristic variables, if necessary
     // Note order of characteristic fields in output vect corresponds to (IVZ,IVX,IVY)
     if (pmb->precon->characteristic_reconstruction) {
-      LeftEigenmatrixDotVectorCL(pmb,IVZ,il,iu,wc,dwl);
-      LeftEigenmatrixDotVectorCL(pmb,IVZ,il,iu,wc,dwr);
+      LeftEigenmatrixDotVectorCL(pmb,IVZ,IP13,il,iu,wc,dwl);
+      LeftEigenmatrixDotVectorCL(pmb,IVZ,IP13,il,iu,wc,dwr);
     }
 
 
@@ -266,7 +266,7 @@ void Reconstruction::PiecewiseLinearCLX3(MeshBlock *pmb,
 
     // Project limited slope back to primitive variables, if necessary
     if (pmb->precon->characteristic_reconstruction) {
-      RightEigenmatrixDotVectorCL(pmb,IVZ,il,iu,wc,dwm);
+      RightEigenmatrixDotVectorCL(pmb,IVZ,IP13,il,iu,wc,dwm);
     }
 
     // compute ql_(k+1/2) and qr_(k-1/2) using monotonized slopes

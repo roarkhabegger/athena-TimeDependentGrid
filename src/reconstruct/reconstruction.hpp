@@ -84,10 +84,10 @@ public:
 
 	// collisionless reconstruction functions 
 	static void LeftEigenmatrixDotVectorCL(MeshBlock *pmb, const int ivx,
-    const int il, const int iu, const AthenaArray<Real> &w,
+    const int ip12, const int il, const int iu, const AthenaArray<Real> &w,
     AthenaArray<Real> &vect);
   static void RightEigenmatrixDotVectorCL(MeshBlock *pmb, const int ivx,
-    const int il, const int iu, const AthenaArray<Real> &w,
+    const int ip12, const int il, const int iu, const AthenaArray<Real> &w,
     AthenaArray<Real> &vect);
 
 	// reconstruction functions of various orders in each dimension for cless vars

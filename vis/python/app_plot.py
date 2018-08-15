@@ -462,15 +462,20 @@ def main(args):
     nf, nx3, nx2, nx1 = imgs.shape 
     # Determine dimensional plotting flag
     flag3d, flag2d, flag1d = False, False, False  
-    if nx3 > 1:
+    if (nx3 > 1) and (nx2 > 1) and (nx1 > 1):
         flag3d = True
         dim    = 3
-    elif (nx3 == 1) and (nx2 > 1):
+    elif (nx3 == 1) and (nx2 > 1) and (nx1 > 1):
         flag2d = True
         dim    = 2
     else:
         flag1d = True 
         dim    = 1
+        # Determine proper coordinates
+        if (nx2 > 1):
+            x1 = x2.copy()
+        if (nx3 > 1):
+            x1 = x3.copy() 
 
     # Change flags for slicing 
     if sliced1d or slicel1d:
@@ -547,7 +552,7 @@ def main(args):
             
         # Get rid of unnecessary dimensions 
         else:
-            imgs = imgs[:,0,0,:] 
+            imgs = np.squeeze(imgs) 
 
         # Handle animation
         if anim:
@@ -583,7 +588,7 @@ def main(args):
         # Handle plotting a single frame 
         else:
             # plot 
-            ax1.plot(x1, imgs[0],'.')  
+            ax1.plot(x1, imgs,'.')  
             ax1.set_xlabel(xlab)
             ax1.set_ylabel(clab)
             ax1.set_title('t = %1.2f' % (tarr[0]) ) 
@@ -664,7 +669,6 @@ def main(args):
                                           repeat=False)
         # Handle a single frame 
         else:
-            print(np.mean(imgs[0]))  
             ax1.set_xlabel(xlab)
             ax1.set_ylabel(ylab)
 
