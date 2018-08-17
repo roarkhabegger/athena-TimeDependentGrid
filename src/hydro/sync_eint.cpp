@@ -41,9 +41,10 @@ void Hydro::SyncEint(AthenaArray<Real> &u) {
 		for (int i=is; i<=ie; ++i) {
 			eint = u(IEN,ks,js,i) - 0.5*(SQR(u(IVX,ks,js,i)))/u(IDN,ks,js,i);
 			emax = u(IEN,ks,js,i); 
-			for (int ii=std::max(is,i-1); ii<=std::min(ie,i+1); ii++) {
-				emax = std::max(emax,u(IEN,ks,js,ii));
-			}
+
+			emax = std::max(emax,u(IEN,ks,js,std::max(is,i-1)));
+			emax = std::max(emax,u(IEN,ks,js,std::min(ie,i+1)));
+			
 			if ((eint/emax > i2) && (eint > 0.0)) {
 				u(IIE,ks,js,i) = eint; 
 			}
@@ -57,11 +58,23 @@ void Hydro::SyncEint(AthenaArray<Real> &u) {
 				eint = u(IEN,ks,j,i) - 0.5*(SQR(u(IVX,ks,j,i))
 															+     SQR(u(IVY,ks,j,i)))/u(IDN,ks,j,i);
 				emax = u(IEN,ks,j,i); 
-				for (int jj=std::max(js,j-1); jj<=std::min(je,j+1); jj++) {
-					for (int ii=std::max(is,i-1); ii<=std::min(ie,i+1); ii++) {
-						emax = std::max(emax,u(IEN,ks,jj,ii));
-					}
-				}
+				
+				// this is should be equivalent to the commented out for-loop below
+				emax = std::max(emax,u(IEN,ks,std::max(js,j-1),std::max(is,i-1)));
+				emax = std::max(emax,u(IEN,ks,std::max(js,j-1),						 i   ));
+				emax = std::max(emax,u(IEN,ks,std::max(js,j-1),std::min(ie,i+1)));
+				emax = std::max(emax,u(IEN,ks,            j   ,std::max(is,i-1)));
+				emax = std::max(emax,u(IEN,ks,            j   ,	  			   i   ));
+				emax = std::max(emax,u(IEN,ks,            j   ,std::min(ie,i+1)));
+				emax = std::max(emax,u(IEN,ks,std::min(je,j+1),std::max(is,i-1)));
+				emax = std::max(emax,u(IEN,ks,std::min(je,j+1),            i   ));
+				emax = std::max(emax,u(IEN,ks,std::min(je,j+1),std::min(ie,i+1)));
+				
+				//for (int jj=std::max(js,j-1); jj<=std::min(je,j+1); jj++) {
+				//	for (int ii=std::max(is,i-1); ii<=std::min(ie,i+1); ii++) {
+				//		emax = std::max(emax,u(IEN,ks,jj,ii));
+				//	}
+				//}
 				if ((eint/emax > i2) && (eint > 0.0)) {
 					//std::cout << "[SyncEint]: k " << ks << " j " << j  << " i "  << i << " eint=" << eint
 					//					<< " IE: " << u(IIE,ks,j,i) << " ieta2: " << i2 << std::endl;
@@ -74,28 +87,57 @@ void Hydro::SyncEint(AthenaArray<Real> &u) {
 	// 3D-case
 	else {
 		for (int k=ks; k<=ke; ++k) {
-			for (int j=js; j<=je; ++j) {
+		for (int j=js; j<=je; ++j) {
 #pragma omp simd
-				for (int i=is; i<=ie; ++i) {
-					eint = u(IEN,k,j,i) - 0.5*(SQR(u(IVX,k,j,i))
-																+    SQR(u(IVY,k,j,i)) 
-																+    SQR(u(IVZ,k,j,i)))/u(IDN,k,j,i);
-					emax = u(IEN,k,j,i); 
-					//std::cout << "[SyncEint]: k" << k << " j " << j  << " i "  << i << " eint=" << eint
-					//					<< " IE: " << u(IIE,k,j,i) << std::endl;
-					for (int kk=std::max(ks,k-1); kk<=std::min(ke,k+1); kk++) {
-						for (int jj=std::max(js,j-1); jj<=std::min(je,j+1); jj++) {
-							for (int ii=std::max(is,i-1); ii<=std::min(ie,i+1); ii++) {
-								emax = std::max(emax,u(IEN,kk,jj,ii));
-							}
-						}
-					}
-					if ((eint/emax > i2) && (eint > 0.0)) {
-						u(IIE,k,j,i) = eint; 
-					}
+			for (int i=is; i<=ie; ++i) {
+				eint = u(IEN,k,j,i) - 0.5*(SQR(u(IVX,k,j,i))
+															+    SQR(u(IVY,k,j,i)) 
+															+    SQR(u(IVZ,k,j,i)))/u(IDN,k,j,i);
+				emax = u(IEN,k,j,i); 
+
+				// this is should be equivalent to the commented out for-loop below
+				emax = std::max(emax,u(IEN,std::max(ks,k-1),std::max(js,j-1),std::max(is,i-1)));
+				emax = std::max(emax,u(IEN,std::max(ks,k-1),std::max(js,j-1),						 i   ));
+				emax = std::max(emax,u(IEN,std::max(ks,k-1),std::max(js,j-1),std::min(ie,i+1)));
+				emax = std::max(emax,u(IEN,std::max(ks,k-1),            j   ,std::max(is,i-1)));
+				emax = std::max(emax,u(IEN,std::max(ks,k-1),            j   ,	  			   i   ));
+				emax = std::max(emax,u(IEN,std::max(ks,k-1),            j   ,std::min(ie,i+1)));
+				emax = std::max(emax,u(IEN,std::max(ks,k-1),std::min(je,j+1),std::max(is,i-1)));
+				emax = std::max(emax,u(IEN,std::max(ks,k-1),std::min(je,j+1),            i   ));
+				emax = std::max(emax,u(IEN,std::max(ks,k-1),std::min(je,j+1),std::min(ie,i+1)));
+
+				emax = std::max(emax,u(IEN,            k   ,std::max(js,j-1),std::max(is,i-1)));
+				emax = std::max(emax,u(IEN,            k   ,std::max(js,j-1),						 i   ));
+				emax = std::max(emax,u(IEN,            k   ,std::max(js,j-1),std::min(ie,i+1)));
+				emax = std::max(emax,u(IEN,            k   ,            j   ,std::max(is,i-1)));
+				emax = std::max(emax,u(IEN,            k   ,            j   ,	  			   i   ));
+				emax = std::max(emax,u(IEN,            k   ,            j   ,std::min(ie,i+1)));
+				emax = std::max(emax,u(IEN,            k   ,std::min(je,j+1),std::max(is,i-1)));
+				emax = std::max(emax,u(IEN,            k   ,std::min(je,j+1),            i   ));
+				emax = std::max(emax,u(IEN,            k   ,std::min(je,j+1),std::min(ie,i+1)));
+
+				emax = std::max(emax,u(IEN,std::min(ke,k-1),std::max(js,j-1),std::max(is,i-1)));
+				emax = std::max(emax,u(IEN,std::min(ke,k-1),std::max(js,j-1),						 i   ));
+				emax = std::max(emax,u(IEN,std::min(ke,k-1),std::max(js,j-1),std::min(ie,i+1)));
+				emax = std::max(emax,u(IEN,std::min(ke,k-1),            j   ,std::max(is,i-1)));
+				emax = std::max(emax,u(IEN,std::min(ke,k-1),            j   ,	  			   i   ));
+				emax = std::max(emax,u(IEN,std::min(ke,k-1),            j   ,std::min(ie,i+1)));
+				emax = std::max(emax,u(IEN,std::min(ke,k-1),std::min(je,j+1),std::max(is,i-1)));
+				emax = std::max(emax,u(IEN,std::min(ke,k-1),std::min(je,j+1),            i   ));
+				emax = std::max(emax,u(IEN,std::min(ke,k-1),std::min(je,j+1),std::min(ie,i+1)));
+				
+				//for (int kk=std::max(ks,k-1); kk<=std::min(ke,k+1); kk++) {
+				//	for (int jj=std::max(js,j-1); jj<=std::min(je,j+1); jj++) {
+				//		for (int ii=std::max(is,i-1); ii<=std::min(ie,i+1); ii++) {
+				//			emax = std::max(emax,u(IEN,kk,jj,ii));
+				//		}
+				//	}
+				//}
+				if ((eint/emax > i2) && (eint > 0.0)) {
+					u(IIE,k,j,i) = eint; 
 				}
 			}
-		}
+		}}
 	}
 	return;
 }

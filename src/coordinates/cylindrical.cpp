@@ -18,6 +18,7 @@
 #include "../mesh/mesh.hpp"
 #include "../eos/eos.hpp"
 #include "../hydro/hydro.hpp"
+#include "../cless/cless.hpp"
 #include "../hydro/hydro_diffusion/hydro_diffusion.hpp"
 
 //----------------------------------------------------------------------------------------
@@ -390,8 +391,67 @@ void Cylindrical::CoordSrcTerms(const Real dt, const AthenaArray<Real> *flux,
 
 				// src term for internal energy -v_R*P/r 
 				if (DUAL_ENERGY) {
-					u(IIE,k,j,i) -= dt*prim(IPR,k,j,i)*prim(IVX,k,j,i)/x1v(i); 
+					u(IIE,k,j,i) -= dt*prim(IPR,k,j,i)*prim(IVX,k,j,i)*coord_src1_i_(i); 
 				}
+      }
+    }
+  }
+
+  return;
+}
+
+//----------------------------------------------------------------------------------------
+// Coordinate (Geometric) source term function for cless variables 
+void Cylindrical::CoordSrcTermsCL(const Real dt, const AthenaArray<Real> *flux,
+  const AthenaArray<Real> &prim, AthenaArray<Real> &u) {
+
+  for (int k=pmy_block->ks; k<=pmy_block->ke; ++k) {
+    for (int j=pmy_block->js; j<=pmy_block->je; ++j) {
+#pragma omp simd
+      for (int i=pmy_block->is; i<=pmy_block->ie; ++i) {
+        // src_1 = <E_{phi phi}><1/r>
+        Real e_pp			= prim(IP22,k,j,i) 
+											+ prim(IDN ,k,j,i)*prim(IVY,k,j,i)*prim(IVY,k,j,i);
+        u(IM1,k,j,i) += dt*coord_src1_i_(i)*e_pp;
+
+        // src_2 = -< E_{phi r} ><1/r>
+				Real e_pr			= prim(IP12,k,j,i) 
+											+ prim(IDN ,k,j,i)*prim(IVX,k,j,i)*prim(IVY,k,j,i);
+
+        u(IM2,k,j,i) -= dt*coord_src1_i_(i)*e_pr;
+
+				// src terms for stress tensor 
+				
+				// src_3 = +< 2 Q_{r phi phi}><1/r>
+				Real q_rpp		 = e_pr*prim(IVY,k,j,i) + prim(IP22,k,j,i)*prim(IVX,k,j,i)
+														  								+ prim(IP12,k,j,i)*prim(IVY,k,j,i); 
+				u(IE11,k,j,i) += dt*coord_src1_i_(i)*2.0*q_rpp;
+				
+				// src_4 = -< 2 Q_{r phi phi}><1/r>
+				u(IE22,k,j,i) -= dt*coord_src1_i_(i)*2.0*q_rpp;
+				
+				// src_5 = -< Q_{r r phi} ><1/r> + < Q_{phi phi phi} ><1/r>
+				Real e_rr			 = prim(IP11,k,j,i)
+											 + prim(IDN ,k,j,i)*prim(IVX,k,j,i)*prim(IVX,k,j,i); 
+				Real q_rrp		 = e_rr*prim(IVY,k,j,i) + 2.0*prim(IP12,k,j,i)*prim(IVX,k,j,i);  
+				Real q_ppp		 = e_pp*prim(IVY,k,j,i) + 2.0*prim(IP22,k,j,i)*prim(IVY,k,j,i);
+
+				u(IE12,k,j,i) += dt*coord_src1_i_(i)*(q_ppp - q_rrp); 
+
+				// src_6 = +< Q_{phi z phi}><1/r>
+				Real e_pz			 = prim(IP23,k,j,i)
+											 + prim(IDN ,k,j,i)*prim(IVY,k,j,i)*prim(IVZ,k,j,i);
+				Real q_pzp		 = e_pz*prim(IVY,k,j,i) + prim(IP23,k,j,i)*prim(IVY,k,j,i)
+																						  + prim(IP22,k,j,i)*prim(IVZ,k,j,i);
+
+				u(IE13,k,j,i) += dt*coord_src1_i_(i)*q_pzp; 
+
+				// src_7 = -< Q_{r z phi}><1/r>
+				Real e_rz			 = prim(IP13,k,j,i)
+											 + prim(IDN ,k,j,i)*prim(IVX,k,j,i)*prim(IVZ,k,j,i); 
+				Real q_rzp		 = e_rz*prim(IVY,k,j,i) + prim(IP23,k,j,i)*prim(IVX,k,j,i)	
+																							+ prim(IP12,k,j,i)*prim(IVZ,k,j,i);
+				u(IE23,k,j,i) -= dt*coord_src1_i_(i)*q_rzp; 
       }
     }
   }

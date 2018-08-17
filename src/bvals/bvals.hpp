@@ -151,6 +151,20 @@ void OutflowOuterCLX2(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
 void OutflowOuterCLX3(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
 		 Real time, Real dt, int is, int ie, int js, int je, int ks, int ke);
 
+void ReflectInnerCLX1(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
+     Real time, Real dt, int is, int ie, int js, int je, int ks, int ke);
+void ReflectInnerCLX2(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
+     Real time, Real dt, int is, int ie, int js, int je, int ks, int ke);
+void ReflectInnerCLX3(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
+     Real time, Real dt, int is, int ie, int js, int je, int ks, int ke);
+void ReflectOuterCLX1(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
+     Real time, Real dt, int is, int ie, int js, int je, int ks, int ke);
+void ReflectOuterCLX2(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
+     Real time, Real dt, int is, int ie, int js, int je, int ks, int ke);
+void ReflectOuterCLX3(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
+		 Real time, Real dt, int is, int ie, int js, int je, int ks, int ke);
+
+
 
 // function to return boundary flag given input string
 enum BoundaryFlag GetBoundaryFlag(std::string input_string);

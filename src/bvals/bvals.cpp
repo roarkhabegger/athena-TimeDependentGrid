@@ -58,6 +58,7 @@ BoundaryValues::BoundaryValues(MeshBlock *pmb, enum BoundaryFlag *input_bcs,
   switch(block_bcs[INNER_X1]) {
     case REFLECTING_BNDRY:
       BoundaryFunction_[INNER_X1] = ReflectInnerX1;
+			BoundaryFunctionCL_[INNER_X1] = ReflectInnerCLX1;
       break;
     case OUTFLOW_BNDRY:
       BoundaryFunction_[INNER_X1] = OutflowInnerX1;
@@ -66,6 +67,7 @@ BoundaryValues::BoundaryValues(MeshBlock *pmb, enum BoundaryFlag *input_bcs,
     case BLOCK_BNDRY: // block boundary
     case PERIODIC_BNDRY: // periodic boundary
       BoundaryFunction_[INNER_X1] = NULL;
+			BoundaryFunctionCL_[INNER_X1] = NULL; 
       break;
     case SHEAR_PERIODIC_BNDRY: // shearing periodic boundary
       if (!SHEARING_BOX) block_bcs[INNER_X1]=PERIODIC_BNDRY;
@@ -86,6 +88,7 @@ BoundaryValues::BoundaryValues(MeshBlock *pmb, enum BoundaryFlag *input_bcs,
   switch(block_bcs[OUTER_X1]) {
     case REFLECTING_BNDRY:
       BoundaryFunction_[OUTER_X1] = ReflectOuterX1;
+			BoundaryFunctionCL_[OUTER_X1] = ReflectOuterCLX1;
       break;
     case OUTFLOW_BNDRY:
       BoundaryFunction_[OUTER_X1] = OutflowOuterX1;
@@ -94,6 +97,7 @@ BoundaryValues::BoundaryValues(MeshBlock *pmb, enum BoundaryFlag *input_bcs,
     case BLOCK_BNDRY: // block boundary
     case PERIODIC_BNDRY: // periodic boundary
       BoundaryFunction_[OUTER_X1] = NULL;
+			BoundaryFunctionCL_[OUTER_X1] = NULL;
       break;
     case SHEAR_PERIODIC_BNDRY: // shearing periodic boundary
       if (!SHEARING_BOX) block_bcs[OUTER_X1]=PERIODIC_BNDRY;
@@ -115,6 +119,7 @@ BoundaryValues::BoundaryValues(MeshBlock *pmb, enum BoundaryFlag *input_bcs,
     switch(block_bcs[INNER_X2]) {
       case REFLECTING_BNDRY:
         BoundaryFunction_[INNER_X2] = ReflectInnerX2;
+				BoundaryFunctionCL_[INNER_X2] = ReflectInnerCLX2;
         break;
       case OUTFLOW_BNDRY:
         BoundaryFunction_[INNER_X2] = OutflowInnerX2;
@@ -142,6 +147,7 @@ BoundaryValues::BoundaryValues(MeshBlock *pmb, enum BoundaryFlag *input_bcs,
     switch(block_bcs[OUTER_X2]) {
       case REFLECTING_BNDRY:
         BoundaryFunction_[OUTER_X2] = ReflectOuterX2;
+				BoundaryFunctionCL_[OUTER_X2] = ReflectOuterCLX2;
         break;
       case OUTFLOW_BNDRY:
         BoundaryFunction_[OUTER_X2] = OutflowOuterX2;
@@ -172,6 +178,7 @@ BoundaryValues::BoundaryValues(MeshBlock *pmb, enum BoundaryFlag *input_bcs,
     switch(block_bcs[INNER_X3]) {
       case REFLECTING_BNDRY:
         BoundaryFunction_[INNER_X3] = ReflectInnerX3;
+				BoundaryFunctionCL_[INNER_X3] = ReflectInnerCLX3;
         break;
       case OUTFLOW_BNDRY:
         BoundaryFunction_[INNER_X3] = OutflowInnerX3;
@@ -180,6 +187,7 @@ BoundaryValues::BoundaryValues(MeshBlock *pmb, enum BoundaryFlag *input_bcs,
       case BLOCK_BNDRY: // block boundary
       case PERIODIC_BNDRY: // periodic boundary
         BoundaryFunction_[INNER_X3] = NULL;
+				BoundaryFunctionCL_[INNER_X3] = NULL;
         break;
       case USER_BNDRY: // user-enrolled BCs
         BoundaryFunction_[INNER_X3] = pmy_mesh_->BoundaryFunction_[INNER_X3];
@@ -195,6 +203,7 @@ BoundaryValues::BoundaryValues(MeshBlock *pmb, enum BoundaryFlag *input_bcs,
     switch(block_bcs[OUTER_X3]) {
       case REFLECTING_BNDRY:
         BoundaryFunction_[OUTER_X3] = ReflectOuterX3;
+				BoundaryFunctionCL_[OUTER_X3] = ReflectOuterCLX3;
         break;
       case OUTFLOW_BNDRY:
         BoundaryFunction_[OUTER_X3] = OutflowOuterX3;
@@ -203,6 +212,7 @@ BoundaryValues::BoundaryValues(MeshBlock *pmb, enum BoundaryFlag *input_bcs,
       case BLOCK_BNDRY: // block boundary
       case PERIODIC_BNDRY: // periodic boundary
         BoundaryFunction_[OUTER_X3] = NULL;
+				BoundaryFunctionCL_[OUTER_X1] = NULL;
         break;
       case USER_BNDRY: // user-enrolled BCs
         BoundaryFunction_[OUTER_X3] = pmy_mesh_->BoundaryFunction_[OUTER_X3];
