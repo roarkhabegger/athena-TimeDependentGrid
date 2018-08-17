@@ -93,7 +93,7 @@ void Cless::AddFluxDivergenceToAverageCL(AthenaArray<Real> &w,
   }
 
   // add coordinate (geometric) source terms
-  //pmb->pcoord->CoordSrcTerms((wght*pmb->pmy_mesh->dt),pmb->pcless->flux,w,bcc,u_out);
+  pmb->pcoord->CoordSrcTermsCL((wght*pmb->pmy_mesh->dt),pmb->pcless->flux,w,u_out);
 
   return;
 }
