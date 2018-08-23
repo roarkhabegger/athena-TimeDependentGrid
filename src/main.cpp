@@ -297,7 +297,7 @@ int main(int argc, char *argv[]) {
 
   TaskList *ptlist;
   try {
-    ptlist = new TimeIntegratorTaskList(pinput, pmesh);
+    ptlist   = new TimeIntegratorTaskList(pinput, pmesh);
   }
   catch(std::bad_alloc& ba) {
     std::cout << "### FATAL ERROR in main" << std::endl << "memory allocation failed "
@@ -389,7 +389,6 @@ int main(int argc, char *argv[]) {
         pmesh->pfgrd->Solve(step,0);
       else if (SELF_GRAVITY_ENABLED == 2) // multigrid
         pmesh->pmgrd->Solve(step);
-
       ptlist->DoTaskListOneSubstep(pmesh, step); // one substep of integration
     }
 

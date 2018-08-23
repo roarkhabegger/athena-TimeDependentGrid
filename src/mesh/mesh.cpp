@@ -1544,7 +1544,7 @@ void Mesh::SetBlockSizeAndBoundaries(LogicalLocation loc, RegionSize &block_size
   int64_t &lx3=loc.lx3;
   int &ll=loc.level;
   int64_t nrbx_ll = nrbx1<<(ll-root_level);
-
+	
   // calculate physical block size, x1
   if (lx1==0) {
     block_size.x1min=mesh_size.x1min;

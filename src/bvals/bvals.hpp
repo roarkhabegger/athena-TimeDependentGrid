@@ -97,10 +97,10 @@ typedef struct NeighborIndexes {
 //  \brief structure storing boundary information
 typedef struct BoundaryData {
   int nbmax;
-  enum BoundaryStatus flag[68];
-  Real *send[68], *recv[68];
+  enum BoundaryStatus flag[56];
+  Real *send[56], *recv[56];
 #ifdef MPI_PARALLEL
-  MPI_Request req_send[68], req_recv[68];
+  MPI_Request req_send[56], req_recv[56];
 #endif
 } BoundaryData;
 
@@ -186,9 +186,9 @@ public:
                enum BoundaryFlag *input_bcs);
   virtual ~BoundaryBase();
 
-  static NeighborIndexes ni[68];
-  static int bufid[68];
-  NeighborBlock neighbor[68];
+  static NeighborIndexes ni[56];
+  static int bufid[56];
+  NeighborBlock neighbor[56];
   int nneighbor;
   int nblevel[3][3][3];
   LogicalLocation loc;

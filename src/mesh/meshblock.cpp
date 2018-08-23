@@ -97,7 +97,6 @@ MeshBlock::MeshBlock(int igid, int ilid, LogicalLocation iloc, RegionSize input_
 
   // mesh-related objects
 
-
   // Boundary
   pbval  = new BoundaryValues(this, input_bcs, pin);
 

@@ -169,7 +169,7 @@ void BoundaryValues::SendFluxCorrection(enum FluxCorrectionType type) {
 
 //----------------------------------------------------------------------------------------
 //! \fn bool BoundaryValues::ReceiveFluxCorrection(enum FluxCorrectionType type)
-//  \brief Receive and apply the surace flux from the finer neighbor(s)
+//  \brief Receive and apply the surface flux from the finer neighbor(s)
 
 bool BoundaryValues::ReceiveFluxCorrection(enum FluxCorrectionType type) {
   MeshBlock *pmb=pmy_block_;
@@ -187,6 +187,7 @@ bool BoundaryValues::ReceiveFluxCorrection(enum FluxCorrectionType type) {
   }
 
   if (type==FLUX_CLESS) {
+		pbd=&bd_flcorcl_; 
     ns=0, ne=NCLESS-1;
     x1flux.InitWithShallowCopy(pmb->pcless->flux[X1DIR]);
     x2flux.InitWithShallowCopy(pmb->pcless->flux[X2DIR]);

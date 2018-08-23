@@ -262,8 +262,8 @@ BoundaryValues::BoundaryValues(MeshBlock *pmb, enum BoundaryFlag *input_bcs,
   }
 	if (CLESS_ENABLED) {
 		InitBoundaryData(bd_cless_, BNDRY_CLESS);
-		//if (pmy_mesh_->multilevel=true)
-		InitBoundaryData(bd_flcorcl_, BNDRY_FLCORCL); 
+		if (pmy_mesh_->multilevel==true)
+			InitBoundaryData(bd_flcorcl_, BNDRY_FLCORCL); 
 	}
 
   if (num_north_polar_blocks_ > 0) {
@@ -543,7 +543,7 @@ BoundaryValues::~BoundaryValues() {
   }
 	if (CLESS_ENABLED) {
 		DestroyBoundaryData(bd_cless_);
-	//	if (pmy_mesh_->multilevel==true) 
+	if (pmy_mesh_->multilevel==true) 
 		DestroyBoundaryData(bd_flcorcl_); 
 	}
 
@@ -667,12 +667,13 @@ void BoundaryValues::InitBoundaryData(BoundaryData &bd, enum BoundaryType type) 
   cng3=cng*f3d;
   int size;
   bd.nbmax=maxneighbor_;
-  if (type==BNDRY_FLCOR || type==BNDRY_EMFCOR) {
+  if (type==BNDRY_FLCOR || type==BNDRY_EMFCOR || type==BNDRY_FLCORCL) {
     for (bd.nbmax=0; BoundaryValues::ni[bd.nbmax].type==NEIGHBOR_FACE; bd.nbmax++);
   }
   if (type==BNDRY_EMFCOR) {
     for (          ; BoundaryValues::ni[bd.nbmax].type==NEIGHBOR_EDGE; bd.nbmax++);
   }
+
   for (int n=0;n<bd.nbmax;n++) {
     // Clear flags and requests
     bd.flag[n]=BNDRY_WAITING;
@@ -701,6 +702,23 @@ void BoundaryValues::InitBoundaryData(BoundaryData &bd, enum BoundaryType type) 
           size=std::max(size,f2c);
         }
         size*=NHYDRO;
+      }
+      break;
+      case BNDRY_CLESS: {
+        size=((BoundaryValues::ni[n].ox1==0)?pmb->block_size.nx1:NGHOST)
+            *((BoundaryValues::ni[n].ox2==0)?pmb->block_size.nx2:NGHOST)
+            *((BoundaryValues::ni[n].ox3==0)?pmb->block_size.nx3:NGHOST);
+        if (multilevel) {
+          int f2c=((BoundaryValues::ni[n].ox1==0) ? ((pmb->block_size.nx1+1)/2):NGHOST)
+                 *((BoundaryValues::ni[n].ox2==0) ? ((pmb->block_size.nx2+1)/2):NGHOST)
+                 *((BoundaryValues::ni[n].ox3==0) ? ((pmb->block_size.nx3+1)/2):NGHOST);
+          int c2f=((BoundaryValues::ni[n].ox1==0) ? ((pmb->block_size.nx1+1)/2+cng1):cng)
+                 *((BoundaryValues::ni[n].ox2==0) ? ((pmb->block_size.nx2+1)/2+cng2):cng)
+                 *((BoundaryValues::ni[n].ox3==0) ? ((pmb->block_size.nx3+1)/2+cng3):cng);
+          size=std::max(size,c2f);
+          size=std::max(size,f2c);
+        }
+        size*=NCLESS;
       }
       break;
       case BNDRY_FIELD: {
@@ -756,6 +774,7 @@ void BoundaryValues::InitBoundaryData(BoundaryData &bd, enum BoundaryType type) 
       }
       break;
       case BNDRY_FLCOR: {
+
         if (BoundaryValues::ni[n].ox1!=0)
           size=(pmb->block_size.nx2+1)/2*(pmb->block_size.nx3+1)/2*NHYDRO;
         if (BoundaryValues::ni[n].ox2!=0)
@@ -765,6 +784,7 @@ void BoundaryValues::InitBoundaryData(BoundaryData &bd, enum BoundaryType type) 
       }
       break;
       case BNDRY_FLCORCL: {
+
         if (BoundaryValues::ni[n].ox1!=0)
           size=(pmb->block_size.nx2+1)/2*(pmb->block_size.nx3+1)/2*NCLESS;
         if (BoundaryValues::ni[n].ox2!=0)
@@ -804,23 +824,7 @@ void BoundaryValues::InitBoundaryData(BoundaryData &bd, enum BoundaryType type) 
         }
       }
       break;
-      case BNDRY_CLESS: {
-        size=((BoundaryValues::ni[n].ox1==0)?pmb->block_size.nx1:NGHOST)
-            *((BoundaryValues::ni[n].ox2==0)?pmb->block_size.nx2:NGHOST)
-            *((BoundaryValues::ni[n].ox3==0)?pmb->block_size.nx3:NGHOST);
-        if (multilevel) {
-          int f2c=((BoundaryValues::ni[n].ox1==0) ? ((pmb->block_size.nx1+1)/2):NGHOST)
-                 *((BoundaryValues::ni[n].ox2==0) ? ((pmb->block_size.nx2+1)/2):NGHOST)
-                 *((BoundaryValues::ni[n].ox3==0) ? ((pmb->block_size.nx3+1)/2):NGHOST);
-          int c2f=((BoundaryValues::ni[n].ox1==0) ? ((pmb->block_size.nx1+1)/2+cng1):cng)
-                 *((BoundaryValues::ni[n].ox2==0) ? ((pmb->block_size.nx2+1)/2+cng2):cng)
-                 *((BoundaryValues::ni[n].ox3==0) ? ((pmb->block_size.nx3+1)/2+cng3):cng);
-          size=std::max(size,c2f);
-          size=std::max(size,f2c);
-        }
-        size*=NCLESS;
-      }
-      break;
+
       default: {
         std::stringstream msg;
         msg << "### FATAL ERROR in InitBoundaryData" << std::endl
@@ -831,6 +835,8 @@ void BoundaryValues::InitBoundaryData(BoundaryData &bd, enum BoundaryType type) 
     }
     bd.send[n]=new Real[size];
     bd.recv[n]=new Real[size];
+
+
   }
 }
 
@@ -1492,6 +1498,9 @@ void BoundaryValues::ClearBoundaryAll(void) {
       }
 			if (CLESS_ENABLED) {
 				MPI_Wait(&(bd_cless_.req_send[nb.bufid]),MPI_STATUS_IGNORE);
+			
+				if (nb.type==NEIGHBOR_FACE && nb.level<pmb->loc.level)
+				  MPI_Wait(&(bd_flcorcl_.req_send[nb.bufid]),MPI_STATUS_IGNORE);
 			}
     }
 #endif

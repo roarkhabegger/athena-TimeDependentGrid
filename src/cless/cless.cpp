@@ -48,6 +48,9 @@ Cless::Cless(MeshBlock *pmb, ParameterInput *pin) {
 			flux[X3DIR].NewAthenaArray(NCLESS,ncells3+1,ncells2,ncells1);
 
 		// Allocate memory for scratch arrays
+		dt1_.NewAthenaArray(ncells1);
+		dt2_.NewAthenaArray(ncells1);
+		dt3_.NewAthenaArray(ncells1); 
 		dxw_.NewAthenaArray(ncells1);
 		wl_.NewAthenaArray((NWAVECL),ncells3,ncells2,ncells1);
 		wr_.NewAthenaArray((NWAVECL),ncells3,ncells2,ncells1);
@@ -96,6 +99,9 @@ Cless::~Cless() {
   if (pmy_block->block_size.nx2 > 1) flux[X2DIR].DeleteAthenaArray();
   if (pmy_block->block_size.nx3 > 1) flux[X3DIR].DeleteAthenaArray();
 
+	dt1_.DeleteAthenaArray();
+	dt2_.DeleteAthenaArray();
+	dt3_.DeleteAthenaArray();
   dxw_.DeleteAthenaArray();
   wl_.DeleteAthenaArray();
   wr_.DeleteAthenaArray();

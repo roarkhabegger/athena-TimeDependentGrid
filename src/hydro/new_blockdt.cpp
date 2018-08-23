@@ -98,12 +98,6 @@ Real Hydro::NewBlockTimeStep(void) {
 						dt1(i) /= std::max( fabs(wi[IVX] + cs), fabs(wicl[IVX] + c1f) );
 						dt2(i) /= std::max( fabs(wi[IVY] + cs), fabs(wicl[IVY] + c2f) );
 						dt3(i) /= std::max( fabs(wi[IVZ] + cs), fabs(wicl[IVZ] + c3f) ); 
-						//dt1(i) /= fabs(wicl[IVX] + c1f);
-						//dt2(i) /= fabs(wicl[IVY] + c2f);
-						//dt3(i) /= fabs(wicl[IVZ] + c3f); 
-
-
-
 					}
           else if (MAGNETIC_FIELDS_ENABLED) { // hydro + mhd
 
