@@ -109,7 +109,8 @@ public:
            RegionSize msize, RegionSize bsize);
   virtual ~FFTBlock();
 
-  void LoadSource(const AthenaArray<Real> &src, int ns, int ngh,
+  void LoadSource(const AthenaArray<Real> &src0, const AthenaArray<Real> &src1,
+									int ns, int ngh,
                   LogicalLocation loc, RegionSize bsize);
   void RetrieveResult(AthenaArray<Real> &dst, int ns, int ngh,
                       LogicalLocation loc, RegionSize bsize);

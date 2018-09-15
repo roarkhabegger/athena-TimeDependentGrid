@@ -168,7 +168,8 @@ void FFTBlock::RetrieveResult(AthenaArray<Real> &dst, int ns, int ngh,
 //! \fn void FFTBlock::LoadSource(const AthenaArray<Real> &src, int ns)
 //  \brief Fill the source in the active zone
 
-void FFTBlock::LoadSource(const AthenaArray<Real> &src, int ns, int ngh,
+void FFTBlock::LoadSource(const AthenaArray<Real> &src0, const AthenaArray<Real> &src1,
+												  int ns, int ngh,
                           LogicalLocation loc, RegionSize bsize) {
   AthenaFFTComplex *dst=in_;
   int is, ie, js, je, ks, ke;
@@ -188,10 +189,10 @@ void FFTBlock::LoadSource(const AthenaArray<Real> &src, int ns, int ngh,
         for (int i=ngh, mi=is; mi<=ie; i++, mi++) {
           int64_t idx=GetIndex(mi,mj,mk,f_in_);
           if (ns == 1) {
-            dst[idx][0]=src(n,k,j,i);
+            dst[idx][0]=src0(n,k,j,i) + src1(n,k,j,i);
             dst[idx][1]=0.0;
           } else {
-            dst[idx][n]=src(n,k,j,i);
+            dst[idx][n]=src0(n,k,j,i) + src1(n,k,j,i);
           }
         }
       }

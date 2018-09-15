@@ -55,7 +55,7 @@ void Cless::AddGravityFluxCL(void) {
         x1flux(IM2,k,j,i) += gxl*gyl/four_pi_G;
         x1flux(IM3,k,j,i) += gxl*gzl/four_pi_G;
         // energy source term is included as a source term separately
-        // see hydro/srctrm/gravity.cpp
+        // see cless/srctrm/gravity.cpp
       }
     }
   }
@@ -83,7 +83,7 @@ void Cless::AddGravityFluxCL(void) {
                             +  grav_mean_rho*phil;
           x2flux(IM3,k,j,i) += gyl*gzl/four_pi_G;
           // energy source term is included as a source term separately
-          // see hydro/srctrm/gravity.cpp
+          // see cless/srcterm/gravity.cpp
         }
       }
     }
@@ -110,7 +110,7 @@ void Cless::AddGravityFluxCL(void) {
           x3flux(IM3,k,j,i) += 0.5*(gzl*gzl-gxl*gxl-gyl*gyl)/four_pi_G
                             +  grav_mean_rho*phil;
           // energy source term is included as a source term separately
-          // see hydro/srctrm/gravity.cpp
+          // see cless/srctrm/gravity.cpp
         }
       }
     }

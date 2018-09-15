@@ -30,14 +30,11 @@ ClessSourceTerms::ClessSourceTerms(Cless *pcl, ParameterInput *pin) {
 
   if (SELF_GRAVITY_ENABLED) cless_sourceterms_defined = true;
 
-	//if (DUAL_ENERGY) cless_sourceterms_defined = true; 
-
   //UserSourceTermCL = pcl->pmy_block->pmy_mesh->UserSourceTerm_;
   //if (UserSourceTermCL != NULL) cless_sourceterms_defined = true;
 }
 
 // destructor
-
 ClessSourceTerms::~ClessSourceTerms() {
 }
 

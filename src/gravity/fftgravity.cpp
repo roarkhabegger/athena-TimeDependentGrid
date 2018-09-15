@@ -23,6 +23,7 @@
 #include "../fft/athena_fft.hpp"
 #include "../globals.hpp"
 #include "../hydro/hydro.hpp"
+#include "../cless/cless.hpp" 
 #include "../task_list/grav_task_list.hpp"
 
 
@@ -63,15 +64,28 @@ FFTGravityDriver::~FFTGravityDriver() {
 
 void FFTGravityDriver::Solve(int step, int mode) {
   FFTBlock *pfb=pmy_fb;
-  AthenaArray<Real> in;
+  AthenaArray<Real> in0,in1;
   // Load the source
   int nbs=nslist_[Globals::my_rank];
   int nbe=nbs+nblist_[Globals::my_rank]-1;
   for (int igid=nbs;igid<=nbe;igid++) {
     MeshBlock *pmb=pmy_mesh_->FindMeshBlock(igid);
     if (pmb!=NULL) {
-      in.InitWithShallowSlice(pmb->phydro->u,4,IDN,1);
-      pfb->LoadSource(in, 1, NGHOST, pmb->loc, pmb->block_size);
+			if (CLESS_ENABLED) {
+				if (CLESS_ONLY_MODE) {
+					in0.InitWithShallowSlice(pmb->pcless->u,4,IDN,1);
+					in1.NewAthenaArray(in0.GetDim4(),in0.GetDim3(),in0.GetDim2(),in0.GetDim1());
+				}
+				else {
+					in0.InitWithShallowSlice(pmb->phydro->u,4,IDN,1); // hydro density
+					in1.InitWithShallowSlice(pmb->pcless->u,4,IDN,1); // cless density 
+				}
+			}
+			else {
+				in0.InitWithShallowSlice(pmb->phydro->u,4,IDN,1);
+				in1.NewAthenaArray(in0.GetDim4(),in0.GetDim3(),in0.GetDim2(),in0.GetDim1());
+			}
+      pfb->LoadSource(in0, in1, 1, NGHOST, pmb->loc, pmb->block_size);
     }
 //    else { // on another process
 //    }
