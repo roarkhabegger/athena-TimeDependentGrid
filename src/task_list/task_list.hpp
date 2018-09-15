@@ -88,7 +88,6 @@ public:
 private:
   Mesh* pmy_mesh_;
   struct Task task_list_[128];
-	//struct Task task_listCL_[64];
 };
 
 //----------------------------------------------------------------------------------------

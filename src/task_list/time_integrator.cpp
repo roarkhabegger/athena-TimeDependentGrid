@@ -968,7 +968,7 @@ enum TaskStatus TimeIntegratorTaskList::EMFShearRemap(MeshBlock *pmb, int stage)
 enum TaskStatus TimeIntegratorTaskList::ClessCalculateFluxes(MeshBlock *pmb, int stage) {
   Cless *pcless=pmb->pcless;
 
-  if (stage <= nsub_steps) {
+  if (stage <= nstages) {
     if ((stage == 1) && (integrator == "vl2")) {
       pcless->CalculateFluxesCL(pcless->w, 1);
       return TASK_NEXT;
@@ -1002,7 +1002,7 @@ enum TaskStatus TimeIntegratorTaskList::ClessFluxCorrectReceive(MeshBlock *pmb, 
 
 enum TaskStatus TimeIntegratorTaskList::ClessIntegrate(MeshBlock *pmb, int stage) {
   Cless *pc=pmb->pcless;
-  if (stage <= nsub_steps) {
+  if (stage <= nstages) {
     // This time-integrator-specific averaging operation logic is identical to FieldInt
     Real ave_wghts[3];
     ave_wghts[0] = 1.0;
@@ -1031,12 +1031,12 @@ enum TaskStatus TimeIntegratorTaskList::ClessSourceTerms(MeshBlock *pmb, int sta
   // return if there are no source terms to be added
   if (pc->psrc->cless_sourceterms_defined == false) return TASK_NEXT;
 
-  if (stage <= nsub_steps) {
+  if (stage <= nstages) {
     // Time at beginning of step for u()
-    Real time=pmb->pmy_mesh->time + pmb->step_dt[0];
+    Real t_start_stage = pmb->pmy_mesh->time + pmb->stage_abscissae[stage-1][0];
     // Scaled coefficient for RHS update
     Real dt = (stage_wghts[(stage-1)].beta)*(pmb->pmy_mesh->dt);
-    pc->psrc->AddClessSourceTerms(time,dt,pc->flux,pc->w,pc->u);
+    pc->psrc->AddClessSourceTerms(t_start_stage,dt,pc->flux,pc->w,pc->u);
   } else {
     // Evaluate the source terms at the beginning of the
     return TASK_FAIL;
@@ -1048,7 +1048,7 @@ enum TaskStatus TimeIntegratorTaskList::ClessSourceTerms(MeshBlock *pmb, int sta
 // Functions to communicate conserved variables between MeshBlocks
 
 enum TaskStatus TimeIntegratorTaskList::ClessSend(MeshBlock *pmb, int stage) {
-  if (stage <= nsub_steps) {
+  if (stage <= nstages) {
     pmb->pbval->SendCellCenteredBoundaryBuffers(pmb->pcless->u, CLESS_CONS);
   } else {
     return TASK_FAIL;
@@ -1058,7 +1058,7 @@ enum TaskStatus TimeIntegratorTaskList::ClessSend(MeshBlock *pmb, int stage) {
 
 enum TaskStatus TimeIntegratorTaskList::ClessReceive(MeshBlock *pmb, int stage) {
   bool ret;
-  if (stage <= nsub_steps) {
+  if (stage <= nstages) {
     ret=pmb->pbval->ReceiveCellCenteredBoundaryBuffers(pmb->pcless->u, CLESS_CONS);
   } else {
     return TASK_FAIL;
@@ -1078,13 +1078,13 @@ enum TaskStatus TimeIntegratorTaskList::ClessProlongation(MeshBlock *pmb, int st
   Cless *pcless=pmb->pcless;
   BoundaryValues *pbval=pmb->pbval;
 
-  if (stage <= nsub_steps) {
+  if (stage <= nstages) {
     // Time at the end of step for u()
-    Real time=pmb->pmy_mesh->time + pmb->step_dt[0];
+    Real t_end_stage = pmb->pmy_mesh->time + pmb->stage_abscissae[stage][0];
     // Scaled coefficient for RHS time-advance in substep
     Real dt = (stage_wghts[(stage-1)].beta)*(pmb->pmy_mesh->dt);
     pbval->ProlongateBoundariesCL(pcless->w,  pcless->u,
-                                time, dt);
+																	t_end_stage, dt);
   } else {
     return TASK_FAIL;
   }
@@ -1104,7 +1104,7 @@ enum TaskStatus TimeIntegratorTaskList::ClessPrimitives(MeshBlock *pmb, int stag
   if (pbval->nblevel[0][1][1] != -1) kl-=NGHOST;
   if (pbval->nblevel[2][1][1] != -1) ku+=NGHOST;
 
-  if (stage <= nsub_steps) {
+  if (stage <= nstages) {
     // At beginning of this task, pcless->w contains previous substep W(U) output
     // and pcless->w1 is used as a register to store the current substep output.
     // For the second order integrators VL2 and RK2, the prim_old initial guess for the
@@ -1127,12 +1127,12 @@ enum TaskStatus TimeIntegratorTaskList::ClessPhysicalBoundary(MeshBlock *pmb, in
 	Cless *pcless=pmb->pcless; 
   BoundaryValues *pbval=pmb->pbval;
 
-  if (stage <= nsub_steps) {
+  if (stage <= nstages) {
     // Time at the end of step for u()
-    Real time=pmb->pmy_mesh->time + pmb->step_dt[0];
+    Real t_end_stage = pmb->pmy_mesh->time + pmb->stage_abscissae[stage][0];
     // Scaled coefficient for RHS time-advance in substep
     Real dt = (stage_wghts[(stage-1)].beta)*(pmb->pmy_mesh->dt);
-		pbval->ApplyPhysicalBoundariesCL(pcless->w, pcless->u, time, dt); 
+		pbval->ApplyPhysicalBoundariesCL(pcless->w, pcless->u, t_end_stage, dt); 
   } else {
     return TASK_FAIL;
   }
@@ -1160,7 +1160,7 @@ enum TaskStatus TimeIntegratorTaskList::ClessStartupIntegrator(MeshBlock *pmb, i
 
 enum TaskStatus TimeIntegratorTaskList::ClessNewBlockTimeStep(MeshBlock *pmb, int stage) {
 	// update block time-stage in CLESS_ONLY mode 
-  if (stage != nsub_steps) return TASK_SUCCESS; // only do on last sub-stage
+  if (stage != nstages) return TASK_SUCCESS; // only do on last sub-stage
 
   pmb->pcless->NewBlockTimeStepCL();
   return TASK_SUCCESS;
