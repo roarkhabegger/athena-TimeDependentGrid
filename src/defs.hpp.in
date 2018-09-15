@@ -34,8 +34,11 @@
 // Riemann solver for collisionless 
 #define RIEMANN_CL_SOLVER "@RSOLVER_CL@"
 
-// include collision variables? default=0 (false)
-#define CLESS_ENABLED @CLESSHD_ENABLED@
+// include collisionless variables? default=0 (false)
+#define CLESS_ENABLED @CLESS_ENABLED@
+
+// enable collisionless-only mode? default=0 (false)
+#define CLESS_ONLY_MODE @CLESS_ONLY_MODE@ 
 
 // include magnetic fields? default=0 (false)
 #define MAGNETIC_FIELDS_ENABLED @MAGNETIC_FIELDS_ENABLED@
