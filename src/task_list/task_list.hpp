@@ -176,6 +176,7 @@ public:
 	enum TaskStatus ClessFluxCorrectSend(MeshBlock *pmb, int step);
 	enum TaskStatus ClessFluxCorrectReceive(MeshBlock *pmb, int step);
 	enum TaskStatus ClessStartupIntegrator(MeshBlock *pmb, int step); 
+	enum TaskStatus ClessNewBlockTimeStep(MeshBlock *pmb, int step);
 };
 
 
@@ -270,6 +271,7 @@ namespace HydroIntegratorTaskNames {
 	const uint128_t CL_SEND_FLX =(uint128_t)1LL<<67;
 	const uint128_t CL_RECV_FLX =(uint128_t)1LL<<68; 
 	const uint128_t CL_START_INT=(uint128_t)1LL<<69;
+	const uint128_t CL_NEW_DT   =(uint128_t)1LL<<70; 
 
 }; // namespace HydroIntegratorTaskNames
 

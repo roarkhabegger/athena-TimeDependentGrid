@@ -12,11 +12,12 @@
 #   --coord=xxx       use xxx as the coordinate system
 #   --eos=xxx         use xxx as the equation of state
 #   --flux=xxx        use xxx as the Riemann solver
-#   --fluxcl=xxx      use xxx as the Riemann solver for CLESSHD 
+#   --fluxcl=xxx      use xxx as the Riemann solver for CLESS 
 #   --nghost=xxx      set NGHOST=xxx
 #   --ns=xxx          set NSCALARS=xxx
 #   -b                enable magnetic fields
 #   -cl               enable collisionless-solver
+#   -clo              only solve collisionless equations 
 #   -s                enable special relativity
 #   -g                enable general relativity
 #   -t                enable interface frame transformations for GR
@@ -110,6 +111,12 @@ parser.add_argument('-cl',
     default=False,
     help='enable collisionless solver')
 
+# -clo argument 
+parser.add_argument('-clo',
+    action='store_true',
+    default=False,
+    help='enable collisionless-only mode (only integrate cless-variables)')
+
 # -s argument
 parser.add_argument('-s',
     action='store_true',
@@ -167,7 +174,7 @@ parser.add_argument('-omp',
 # --grav=[name] argument
 parser.add_argument('--grav',
     default='none',
-    choices=['none','fft'],
+    choices=['none','fft','fft_cyl'],
     help='select self-gravity solver')
 
 # -fft argument
@@ -245,7 +252,7 @@ if args['flux'] == 'default':
   else:
     args['flux'] = 'hllc'
 
-# Set default flux for CLESSHD
+# Set default flux for CLESS
 if args['fluxcl'] == 'default':
     args['fluxcl'] = 'hlle'
 
@@ -280,6 +287,11 @@ if args['eos'] == 'isothermal':
     raise SystemExit('### CONFIGURE ERROR: '\
         + 'Isothermal EOS is incompatible with dual-energy')
 
+# Check cless 
+if args['clo'] and not args['cl']:
+    raise SystemExit('### CONFIGURE ERROR: '\
+        + 'Collisionless-only-mode requires collisionless solver to be enabled')
+
 #--- Step 3. Set definitions and Makefile options based on above arguments ---------------
 
 # Prepare dictionaries of substitutions to be made
@@ -310,13 +322,18 @@ if args['eos'] == 'isothermal':
 
 # set number of collisionless variables, if using it
 if args['cl']:
-    definitions['CLESSHD_ENABLED'] = '1'
+    definitions['CLESS_ENABLED'] = '1'
     definitions['NCLESS_VARIABLES'] = '10'
     definitions['NWAVE_CLESS'] = '10'
+    if args['clo']:
+        definitions['CLESS_ONLY_MODE'] = '1'
+    else:
+        definitions['CLESS_ONLY_MODE'] = '0'
 else:
-    definitions['CLESSHD_ENABLED'] = '0' 
+    definitions['CLESS_ENABLED'] = '0' 
     definitions['NCLESS_VARIABLES'] = '0' 
     definitions['NWAVE_CLESS'] = '0'
+    definitions['CLESS_ONLY_MODE'] = '0'
 
 # --flux=[name] argument
 definitions['RSOLVER'] = makefile_options['RSOLVER_FILE'] = args['flux']
@@ -519,6 +536,13 @@ else:
     definitions['SELF_GRAVITY_ENABLED'] = '1'
     if not args['fft']:
       raise SystemExit('### CONFIGURE ERROR: FFT Poisson solver only be used with FFT')
+  if args['grav'] == "fft_cyl":
+    definitions['SELF_GRAVITY_ENABLED'] = '3'
+    if not args['fft']:
+      raise SystemExit('### CONFIGURE ERROR: FFT_CYL Poisson solver only be used with FFT')
+    if args['coord'] != 'cylindrical':
+        raise SystemExit('### CONFIGURE ERROR: FFT_CYL Poisson solver requires cylindrical'
+                         ' coordinates.') 
 
 # -fft argument
 makefile_options['MPIFFT_FILE'] = ' '
@@ -620,7 +644,8 @@ print('  Riemann solver:          ' + args['flux'])
 print('  CL Riemann solver:       ' + args['fluxcl'])
 print('  Self Gravity:            ' + ('OFF' if args['grav'] == 'none' else args['grav']))
 print('  Magnetic fields:         ' + ('ON' if args['b'] else 'OFF'))
-print('  Collisionless variables: ' + ('ON' if args['cl'] else 'OFF'))
+print('  Collisionless solver:    ' + ('ON' if args['cl'] else 'OFF'))
+print('  COllisionless only mode: ' + ('ON' if args['clo'] else 'OFF'))
 print('  Special relativity:      ' + ('ON' if args['s'] else 'OFF'))
 print('  General relativity:      ' + ('ON' if args['g'] else 'OFF'))
 print('  Frame transformations:   ' + ('ON' if args['t'] else 'OFF'))
