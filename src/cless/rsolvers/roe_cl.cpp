@@ -123,12 +123,12 @@ void Cless::RiemannSolverCL(const int kl, const int ku, const int jl, const int 
 		// is solved in terms of the 'specific enthalpy Hij = 3 Sij + ui uj, but written 
 		// in terms of Sij
 
-		//wroe[IP11]+=ONE_3RD*sqrtdl*sqrtdr*(wri[IVX]-wli[IVX])*(wri[IVX]-wli[IVX])*isdlpdrSQR;
-		//wroe[IP22]+=ONE_3RD*sqrtdl*sqrtdr*(wri[IVY]-wli[IVY])*(wri[IVY]-wli[IVY])*isdlpdrSQR;
-		//wroe[IP33]+=ONE_3RD*sqrtdl*sqrtdr*(wri[IVZ]-wli[IVZ])*(wri[IVZ]-wli[IVZ])*isdlpdrSQR;
-		//wroe[IP12]+=ONE_3RD*sqrtdl*sqrtdr*(wri[IVX]-wli[IVX])*(wri[IVY]-wli[IVY])*isdlpdrSQR;
-		//wroe[IP13]+=ONE_3RD*sqrtdl*sqrtdr*(wri[IVX]-wli[IVX])*(wri[IVZ]-wli[IVZ])*isdlpdrSQR;
-		//wroe[IP23]+=ONE_3RD*sqrtdl*sqrtdr*(wri[IVY]-wli[IVY])*(wri[IVZ]-wli[IVZ])*isdlpdrSQR;
+		wroe[IP11]+=ONE_3RD*sqrtdl*sqrtdr*(wri[IVX]-wli[IVX])*(wri[IVX]-wli[IVX])*isdlpdrSQR;
+		wroe[IP22]+=ONE_3RD*sqrtdl*sqrtdr*(wri[IVY]-wli[IVY])*(wri[IVY]-wli[IVY])*isdlpdrSQR;
+		wroe[IP33]+=ONE_3RD*sqrtdl*sqrtdr*(wri[IVZ]-wli[IVZ])*(wri[IVZ]-wli[IVZ])*isdlpdrSQR;
+		wroe[IP12]+=ONE_3RD*sqrtdl*sqrtdr*(wri[IVX]-wli[IVX])*(wri[IVY]-wli[IVY])*isdlpdrSQR;
+		wroe[IP13]+=ONE_3RD*sqrtdl*sqrtdr*(wri[IVX]-wli[IVX])*(wri[IVZ]-wli[IVZ])*isdlpdrSQR;
+		wroe[IP23]+=ONE_3RD*sqrtdl*sqrtdr*(wri[IVY]-wli[IVY])*(wri[IVZ]-wli[IVZ])*isdlpdrSQR;
 
 //--- Step 3.  Compute eigenvalues and eigenmatrices using Roe-averaged values
 
