@@ -415,3 +415,42 @@ void Mesh::UserWorkAfterLoop(ParameterInput *pin) {
   pr.DeleteAthenaArray();
   return;
 }
+
+
+// AMR 
+int RefinementCondition(MeshBlock *pmb);
+
+void Mesh::InitUserMeshData(ParameterInput *pin)
+{
+  if(adaptive==true)
+    EnrollUserRefinementCondition(RefinementCondition);
+
+  return;
+}
+
+// refinement condition: density and pressure curvature
+int RefinementCondition(MeshBlock *pmb)
+{
+  AthenaArray<Real> &w = pmb->phydro->w;
+  Real maxeps=0.0;
+  for(int k=pmb->ks; k<=pmb->ke; k++) {
+    for(int j=pmb->js; j<=pmb->je; j++) {
+      for(int i=pmb->is; i<=pmb->ie; i++) {
+        Real epsr= (std::abs(w(IDN,k,j,i+1)-2.0*w(IDN,k,j,i)+w(IDN,k,j,i-1))
+                   +std::abs(w(IDN,k,j+1,i)-2.0*w(IDN,k,j,i)+w(IDN,k,j-1,i))
+                   +std::abs(w(IDN,k+1,j,i)-2.0*w(IDN,k,j,i)+w(IDN,k-1,j,i)))/w(IDN,k,j,i);
+        Real epsp= (std::abs(w(IPR,k,j,i+1)-2.0*w(IPR,k,j,i)+w(IPR,k,j,i-1))
+                   +std::abs(w(IPR,k,j+1,i)-2.0*w(IPR,k,j,i)+w(IPR,k,j-1,i))
+                   +std::abs(w(IPR,k+1,j,i)-2.0*w(IPR,k,j,i)+w(IPR,k-1,j,i)))/w(IPR,k,j,i);
+        Real eps = std::max(epsr, epsp);
+        maxeps = std::max(maxeps, eps);
+      }
+    }
+  }
+  // refine : curvature > 0.01
+  if(maxeps > 0.01) return 1;
+  // derefinement: curvature < 0.005
+  if(maxeps < 0.005) return -1;
+  // otherwise, stay
+  return 0;
+}
