@@ -216,7 +216,7 @@ TimeIntegratorTaskList::TimeIntegratorTaskList(ParameterInput *pin, Mesh *pm)
 		// First deal with cless-only-mode 
 		if (CLESS_ONLY_MODE) {
 			if (CLESS_ENABLED) { // this doesn't do anything - cless_only_mode implies cless_enabled   
-				AddTimeIntegratorTask(CL_START_INT,NONE); 
+				AddTimeIntegratorTask(CL_START_INT,STARTUP_INT); 
 				AddTimeIntegratorTask(CL_CALC_FLX,START_ALLRECV);  
 				if (pm->multilevel==true) { // SMR or AMR
 					AddTimeIntegratorTask(CL_SEND_FLX,CL_CALC_FLX);
@@ -254,7 +254,7 @@ TimeIntegratorTaskList::TimeIntegratorTaskList(ParameterInput *pin, Mesh *pm)
 		// regular athena-mode 
 		else {
 			if (CLESS_ENABLED) 
-				AddTimeIntegratorTask(CL_START_INT,NONE); 
+				AddTimeIntegratorTask(CL_START_INT,STARTUP_INT); 
 
 			// Check IE
 			if (DUAL_ENERGY)
