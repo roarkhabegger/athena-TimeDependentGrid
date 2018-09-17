@@ -7,7 +7,7 @@
 //  \brief Roe's linearized Riemann solver for the collisionless system.
 //
 // Computes 1D fluxes using Roe's linearization.  When Roe's method fails because of
-// negative density or pressure in the intermediate states, LLF fluxes are used instead.
+// negative density or pressure in the intermediate states, HLLE fluxes are used instead.
 //
 // REFERENCES:
 // - P. Roe, "Approximate Riemann solvers, parameter vectors, and difference schemes",
@@ -27,7 +27,7 @@
 inline void RoeEigensystemCL(const Real wroe[], Real eigenvalues[],
   Real right_eigenmatrix[][(NWAVECL)], Real left_eigenmatrix[][(NWAVECL)]);
 // set to 1 to test intermediate states (currently not working)
-#define TEST_INTERMEDIATE_STATES 0 
+#define TEST_INTERMEDIATE_STATES 1 
 
 //----------------------------------------------------------------------------------------
 //! \func
@@ -140,7 +140,7 @@ void Cless::RiemannSolverCL(const int kl, const int ku, const int jl, const int 
 		Real vxr = wri[IVX]; 
     
 		fl[IDN ] = wli[IDN]*vxl;
-    fr[IDN ] = wli[IDN]*vxr;
+    fr[IDN ] = wri[IDN]*vxr;
 
     fl[IVX ] = wli[IDN]*wli[IVX]*vxl + wli[IP11];
     fr[IVX ] = wri[IDN]*wri[IVX]*vxr + wri[IP11];
@@ -296,7 +296,7 @@ void Cless::RiemannSolverCL(const int kl, const int ku, const int jl, const int 
 //--- Step 6.  Check that the density and pressure in the intermediate states are
 // positive.  If not, set a flag that will be checked below.
 
-    int llf_flag = 0;
+    int hlle_flag = 0;
 		if (TEST_INTERMEDIATE_STATES) {	
 			u[IDN ] = wli[IDN]; 
 			u[IVX ] = wli[IDN]*wli[IVX]; 
@@ -311,7 +311,7 @@ void Cless::RiemannSolverCL(const int kl, const int ku, const int jl, const int 
 
 			// jump across wave[0] 
 			u[IDN ] += a[0]*rem[IDN ][0];
-			if (u[IDN] < 0.0) llf_flag=1; 
+			if (u[IDN] < 0.0) hlle_flag=1; 
 			u[IVX ] += a[0]*rem[IVX ][0];
 			u[IVY ] += a[0]*rem[IVY ][0];
 			u[IVZ ] += a[0]*rem[IVZ ][0];
@@ -322,13 +322,13 @@ void Cless::RiemannSolverCL(const int kl, const int ku, const int jl, const int 
 			Real p22 = u[IE22] - SQR(u[IVY])/u[IDN];
 			Real p33 = u[IE33] - SQR(u[IVZ])/u[IDN];
 
-			if (p11 < 0.0) llf_flag=2;
-			if (p22 < 0.0) llf_flag=3;
-			if (p33 < 0.0) llf_flag=4; 
+			if (p11 < 0.0) hlle_flag=2;
+			if (p22 < 0.0) hlle_flag=3;
+			if (p33 < 0.0) hlle_flag=4; 
 
 			// jump across wave[1] 
 			u[IDN ] += a[1]*rem[IDN ][1];
-			if (u[IDN] < 0.0) llf_flag=1; 
+			if (u[IDN] < 0.0) hlle_flag=1; 
 			u[IVX ] += a[1]*rem[IVX ][1];
 			u[IVY ] += a[1]*rem[IVY ][1];
 			u[IVZ ] += a[1]*rem[IVZ ][1];
@@ -339,13 +339,13 @@ void Cless::RiemannSolverCL(const int kl, const int ku, const int jl, const int 
 			p22 = u[IE22] - SQR(u[IVY])/u[IDN];
 			p33 = u[IE33] - SQR(u[IVZ])/u[IDN];
 
-			if (p11 < 0.0) llf_flag=2;
-			if (p22 < 0.0) llf_flag=3;
-			if (p33 < 0.0) llf_flag=4; 
+			if (p11 < 0.0) hlle_flag=2;
+			if (p22 < 0.0) hlle_flag=3;
+			if (p33 < 0.0) hlle_flag=4; 
 
 			// jump across wave[2] 
 			u[IDN ] += a[2]*rem[IDN ][2];
-			if (u[IDN] < 0.0) llf_flag=1; 
+			if (u[IDN] < 0.0) hlle_flag=1; 
 			u[IVX ] += a[2]*rem[IVX ][2];
 			u[IVY ] += a[2]*rem[IVY ][2];
 			u[IVZ ] += a[2]*rem[IVZ ][2];
@@ -356,13 +356,13 @@ void Cless::RiemannSolverCL(const int kl, const int ku, const int jl, const int 
 			p22 = u[IE22] - SQR(u[IVY])/u[IDN];
 			p33 = u[IE33] - SQR(u[IVZ])/u[IDN];
 
-			if (p11 < 0.0) llf_flag=2;
-			if (p22 < 0.0) llf_flag=3;
-			if (p33 < 0.0) llf_flag=4; 
+			if (p11 < 0.0) hlle_flag=2;
+			if (p22 < 0.0) hlle_flag=3;
+			if (p33 < 0.0) hlle_flag=4; 
 
 			// jump across wave[3] 
 			u[IDN ] += a[3]*rem[IDN ][3];
-			if (u[IDN] < 0.0) llf_flag=1; 
+			if (u[IDN] < 0.0) hlle_flag=1; 
 			u[IVX ] += a[3]*rem[IVX ][3];
 			u[IVY ] += a[3]*rem[IVY ][3];
 			u[IVZ ] += a[3]*rem[IVZ ][3];
@@ -373,9 +373,9 @@ void Cless::RiemannSolverCL(const int kl, const int ku, const int jl, const int 
 			p22 = u[IE22] - SQR(u[IVY])/u[IDN];
 			p33 = u[IE33] - SQR(u[IVZ])/u[IDN];
 
-			if (p11 < 0.0) llf_flag=2;
-			if (p22 < 0.0) llf_flag=3;
-			if (p33 < 0.0) llf_flag=4; 
+			if (p11 < 0.0) hlle_flag=2;
+			if (p22 < 0.0) hlle_flag=3;
+			if (p33 < 0.0) hlle_flag=4; 
 		}
 
 //--- Step 7.  Compute Roe flux
@@ -537,20 +537,74 @@ void Cless::RiemannSolverCL(const int kl, const int ku, const int jl, const int 
 			flxi[IP23] = fr[IP23];
 		}
 
-//--- Step 9.  Overwrite with LLF flux if any of intermediate states are negative
-		if (llf_flag != 0) {
-			Real a = std::max(fabs(ev[0]), fabs(ev[NWAVECL-1]));
+//--- Step 9.  Overwrite with HLLE flux if any of intermediate states are negative
+		if (hlle_flag != 0) {
+			// Compute hlle flux -- see hlle_cl.cpp for steps 
+			Real cl = std::sqrt(3.0*wli[IP11]/wli[IDN]);
+			Real cr = std::sqrt(3.0*wri[IP11]/wri[IDN]);
+			Real a  = std::sqrt(3.0*wroe[IP11]);  
 
-			flxi[IDN ] = 0.5*(fl[IDN ] + fr[IDN ]) - a*du[IDN ];
-			flxi[IVX ] = 0.5*(fl[IVX ] + fr[IVX ]) - a*du[IVX ];
-			flxi[IVY ] = 0.5*(fl[IVY ] + fr[IVY ]) - a*du[IVY ];
-			flxi[IVZ ] = 0.5*(fl[IVZ ] + fr[IVZ ]) - a*du[IVZ ];
-			flxi[IP11] = 0.5*(fl[IP11] + fr[IP11]) - a*du[IP11];
-			flxi[IP22] = 0.5*(fl[IP22] + fr[IP22]) - a*du[IP22];
-			flxi[IP33] = 0.5*(fl[IP33] + fr[IP33]) - a*du[IP33];
-			flxi[IP12] = 0.5*(fl[IP12] + fr[IP12]) - a*du[IP12];
-			flxi[IP13] = 0.5*(fl[IP13] + fr[IP13]) - a*du[IP13];
-			flxi[IP23] = 0.5*(fl[IP23] + fr[IP23]) - a*du[IP23];
+
+			Real al = std::min((wroe[IVX] - a),(wli[IVX] - cl));
+			Real ar = std::max((wroe[IVX] + a),(wri[IVX] + cr));
+
+			Real bp = ar > 0.0 ? ar : 0.0;
+			Real bm = al < 0.0 ? al : 0.0;
+
+
+			Real vxl = wli[IVX] - bm;
+			Real vxr = wri[IVX] - bp;
+
+			fl[IDN ] = wli[IDN]*vxl;
+			fr[IDN ] = wri[IDN]*vxr;
+
+			fl[IVX ] = wli[IDN]*wli[IVX]*vxl + wli[IP11];
+			fr[IVX ] = wri[IDN]*wri[IVX]*vxr + wri[IP11];
+
+			fl[IVY ] = wli[IDN]*wli[IVY]*vxl + wli[IP12];
+			fr[IVY ] = wri[IDN]*wri[IVY]*vxr + wri[IP12];
+
+			fl[IVZ ] = wli[IDN]*wli[IVZ]*vxl + wli[IP13];
+			fr[IVZ ] = wri[IDN]*wri[IVZ]*vxr + wri[IP13];
+
+			fl[IP11] = (wli[IP11] + wli[IDN]*wli[IVX]*wli[IVX])*vxl + 2.0*wli[IP11]*wli[IVX]; 
+			fr[IP11] = (wri[IP11] + wri[IDN]*wri[IVX]*wri[IVX])*vxr + 2.0*wri[IP11]*wri[IVX]; 
+
+			fl[IP22] = (wli[IP22] + wli[IDN]*wli[IVY]*wli[IVY])*vxl + 2.0*wli[IP12]*wli[IVY]; 
+			fr[IP22] = (wri[IP22] + wri[IDN]*wri[IVY]*wri[IVY])*vxr + 2.0*wri[IP12]*wri[IVY]; 
+			
+			fl[IP33] = (wli[IP33] + wli[IDN]*wli[IVZ]*wli[IVZ])*vxl + 2.0*wli[IP13]*wli[IVZ]; 
+			fr[IP33] = (wri[IP33] + wri[IDN]*wri[IVZ]*wri[IVZ])*vxr + 2.0*wri[IP13]*wri[IVZ]; 
+
+			fl[IP12] = (wli[IP12] + wli[IDN]*wli[IVX]*wli[IVY])*vxl + ( wli[IP12]*wli[IVX] 
+																															+   wli[IP11]*wli[IVY] );
+			fr[IP12] = (wri[IP12] + wri[IDN]*wri[IVX]*wri[IVY])*vxr + ( wri[IP12]*wri[IVX] 
+																															+   wri[IP11]*wri[IVY] );
+
+			fl[IP13] = (wli[IP13] + wli[IDN]*wli[IVX]*wli[IVZ])*vxl + ( wli[IP13]*wli[IVX] 
+																															+   wli[IP11]*wli[IVZ] );
+			fr[IP13] = (wri[IP13] + wri[IDN]*wri[IVX]*wri[IVZ])*vxr + ( wri[IP13]*wri[IVX] 
+																															+   wri[IP11]*wri[IVZ] );
+
+			fl[IP23] = (wli[IP23] + wli[IDN]*wli[IVY]*wli[IVZ])*vxl + ( wli[IP13]*wli[IVY] 
+																															+   wli[IP12]*wli[IVZ] );
+			fr[IP23] = (wri[IP23] + wri[IDN]*wri[IVY]*wri[IVZ])*vxr + ( wri[IP13]*wri[IVY] 
+																															+   wri[IP12]*wri[IVZ] );
+
+
+			Real tmp=0.0;
+			if (bp != bm) tmp = 0.5*(bp + bm)/(bp - bm);
+
+			flxi[IDN ] = 0.5*(fl[IDN ]+fr[IDN ]) + (fl[IDN ]-fr[IDN ])*tmp;
+			flxi[IVX ] = 0.5*(fl[IVX ]+fr[IVX ]) + (fl[IVX ]-fr[IVX ])*tmp;
+			flxi[IVY ] = 0.5*(fl[IVY ]+fr[IVY ]) + (fl[IVY ]-fr[IVY ])*tmp;
+			flxi[IVZ ] = 0.5*(fl[IVZ ]+fr[IVZ ]) + (fl[IVZ ]-fr[IVZ ])*tmp;
+			flxi[IP11] = 0.5*(fl[IP11]+fr[IP11]) + (fl[IP11]-fr[IP11])*tmp;
+			flxi[IP22] = 0.5*(fl[IP22]+fr[IP22]) + (fl[IP22]-fr[IP22])*tmp;
+			flxi[IP33] = 0.5*(fl[IP33]+fr[IP33]) + (fl[IP33]-fr[IP33])*tmp;
+			flxi[IP12] = 0.5*(fl[IP12]+fr[IP12]) + (fl[IP12]-fr[IP12])*tmp;
+			flxi[IP13] = 0.5*(fl[IP13]+fr[IP13]) + (fl[IP13]-fr[IP13])*tmp;
+			flxi[IP23] = 0.5*(fl[IP23]+fr[IP23]) + (fl[IP23]-fr[IP23])*tmp;
 		}
 
 		flx(IDN ,k,j,i) = flxi[IDN ];
