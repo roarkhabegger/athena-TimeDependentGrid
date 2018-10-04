@@ -19,17 +19,25 @@ import re
 # Import from correct directory
 import socket as s
 comp = s.gethostname()
+arloc = '../vis/python/'
 if comp == 'thetis': 
-    sys.path.insert(0,'/afs/cas.unc.edu/users/j/d/'
-                  'jdupuy26/Johns_work/'
-                  'misc_scripts/plotting_tools')
+    arloc = ('/afs/cas.unc.edu/users/j/d/'
+             'jdupuy26/Johns_work/'
+             'misc_scripts/plotting_tools')
 elif comp == 'debpad':
-    sys.path.insert(0,'/home/jdupuy26/Johns_work/'
-                      'Grad_Work/Research/codes/'
-                      'my_athena++/vis/python/')
+    arloc = ('/home/jdupuy26/Johns_work/'
+             'Grad_Work/Research/codes/'
+             'athena-pub-fork/vis/python/')
 else: 
-    print('[init]: Computer %s not recognized!' % comp)
-import athena_read as ar
+    print('[init]: Computer %s not recognized, assuming that athena_read'
+          ' is located in %s' % (comp,arloc) )
+try:
+    sys.path.insert(0,arloc)
+    import athena_read as ar
+except ImportError as e:
+    print('[init]: File athena_read.py not found at %s' %(arloc) )
+    print('[init]: Exiting with ImportError -- %s' %(e))
+    quit() 
 
 
 #===================================================================
@@ -46,12 +54,15 @@ import athena_read as ar
 #
 #  Usage: python app_plot.py quant   
 #
-#  WARNING: THIS MUST BE RUN FROM SIMULATION DIRECTORY 
+#  WARNING: This must be run from the simulation directory 
+#           It assumes CONSERVED quantities are output 
+#           Does not currently support primitive quantities. 
+#           Untested with AMR 
 #          
 #  Author: John Dupuy 
 #          UNC Chapel Hill
 #  Date:    07/20/18 
-#  Updated: 07/24/18 
+#  Updated: 10/04/18 
 #====================================================================
 
 #============ FUNCTIONS ==============================
@@ -703,11 +714,8 @@ def main(args):
             
 
     if save:
-        #mydir  = '/srv/analysis/jdupuy26/figures/'
         mydir = os.getcwd()+'/'
         # Create file name (have to make sure it is unique for each sim to avoid overwrites)  
-        #myname = os.path.basename(os.path.dirname(os.path.realpath('bgsbu.log')))
-        #myname = os.getcwd().split('longevity_study/',1)[1].replace('/','_') 
         myname = '' 
         if anim:
             print("[main]: Saving animation...")
