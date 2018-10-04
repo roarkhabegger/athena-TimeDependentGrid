@@ -26,7 +26,7 @@
 // prototype for function to compute eigenvalues and eigenvectors of Roe's matrix A
 inline void RoeEigensystemCL(const Real wroe[], Real eigenvalues[],
   Real right_eigenmatrix[][(NWAVECL)], Real left_eigenmatrix[][(NWAVECL)]);
-// set to 1 to test intermediate states (currently not working)
+// set to 1 to test intermediate states 
 #define TEST_INTERMEDIATE_STATES 1 
 
 //----------------------------------------------------------------------------------------
