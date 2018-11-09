@@ -68,6 +68,9 @@ public:
                             AthenaArray<Real> &dx2);
   virtual void CenterWidth3(const int k, const int j, const int il, const int iu,
                             AthenaArray<Real> &dx3);
+  // ... to get positions
+  virtual void Center1Pos(const int k, const int j, const int il, const int iu, AthenaArray<Real> &pos);
+  virtual void Face1Pos(const int k, const int j, const int il, const int iu, AthenaArray<Real> &pos);
 
   // ...to compute area of faces
   virtual void Face1Area(const int k, const int j, const int il, const int iu,

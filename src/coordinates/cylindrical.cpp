@@ -371,7 +371,7 @@ void Cylindrical::CoordSrcTerms(const Real dt, const AthenaArray<Real> *flux,
         // src_1 = <M_{phi phi}><1/r>
         Real m_pp = prim(IDN,k,j,i)*prim(IM2,k,j,i)*prim(IM2,k,j,i);
         if (NON_BAROTROPIC_EOS) {
-					m_pp += prim(IEN,k,j,i);
+          m_pp += prim(IEN,k,j,i);
         } else {
           m_pp += (iso_cs*iso_cs)*prim(IDN,k,j,i);
         }
@@ -389,10 +389,10 @@ void Cylindrical::CoordSrcTerms(const Real dt, const AthenaArray<Real> *flux,
         u(IM2,k,j,i) -= dt*coord_src2_i_(i)*(x_i*flux[X1DIR](IM2,k,j,i)
                                            + x_ip1*flux[X1DIR](IM2,k,j,i+1));
 
-				// src term for internal energy -v_R*P/r 
-				if (DUAL_ENERGY) {
-					u(IIE,k,j,i) -= dt*prim(IPR,k,j,i)*prim(IVX,k,j,i)*coord_src1_i_(i); 
-				}
+        // src term for internal energy -v_R*P/r 
+        if (DUAL_ENERGY) {
+          u(IIE,k,j,i) -= dt*prim(IPR,k,j,i)*prim(IVX,k,j,i)*coord_src1_i_(i); 
+        }
       }
     }
   }

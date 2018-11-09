@@ -88,6 +88,7 @@ public:
   int nuser_out_var;
   AthenaArray<Real> user_out_var;
   std::string *user_out_var_names_;
+  OTFData otf_data;
 
   // user MeshBlock data that can be stored in restart files
   AthenaArray<Real> *ruser_meshblock_data;
@@ -102,7 +103,7 @@ public:
 
   // physics-related objects
   Hydro *phydro;
-	Cless *pcless;
+  Cless *pcless;
   Field *pfield;
   Gravity *pgrav;
   EquationOfState *peos;
@@ -114,7 +115,9 @@ public:
   void SearchAndSetNeighbors(MeshBlockTree &tree, int *ranklist, int *nslist);
   void UserWorkInLoop(void); // in ../pgen
   void InitUserMeshBlockData(ParameterInput *pin); // in ../pgen
-  void UserWorkBeforeOutput(ParameterInput *pin); // in ../pgen
+  void UserWorkBeforeOutput(ParameterInput *pin);  // in ../pgen
+  void InitOTFOutput(ParameterInput *pin);         // in ../pgen
+  void OTFWorkBeforeOutput(ParameterInput *pin);   // in ../pgen
 
 private:
   // data
@@ -148,7 +151,7 @@ class Mesh {
   friend class MeshRefinement;
   friend class HydroSourceTerms;
   friend class Hydro;
-	friend class Cless; 
+  friend class Cless; 
   friend class FFTDriver;
   friend class FFTGravityDriver;
   friend class TurbulenceDriver;
@@ -200,6 +203,7 @@ public:
   unsigned int CreateAMRMPITag(int lid, int ox1, int ox2, int ox3);
   MeshBlock* FindMeshBlock(int tgid);
   void ApplyUserWorkBeforeOutput(ParameterInput *pin);
+  void ApplyOTFWorkBeforeOutput(ParameterInput *pin);
   void UserWorkAfterLoop(ParameterInput *pin); // method in ../pgen
 
 private:
@@ -225,6 +229,7 @@ private:
   // functions
   MeshGenFunc_t MeshGenerator_[3];
   SrcTermFunc_t UserSourceTerm_;
+  StaticGravPotFunc_t StaticGravPot_;
   BValFunc_t BoundaryFunction_[6];
 	BValFuncCL_t BoundaryFunctionCL_[6]; 
   AMRFlagFunc_t AMRFlag_;
@@ -246,6 +251,7 @@ private:
   void EnrollUserBoundaryFunction (enum BoundaryFace face, BValFunc_t my_func);
   void EnrollUserRefinementCondition(AMRFlagFunc_t amrflag);
   void EnrollUserMeshGenerator(enum CoordinateDirection dir, MeshGenFunc_t my_mg);
+  void EnrollStaticGravPotFunction(StaticGravPotFunc_t myfunc);
   void EnrollUserExplicitSourceFunction(SrcTermFunc_t my_func);
   void EnrollUserTimeStepFunction(TimeStepFunc_t my_func);
   void AllocateUserHistoryOutput(int n);

@@ -136,6 +136,8 @@ MeshBlock::MeshBlock(int igid, int ilid, LogicalLocation iloc, RegionSize input_
 
   // Create user mesh data
   InitUserMeshBlockData(pin);
+  // Initialize OTF output if necessary.
+  InitOTFOutput(pin);
 
   return;
 }
@@ -232,6 +234,7 @@ MeshBlock::MeshBlock(int igid, int ilid, Mesh *pm, ParameterInput *pin,
   if (MAGNETIC_FIELDS_ENABLED) pfield = new Field(this, pin);
   peos = new EquationOfState(this, pin);
   InitUserMeshBlockData(pin);
+  InitOTFOutput(pin);
 
   int os=0;
   // load hydro and field data

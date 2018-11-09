@@ -85,6 +85,13 @@ typedef struct RegionSize {
   int nx1, nx2, nx3;        // number of active cells (not including ghost zones)
 } RegionSize;
 
+//----------------------------------------------------------------------------------------
+//! \struct OTFData
+//  \brief on-the-fly data structure
+typedef struct OTFData {
+  int64_t len;
+  Real *data;
+} OTFData;
 
 //---------------------------------------------------------------------------------------
 //! \struct FaceField
@@ -159,6 +166,7 @@ typedef int (*AMRFlagFunc_t)(MeshBlock *pmb);
 typedef Real (*MeshGenFunc_t)(Real x, RegionSize rs);
 typedef void (*SrcTermFunc_t)(MeshBlock *pmb, const Real time, const Real dt,
   const AthenaArray<Real> &prim, const AthenaArray<Real> &bcc, AthenaArray<Real> &cons);
+typedef Real (*StaticGravPotFunc_t)(const Real x1, const Real x2, const Real x3, const Real time);
 typedef Real (*TimeStepFunc_t)(MeshBlock *pmb);
 typedef Real (*HistoryOutputFunc_t)(MeshBlock *pmb, int iout);
 typedef void (*MetricFunc_t)(Real x1, Real x2, Real x3, ParameterInput *pin,

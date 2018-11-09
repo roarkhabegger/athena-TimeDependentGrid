@@ -170,6 +170,17 @@ private:
 #endif
 
 //----------------------------------------------------------------------------------------
+//! \class OTFOutput
+//  \brief derived OutputType class for on-the-fly analysis
+
+class OTFOutput : public OutputType {
+public:
+  explicit OTFOutput(OutputParameters oparams);
+  ~OTFOutput() {};
+  void WriteOutputFile(Mesh *pm, ParameterInput *pin, bool flag);
+};
+
+//----------------------------------------------------------------------------------------
 //! \class Outputs
 //  \brief root class for all Athena++ outputs.  Provides a linked list of OutputTypes,
 //  with each node representing one mode of output to be made during a simulation.

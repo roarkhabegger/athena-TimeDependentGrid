@@ -130,27 +130,26 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin) {
       if (RELATIVISTIC_DYNAMICS)  // this should only ever be SR with this file
         phydro->u(IEN,k,j,i) += den;
 
-			// initialize cless vars 
-			if (CLESS_ENABLED) {
-				pcless->u(IDN ,k,j,i) = den;
-				pcless->u(IM1 ,k,j,i) = 0.0;
-				pcless->u(IM2 ,k,j,i) = 0.0;
-				pcless->u(IM3 ,k,j,i) = 0.0;
-				pcless->u(IP11,k,j,i) = pres;
-				pcless->u(IP22,k,j,i) = pres;
-				pcless->u(IP33,k,j,i) = pres;
-				pcless->u(IP12,k,j,i) = 0.0;
-				pcless->u(IP13,k,j,i) = 0.0;
-				pcless->u(IP23,k,j,i) = 0.0;
-			}
+      // initialize cless vars 
+      if (CLESS_ENABLED) {
+        pcless->u(IDN ,k,j,i) = den;
+        pcless->u(IM1 ,k,j,i) = 0.0;
+        pcless->u(IM2 ,k,j,i) = 0.0;
+        pcless->u(IM3 ,k,j,i) = 0.0;
+        pcless->u(IP11,k,j,i) = pres;
+        pcless->u(IP22,k,j,i) = pres;
+        pcless->u(IP33,k,j,i) = pres;
+        pcless->u(IP12,k,j,i) = 0.0;
+        pcless->u(IP13,k,j,i) = 0.0;
+        pcless->u(IP23,k,j,i) = 0.0;
+      }
     }
 
-		if (NSCALARS > 0) {
-			for (int n=NHYDRO-NSCALARS; n<NHYDRO; ++n) {
-				phydro->u(n,k,j,i) = den;
-			}
-		}
-
+    if (NSCALARS > 0) {
+      for (int n=NHYDRO-NSCALARS; n<NHYDRO; ++n) {
+        phydro->u(n,k,j,i) = den;
+      }
+    }
 		
   }}}
 

@@ -115,10 +115,10 @@ public:
   Real GetIsoSoundSpeed() const {return iso_sound_speed_;}
   Real GetDensityFloor() const {return density_floor_;}
   Real GetPressureFloor() const {return pressure_floor_;}
-	#ifdef DUAL_ENERGY
-	Real GetIeta1() const {return ieta1_;}
-	Real GetIeta2() const {return ieta2_;}
-	#endif // DUAL_ENERGY 
+#ifdef DUAL_ENERGY
+  Real GetIeta1() const {return ieta1_;}
+  Real GetIeta2() const {return ieta2_;}
+#endif // DUAL_ENERGY 
 	
 
 private:

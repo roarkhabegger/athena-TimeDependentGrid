@@ -160,17 +160,16 @@ Mesh::Mesh(ParameterInput *pin, int mesh_test) {
   }
 
   // read ratios of grid cell size in each direction
-	// ilog = 1 allows for uniform log-spacing in x1
-	ilog = pin->GetOrAddInteger("mesh", "ilog", 0); 
-	if (ilog == 0) {
-		block_size.x1rat = mesh_size.x1rat = pin->GetOrAddReal("mesh","x1rat",1.0);
-	}
-	else {
-		block_size.x1rat = mesh_size.x1rat = std::pow(mesh_size.x1max/mesh_size.x1min, 
-																									1.0/mesh_size.nx1); 
-	}
-	block_size.x2rat = mesh_size.x2rat = pin->GetOrAddReal("mesh","x2rat",1.0);
-	block_size.x3rat = mesh_size.x3rat = pin->GetOrAddReal("mesh","x3rat",1.0);
+  // ilog = 1 allows for uniform log-spacing in x1
+  ilog = pin->GetOrAddInteger("mesh", "ilog", 0); 
+  if (ilog == 0) {
+    block_size.x1rat = mesh_size.x1rat = pin->GetOrAddReal("mesh","x1rat",1.0);
+  }
+  else {
+   block_size.x1rat = mesh_size.x1rat = std::pow(mesh_size.x1max/mesh_size.x1min,1.0/mesh_size.nx1); 
+  }
+  block_size.x2rat = mesh_size.x2rat = pin->GetOrAddReal("mesh","x2rat",1.0);
+  block_size.x3rat = mesh_size.x3rat = pin->GetOrAddReal("mesh","x3rat",1.0);
 
 
   // read BC flags for each of the 6 boundaries in turn.
@@ -243,6 +242,7 @@ Mesh::Mesh(ParameterInput *pin, int mesh_test) {
 	}
   AMRFlag_=NULL;
   UserSourceTerm_=NULL;
+  StaticGravPot_=NULL;
   UserTimeStep_=NULL;
   ViscosityCoeff_=NULL;
   ConductionCoeff_=NULL;
@@ -645,6 +645,7 @@ Mesh::Mesh(ParameterInput *pin, IOWrapper& resfile, int mesh_test) {
 	}
   AMRFlag_=NULL;
   UserSourceTerm_=NULL;
+  StaticGravPot_=NULL;
   UserTimeStep_=NULL;
   ViscosityCoeff_=NULL;
   ConductionCoeff_=NULL;
@@ -1103,6 +1104,15 @@ void Mesh::EnrollUserMeshGenerator(enum CoordinateDirection dir, MeshGenFunc_t m
 }
 
 //----------------------------------------------------------------------------------------
+//! \fn void Mesh::EnrollStaticGravPotFunction(StaticGravPotFunc_t my_func)
+//  \brief Enroll a user-defined static gravitational potential
+
+void Mesh::EnrollStaticGravPotFunction(StaticGravPotFunc_t my_func) {
+  StaticGravPot_ = my_func;
+  return;
+}
+
+//----------------------------------------------------------------------------------------
 //! \fn void Mesh::EnrollUserExplicitSourceFunction(SrcTermFunc_t my_func)
 //  \brief Enroll a user-defined source function
 
@@ -1239,6 +1249,18 @@ void Mesh::ApplyUserWorkBeforeOutput(ParameterInput *pin) {
   MeshBlock *pmb = pblock;
   while (pmb != NULL)  {
     pmb->UserWorkBeforeOutput(pin);
+    pmb=pmb->next;
+  }
+}
+
+//----------------------------------------------------------------------------------------
+// \!fn void Mesh::ApplyOTFWorkBeforeOutput(ParameterInput *pin)
+// \brief Apply MeshBlock::OTFWorkBeforeOutput
+
+void Mesh::ApplyOTFWorkBeforeOutput(ParameterInput *pin) {
+  MeshBlock *pmb = pblock;
+  while (pmb != NULL)  {
+    pmb->OTFWorkBeforeOutput(pin);
     pmb=pmb->next;
   }
 }

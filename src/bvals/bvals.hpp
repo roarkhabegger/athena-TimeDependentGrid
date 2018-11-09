@@ -331,11 +331,11 @@ public:
   void RemapFluxEMF(const int k, const int jinner, const int jouter, const Real eps,
                     const AthenaArray<Real> &U, AthenaArray<Real> &Flux);
 
-	// Cless 
-	void ApplyPhysicalBoundariesCL(AthenaArray<Real> &pdst, AthenaArray<Real> &cdst,
-       const Real time, const Real dt);
+  // Cless 
+  void ApplyPhysicalBoundariesCL(AthenaArray<Real> &pdst, AthenaArray<Real> &cdst,
+                                 const Real time, const Real dt);
   void ProlongateBoundariesCL(AthenaArray<Real> &pdst, AthenaArray<Real> &cdst,
-       const Real time, const Real dt);
+                              const Real time, const Real dt);
 
 
 

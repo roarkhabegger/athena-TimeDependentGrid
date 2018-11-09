@@ -8,12 +8,18 @@ bin/
 
 # Obsolete code directory
 .obsolete/
+*.001
+*.002
+*.003
+*.004
+*.005
 
 # Compiled object files
 *.slo
 *.lo
 *.o
 *.obj
+*++
 
 # Compiled dynamic libraries
 *.so

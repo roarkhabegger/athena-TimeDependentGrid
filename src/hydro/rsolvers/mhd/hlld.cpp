@@ -366,5 +366,27 @@ void Hydro::RiemannSolver(const int kl, const int ku, const int jl, const int ju
   }
   }}
 
+  if (NSCALARS > 0) {
+    for (int k=kl; k<=ku; k++) {
+      for (int j=jl; j<=ju; j++) {
+#pragma omp simd
+        for (int i=il; i<=iu; i++) {
+          Real fd = flx(IDN,k,j,i);
+          flx(IS0,k,j,i)   = (fd >= 0 ? fd*wl(IS0,k,j,i) : fd*wr(IS0,k,j,i));
+          if (NSCALARS > 1)
+            flx(IS1,k,j,i) = (fd >= 0 ? fd*wl(IS1,k,j,i) : fd*wr(IS1,k,j,i));
+          if (NSCALARS > 2)
+            flx(IS2,k,j,i) = (fd >= 0 ? fd*wl(IS2,k,j,i) : fd*wr(IS2,k,j,i));
+          if (NSCALARS > 3)
+            flx(IS3,k,j,i) = (fd >= 0 ? fd*wl(IS3,k,j,i) : fd*wr(IS3,k,j,i));
+          if (NSCALARS > 4)
+            flx(IS4,k,j,i) = (fd >= 0 ? fd*wl(IS4,k,j,i) : fd*wr(IS4,k,j,i));
+          if (NSCALARS > 5)
+            flx(IS5,k,j,i) = (fd >= 0 ? fd*wl(IS5,k,j,i) : fd*wr(IS5,k,j,i));
+        }
+      }
+    }
+  }
+
   return;
 }

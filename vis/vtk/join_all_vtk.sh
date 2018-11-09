@@ -33,6 +33,6 @@ do
     do
 	input_files+=("${PROBLEM_ID}.block${blockid}.out${OUTPUT_ID}.${output_step}.vtk")
     done
-    #echo "./join_vtk++ -o ${output_file} ${input_files[*]}"
+    echo "./join_vtk++ -o ${output_file} ${input_files[*]}"
     ./join_vtk++ -o ${output_file} ${input_files[*]}
 done

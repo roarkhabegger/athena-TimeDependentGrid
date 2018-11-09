@@ -37,20 +37,31 @@ public:
   // functions
   void AddHydroSourceTerms(const Real time, const Real dt, const AthenaArray<Real> *flx,
     const AthenaArray<Real> &p, const AthenaArray<Real> &b, AthenaArray<Real> &c);
+
   void PointMass(const Real dt, const AthenaArray<Real> *flx,const AthenaArray<Real> &p,
     AthenaArray<Real> &c);
+
   void ConstantAcceleration(const Real dt, const AthenaArray<Real> *flx,
     const AthenaArray<Real> &p, AthenaArray<Real> &c);
+
   // shearing box src terms
   void ShearingBoxSourceTerms(const Real dt, const AthenaArray<Real> *flx,
-                           const AthenaArray<Real> &p, AthenaArray<Real> &c);
-	// dual-energy src terms
-	void InternalEnergy(const Real dt, const AthenaArray<Real> *flx, 
-									const AthenaArray<Real> &p, AthenaArray<Real> &c); 
+                              const AthenaArray<Real> &p, AthenaArray<Real> &c);
+  // dual-energy src terms
+  void InternalEnergy(const Real dt, const AthenaArray<Real> *flx, 
+                      const AthenaArray<Real> &p, AthenaArray<Real> &c); 
   Real UnstratifiedDisk(const Real x1, const Real x2, const Real x3);
 
+  // Static Gravity
+  void StaticGravity(const Real dt, const Real time, const AthenaArray<Real> *flx,
+    const AthenaArray<Real> &p, AthenaArray<Real> &c);
+  void EnrollStaticGravPotFunction(StaticGravPotFunc_t my_func);
+  StaticGravPotFunc_t StaticGravPot;
+
+  // Self Gravity
   void SelfGravity(const Real dt, const AthenaArray<Real> *flx,
     const AthenaArray<Real> &p, AthenaArray<Real> &c);
+
   void EnrollSrcTermFunction(SrcTermFunc_t my_func);
   SrcTermFunc_t UserSourceTerm;
 

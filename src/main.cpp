@@ -362,7 +362,7 @@ int main(int argc, char *argv[]) {
 
 
   if (Globals::my_rank==0) {
-    std::cout<<std::endl<<"Setup complete, entering main loop..."<<std::endl<<std::endl;
+    std::cout<<std::endl<<"Setup complete, entering main loop..."<<Globals::my_rank<<std::endl<<std::endl;
   }
 
   clock_t tstart = clock();

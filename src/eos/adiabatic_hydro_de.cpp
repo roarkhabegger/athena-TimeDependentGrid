@@ -47,7 +47,7 @@ void EquationOfState::ConservedToPrimitive(AthenaArray<Real> &cons,
   const AthenaArray<Real> &prim_old, const FaceField &b, AthenaArray<Real> &prim,
   AthenaArray<Real> &bcc, Coordinates *pco, int il,int iu, int jl,int ju, int kl,int ku) {
   Real gm1 = GetGamma() - 1.0;
-	Real i1 = GetIeta1();
+  Real i1 = GetIeta1();
 
   for (int k=kl; k<=ku; ++k) {
   for (int j=jl; j<=ju; ++j) {
@@ -58,14 +58,14 @@ void EquationOfState::ConservedToPrimitive(AthenaArray<Real> &cons,
       Real& u_m2 = cons(IM2,k,j,i);
       Real& u_m3 = cons(IM3,k,j,i);
       Real& u_e  = cons(IEN,k,j,i);
-			Real& u_ie = cons(IIE,k,j,i);
+      Real& u_ie = cons(IIE,k,j,i);
 
       Real& w_d  = prim(IDN,k,j,i);
       Real& w_vx = prim(IVX,k,j,i);
       Real& w_vy = prim(IVY,k,j,i);
       Real& w_vz = prim(IVZ,k,j,i);
       Real& w_p  = prim(IPR,k,j,i);
-			Real& w_ge = prim(IGE,k,j,i);
+      Real& w_ge = prim(IGE,k,j,i);
 				
       // apply density floor, without changing momentum or energy
       u_d = (u_d > density_floor_) ?  u_d : density_floor_;
@@ -78,31 +78,30 @@ void EquationOfState::ConservedToPrimitive(AthenaArray<Real> &cons,
 
       Real ke = 0.5*di*(SQR(u_m1) + SQR(u_m2) + SQR(u_m3));
       w_p = gm1*(u_e - ke);
-			w_ge = u_ie*di;
+      w_ge = u_ie*di;
 
-			// Use dual-energy 
-			if (((w_p/u_e) < i1) || (u_e <= 0.0) || (w_p <= 0.0)) {
-				w_p = gm1*u_ie; 
-				u_e =			u_ie + ke; 
-			}
+      // Use dual-energy 
+      if (((w_p/u_e) < i1) || (u_e <= 0.0) || (w_p <= 0.0)) {
+        w_p = gm1*u_ie; 
+        u_e = u_ie + ke; 
+      }
     }
   }}
 
-	// passive scalars 
-	for (int n=(NHYDRO-NSCALARS); n<NHYDRO; ++n) {
-		for (int k=kl; k<=ku; ++k) {
-		for (int j=jl; j<=ju; ++j) {
+  // passive scalars 
+  for (int n=(NHYDRO-NSCALARS); n<NHYDRO; ++n) {
+    for (int k=kl; k<=ku; ++k) {
+      for (int j=jl; j<=ju; ++j) {
 #pragma omp simd
-			for (int i=il; i<=iu; ++i) {
-				Real& u_s = cons(n  ,k,j,i);
-				Real& u_d = cons(IDN,k,j,i);
-				Real   di = 1./u_d; 
-				
-				Real& w_s = prim(n,k,j,i);
-
-				w_s = u_s*di;
-			}
-		}}
+        for (int i=il; i<=iu; ++i) {
+          Real& u_s = cons(n  ,k,j,i);
+          Real& u_d = cons(IDN,k,j,i);
+          Real   di = 1./u_d; 
+          Real& w_s = prim(n,k,j,i);
+          w_s = u_s*di;
+        }
+      }
+    }
   }
 
   return;

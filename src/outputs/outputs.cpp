@@ -224,6 +224,8 @@ Outputs::Outputs(Mesh *pm, ParameterInput *pin) {
               << "is requested in output block '" << op.block_name << "'" << std::endl;
           throw std::runtime_error(msg.str().c_str());
 #endif
+        } else if (op.file_type.compare("otf") == 0) {
+          pnew_type = new OTFOutput(op);
         } else {
           msg << "### FATAL ERROR in Outputs constructor" << std::endl
               << "Unrecognized file format = '" << op.file_type
@@ -765,16 +767,21 @@ void OutputType::ClearOutputData() {
 //  \brief scans through linked list of OutputTypes and makes any outputs needed.
 
 void Outputs::MakeOutputs(Mesh *pm, ParameterInput *pin, bool wtflag) {
-  bool first=true;
+  bool firsthst=true;
+  bool firstotf=true;
   OutputType* ptype = pfirst_type_;
   while (ptype != NULL) {
     if ((pm->time == pm->start_time) ||
         (pm->time >= ptype->output_params.next_time) ||
         (pm->time >= pm->tlim) ||
         (wtflag==true && ptype->output_params.file_type=="rst")) {
-      if (first && ptype->output_params.file_type!="hst") {
+      if (firsthst && ptype->output_params.file_type!="hst") {
         pm->ApplyUserWorkBeforeOutput(pin);
-        first=false;
+        firsthst=false;
+      }
+      if (firstotf && ptype->output_params.file_type=="otf") {
+        pm->ApplyOTFWorkBeforeOutput(pin);
+        firstotf=false;
       }
       ptype->WriteOutputFile(pm, pin, wtflag);
     }

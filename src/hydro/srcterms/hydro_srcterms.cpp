@@ -62,7 +62,10 @@ HydroSourceTerms::HydroSourceTerms(Hydro *phyd, ParameterInput *pin) {
 
   if (SELF_GRAVITY_ENABLED) hydro_sourceterms_defined = true;
 
-	if (DUAL_ENERGY) hydro_sourceterms_defined = true; 
+  if (DUAL_ENERGY) hydro_sourceterms_defined = true; 
+
+  StaticGravPot  = phyd->pmy_block->pmy_mesh->StaticGravPot_;
+  if (StaticGravPot != NULL) hydro_sourceterms_defined = true;
 
   UserSourceTerm = phyd->pmy_block->pmy_mesh->UserSourceTerm_;
   if (UserSourceTerm != NULL) hydro_sourceterms_defined = true;
@@ -94,10 +97,13 @@ void HydroSourceTerms::AddHydroSourceTerms(const Real time, const Real dt,
   // shearing box source terms: tidal and Coriolis forces
   if ((Omega_0_ !=0.0) && (qshear_ != 0.0)) ShearingBoxSourceTerms(dt, flux,
                                                                    prim, cons);
-	// Internal-energy source terms: -P \div v
-	if (DUAL_ENERGY) InternalEnergy(dt, flux, 
-																  prim, cons); 
+  // Internal-energy source terms: -P \div v
+  if (DUAL_ENERGY) InternalEnergy(dt, flux, prim, cons);
+
   // MyNewSourceTerms()
+
+  // Static Gravitational Potential
+  if (StaticGravPot != NULL) StaticGravity(dt, time, flux, prim, cons);
 
   //  user-defined source terms
   if (UserSourceTerm != NULL)

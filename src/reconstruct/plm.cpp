@@ -67,6 +67,10 @@ void Reconstruction::PiecewiseLinearX1(MeshBlock *pmb,
       LeftEigenmatrixDotVector(pmb,IVX,il-1,iu,bx,wc,dwr);
     }
 
+    // Internal energy and advected scalars
+    // It looks like since dwl, dwr are not addressed for n>=NWAVE in LEDV, 
+    // they are kept identical, consistent with Athena comment.
+
     // Apply van Leer limiter for uniform grid
     if (pmb->precon->uniform_limiter[X1DIR]) {
       for (int n=0; n<(NWAVE+NINT+NSCALARS); ++n) {
@@ -97,6 +101,9 @@ void Reconstruction::PiecewiseLinearX1(MeshBlock *pmb,
     if (pmb->precon->characteristic_reconstruction) {
       RightEigenmatrixDotVector(pmb,IVX,il-1,iu,bx,wc,dwm);
     }
+
+    // Internal energy and advected scalars
+
 
     // compute ql_(i+1/2) and qr_(i-1/2) using monotonized slopes
     for (int n=0; n<(NWAVE+NINT+NSCALARS); ++n) {

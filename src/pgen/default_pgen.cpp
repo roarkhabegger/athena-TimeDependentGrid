@@ -9,7 +9,9 @@
 //
 // The attribute "weak" is used to ensure the loader selects the user-defined version of
 // functions rather than the default version given here.
+//
 
+#include <iostream>
 // Athena++ headers
 #include "../athena.hpp"
 #include "../athena_arrays.hpp"
@@ -37,6 +39,28 @@ void __attribute__((weak)) Mesh::InitUserMeshData(ParameterInput *pin) {
 
 void __attribute__((weak)) MeshBlock::InitUserMeshBlockData(ParameterInput *pin) {
   // do nothing
+  return;
+}
+
+//========================================================================================
+//! \fn void MeshBlock::InitOTFOutput(ParameterInput *pin)
+//  \brief Initialization of on-the-fly analysis structure.
+//  Called in MeshBlock constructor before ProblemGenerator.
+//========================================================================================
+
+void __attribute__((weak)) MeshBlock::InitOTFOutput(ParameterInput *pin) {
+  //do nothing
+  return;
+}
+
+//========================================================================================
+//! \fn void MeshBlock::OTFWorkBeforeOutput(ParameterInput *pin)
+//  \brief On-the-fly analysis before output of otf file.
+//  Called in output before writing.
+//========================================================================================
+
+void __attribute__((weak)) MeshBlock::OTFWorkBeforeOutput(ParameterInput *pin) {
+  //do nothing
   return;
 }
 

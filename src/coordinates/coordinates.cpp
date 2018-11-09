@@ -346,6 +346,26 @@ Real Coordinates::GetEdge3Length(const int k, const int j, const int i) {
 }
 
 //----------------------------------------------------------------------------------------
+// Center1Pos: return center position fh++
+void Coordinates::Center1Pos(const int k, const int j, const int il, const int iu, AthenaArray<Real> &pos) {
+#pragma omp simd
+  for (int i=il; i<=iu; i++) {
+    pos(i) = x1v(i);
+  }
+  return;
+}
+
+//----------------------------------------------------------------------------------------
+// Face1Pos: return center position fh++
+void Coordinates::Face1Pos(const int k, const int j, const int il, const int iu, AthenaArray<Real> &pos) {
+#pragma omp simd
+  for (int i=il; i<=iu; i++) {
+    pos(i) = x1f(i);
+  }
+  return;
+}
+
+//----------------------------------------------------------------------------------------
 // VolCenterXLength functions: compute physical length connecting cell centers as vector
 // VolCenter1(i,j,k) located at (i+1/2,j,k), i.e. (x1f(i+1), x2v(j), x3v(k))
 void Coordinates::VolCenter1Length(const int k, const int j, const int il, const int iu,
