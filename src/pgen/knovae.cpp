@@ -138,7 +138,7 @@ void ReflectInnerX1_nonuniform(MeshBlock *pmb, Coordinates *pco, AthenaArray<Rea
 //========================================================================================
 
 void MeshBlock::InitOTFOutput(ParameterInput *pin) {
-  otf_data.len = 6*(NSCALARS+1)+2*pmy_mesh->mesh_size.nx2*pmy_mesh->mesh_size.nx3;
+  otf_data.len = 8*(NSCALARS+1)+3+8*pmy_mesh->mesh_size.nx2*pmy_mesh->mesh_size.nx3;
   otf_data.data = new Real[otf_data.len];
   //std::cout << "rank=" << Globals::my_rank << " loc.level=" << loc.level << " lid=" << lid << std::endl;
   if (lid == 0) { // only defined on root level
@@ -610,16 +610,23 @@ void MeshBlock::OTFWorkBeforeOutput(ParameterInput *pin) {
     int nscl = NSCALARS;
     int nx3  = ke-ks+1; // These are local!
     int nx2  = je-js+1;
-    Real rad, thet, x, y, z, dv, d, dc, c0, c1, mixpar, mixmas;
-    Real *avgparam = new Real[4*(nscl+1)];
-    Real *stdparam = new Real[2*(nscl+1)];
-    Real *mixparam = new Real[2*nx2*nx3];
-    for (int s=0; s<2*(nscl+1); s++) 
+    int ioff = 4*(nscl+1);
+    Real rad, thet, x, y, z, dv, d, p, dc, c0, c1, v1, mixpar, mixmas;
+    Real *avgparam = new Real[4*(nscl+1)+2*(nscl+1)+3]; // average rad, the and their mass weights, for c0, c1 and c0+c1
+    Real *stdparam = new Real[2*(nscl+1)]; // standard deviation of rad, the for c0, c1 and c0+c1
+    //Real *hydparam = new Real[2*(nscl+1)]; // density and temperature for c0, c1, and c0+c1
+    Real *mixparam = new Real[2*nx2*nx3];  // mixing parameter and mass weight, averaged over radius
+    Real *velparam = new Real[6*nx2*nx3];  // radial velocities and mass weights for c0, c1, c0+c1
+    //Real *volparam = new Real[3];          // volume
+    for (int s=0; s<2*(nscl+1); s++) {
       stdparam[s] = 0.0;
-    for (int s=0; s<4*(nscl+1); s++) 
+    }
+    for (int s=0; s<6*(nscl+1)+3; s++) 
       avgparam[s] = 0.0;
     for (int s=0; s<2*nx2*nx3; s++)
       mixparam[s] = 0.0;
+    for (int s=0; s<6*nx2*nx3; s++)
+      velparam[s] = 0.0;
 
     for (int k=ks; k<=ke; k++) {
       for (int j=js; j<=je; j++) {
@@ -645,32 +652,49 @@ void MeshBlock::OTFWorkBeforeOutput(ParameterInput *pin) {
             thet = pcoord->x2v(j);
           }
           d                                      = phydro->u(IDN,k,j,i);
+          v1                                     = phydro->u(IM1,k,j,i)/d;
           c0                                     = phydro->u(NHYDRO-nscl  ,k,j,i);
           c1                                     = phydro->u(NHYDRO-nscl+1,k,j,i);
           dc                                     = c0+c1;
+          p                                      = phydro->w(IPR,k,j,i)/d;
           // fastest index: rad, thet. middle index: scal. slowest index: quantity, mass
-          avgparam[(nscl+1)*2*0 +2*0 + 0]       += rad *c0*dv;
+          avgparam[(nscl+1)*2*0 +2*0 + 0]       += rad *c0*dv; //positions
           avgparam[(nscl+1)*2*0 +2*0 + 1]       += thet*c0*dv;
           avgparam[(nscl+1)*2*0 +2*1 + 0]       += rad *c1*dv;
           avgparam[(nscl+1)*2*0 +2*1 + 1]       += thet*c1*dv;
           avgparam[(nscl+1)*2*0 +2*2 + 0]       += rad *dc*dv;
           avgparam[(nscl+1)*2*0 +2*2 + 1]       += thet*dc*dv;
-          avgparam[(nscl+1)*2*1 +2*0 + 0]       += c0*dv;
+          avgparam[(nscl+1)*2*1 +2*0 + 0]       += c0*dv; // masses
           avgparam[(nscl+1)*2*1 +2*0 + 1]       += c0*dv;
           avgparam[(nscl+1)*2*1 +2*1 + 0]       += c1*dv;
           avgparam[(nscl+1)*2*1 +2*1 + 1]       += c1*dv;
           avgparam[(nscl+1)*2*1 +2*2 + 0]       += dc*dv;
           avgparam[(nscl+1)*2*1 +2*2 + 1]       += dc*dv;
+          avgparam[ioff+2*0+0]                  += p*c0*dv; // temperature * density...
+          avgparam[ioff+2*0+1]                  += c0*dv; // density
+          avgparam[ioff+2*1+0]                  += p*c1*dv;
+          avgparam[ioff+2*1+1]                  += c1*dv; 
+          avgparam[ioff+2*2+0]                  += p*dc*dv; 
+          avgparam[ioff+2*2+1]                  += dc*dv;
+          avgparam[ioff+2*(nscl+1)+0]           += c0/d*dv; // volume
+          avgparam[ioff+2*(nscl+1)+1]           += c1/d*dv;
+          avgparam[ioff+2*(nscl+1)+2]           += dc/d*dv;
           mixpar                                 = 0.5*(1.0+(c1-c0)/(c1+c0));
           mixmas                                 = dc*dv;
           mixparam[nx3*nx2*0+nx2*(k-ks)+(j-js)] += mixpar*mixmas;
           mixparam[nx3*nx2*1+nx2*(k-ks)+(j-js)] += mixmas;
+          velparam[nx3*nx2*0+nx2*(k-ks)+(j-js)] += v1*dc*dv;
+          velparam[nx3*nx2*1+nx2*(k-ks)+(j-js)] += dc*dv;
+          velparam[nx3*nx2*2+nx2*(k-ks)+(j-js)] += v1*c0*dv;
+          velparam[nx3*nx2*3+nx2*(k-ks)+(j-js)] += c0*dv;
+          velparam[nx3*nx2*4+nx2*(k-ks)+(j-js)] += v1*c1*dv;
+          velparam[nx3*nx2*5+nx2*(k-ks)+(j-js)] += c1*dv;
         }
       }
     }
 #ifdef MPI_PARALLEL
     std::stringstream msg;
-    mpierr = MPI_Allreduce(MPI_IN_PLACE,avgparam,4*(nscl+1),MPI_ATHENA_REAL,MPI_SUM,MPI_COMM_WORLD); 
+    mpierr = MPI_Allreduce(MPI_IN_PLACE,avgparam,6*(nscl+1)+3,MPI_ATHENA_REAL,MPI_SUM,MPI_COMM_WORLD); 
     if (mpierr) {
       msg << "[knovae]: MPI_Allreduce error avgparam = " << mpierr << std::endl;
       throw std::runtime_error(msg.str().c_str());
@@ -681,12 +705,28 @@ void MeshBlock::OTFWorkBeforeOutput(ParameterInput *pin) {
         msg << "[knovae]: MPI_Allreduce error mixparam = " << mpierr << std::endl;
         throw std::runtime_error(msg.str().c_str());
       }
+      mpierr = MPI_Allreduce(MPI_IN_PLACE,velparam,6*nx2*nx3 ,MPI_ATHENA_REAL,MPI_SUM,comm_x1.comsub);
+      if (mpierr) {
+        msg << "[knovae]: MPI_Allreduce error velparam = " << mpierr << std::endl;
+        throw std::runtime_error(msg.str().c_str());
+      }
     }
 #endif // MPI_PARALLEL
     for (int s=0; s<2*(nscl+1); s++) 
-      avgparam[s] /= avgparam[s+2*(nscl+1)];
-    for (int s=0; s<nx2*nx3; s++) 
-      mixparam[s] /= mixparam[s+nx2*nx3];
+      avgparam[s] /= avgparam[s+2*(nscl+1)]; // these are rad and thet
+    for (int s=0; s<nscl+1; s++) {
+      avgparam[ioff+2*s+0] /= avgparam[ioff+2*s+1]; // temperature
+    }
+    for (int s=0; s<nscl+1; s++) {
+      avgparam[ioff+2*s+1] /= avgparam[ioff+2*(nscl+1)+s]; // density
+    }
+    for (int s=0; s<nx2*nx3; s++) {
+      mixparam[s]           /= mixparam[s+nx2*nx3];
+      velparam[s+0*nx2*nx3] /= velparam[s+1*nx2*nx3];
+      velparam[s+2*nx2*nx3] /= velparam[s+3*nx2*nx3];
+      velparam[s+4*nx2*nx3] /= velparam[s+5*nx2*nx3];
+    }
+      
     // still need to get dispersion of color-averaged theta
     for (int k=ks; k<=ke; k++) {
       for (int j=js; j<=je; j++) {
@@ -742,12 +782,12 @@ void MeshBlock::OTFWorkBeforeOutput(ParameterInput *pin) {
     // of ranks has to communicate the results, though. We need a special communicator for that, too.
     // We have now the slab communicator for the bottom slab. 
     int off = 0;
-    for (int s=0; s<4*(nscl+1); s++) 
+    for (int s=0; s<6*(nscl+1)+3; s++) 
       otf_data.data[    s] = avgparam[s];
-    off = 4*(nscl+1);
+    off = 6*(nscl+1)+3;
     for (int s=0; s<2*(nscl+1); s++)
       otf_data.data[off+s] = stdparam[s];
-    off = 6*(nscl+1);
+    off = 8*(nscl+1)+3;
 #ifdef MPI_PARALLEL
     if (comm_slab.comsub != MPI_COMM_NULL) {
       mpierr = MPI_Allgather(mixparam, 2*nx2*nx3, MPI_ATHENA_REAL, &(otf_data.data[off]), 2*nx2*nx3, MPI_ATHENA_REAL, comm_slab.comsub);
@@ -755,9 +795,15 @@ void MeshBlock::OTFWorkBeforeOutput(ParameterInput *pin) {
         msg << "[knovae]: MPI_Allgather error mixparam = " << mpierr << std::endl;
         throw std::runtime_error(msg.str().c_str());
       }
+      off = 8*(nscl+1)+3+2*pmy_mesh->mesh_size.nx2*pmy_mesh->mesh_size.nx3;
+      mpierr = MPI_Allgather(velparam, 6*nx2*nx3, MPI_ATHENA_REAL, &(otf_data.data[off]), 6*nx2*nx3, MPI_ATHENA_REAL, comm_slab.comsub);
+      if (mpierr) {
+        msg << "[knovae]: MPI_Allgather error mixparam = " << mpierr << std::endl;
+        throw std::runtime_error(msg.str().c_str());
+      }
     }
 #else
-    for (int s=0; s<2*nx2*nx3; s++)
+    for (int s=0; s<8*nx2*nx3; s++)
       otf_data.data[off+s] = mixparam[s];
 #endif
     delete [] avgparam;
