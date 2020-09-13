@@ -231,7 +231,7 @@ private:
   SrcTermFunc_t UserSourceTerm_;
   StaticGravPotFunc_t StaticGravPot_;
   BValFunc_t BoundaryFunction_[6];
-	BValFuncCL_t BoundaryFunctionCL_[6]; 
+  BValFuncCL_t BoundaryFunctionCL_[6]; 
   AMRFlagFunc_t AMRFlag_;
   TimeStepFunc_t UserTimeStep_;
   HistoryOutputFunc_t *user_history_func_;
@@ -240,6 +240,10 @@ private:
   ConductionCoeff_t ConductionCoeff_;
   FieldDiffusionCoeff_t FieldDiffusivity_;
   MGBoundaryFunc_t MGBoundaryFunction_[6];
+
+  WallVel_t GridDiffEq_;
+  CalcGridData_t CalcGridData_;
+  AthenaArray<Real> GridData; 
 
   void AllocateRealUserMeshDataField(int n);
   void AllocateIntUserMeshDataField(int n);
@@ -265,6 +269,10 @@ private:
   void SetFourPiG(Real fpg) { four_pi_G_=fpg; }
   void SetGravityThreshold(Real eps) { grav_eps_=eps; }
   void SetMeanDensity(Real d0) { grav_mean_rho_=d0; }
+
+  void EnrollGridDiffEq(WallVel_t my_func);
+  void EnrollCalcGridData(CalcGridData_t my_func);
+  void SetGridData(int n);
 };
 
 

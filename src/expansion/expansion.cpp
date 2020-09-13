@@ -59,7 +59,6 @@ Expansion::Expansion(MeshBlock *pmb, ParameterInput *pin) {
   //velx2f.NewAthenaArray((ncells2+1));
   //velx3f.NewAthenaArray((ncells3+1));
 
-  nCons.NewAthenaArray(NHYDRO,ncells3,ncells2,ncells1);
 
   myFlux[X1DIR].NewAthenaArray(NHYDRO,ncells3,ncells2,ncells1+1);
   if (pmy_block->block_size.nx2 > 1)
@@ -184,59 +183,31 @@ void Expansion::ExpAddSourceTerms(Real myDt, AthenaArray<Real> &prim, AthenaArra
   return;
 }
 
-void Expansion::UpdateExpData(MeshBlock *pmb, int  stage ,Real time, Real dt){
-  int dirPrim = 0; 
+void Expansion::UpdatVelData(MeshBlock *pmb, int  stage ,Real time, Real dt){
   mydt = dt;
-  if (pmb->pmy_mesh->NewXf_ != NULL) {
+  if (pmb->pmy_mesh->GridDiffEq_ != NULL) {
     //Edit each delx1f, delx2f, delx3f before source terms and editing of grid      
     for (int k = kl; k<=ku+1;++k){
-      delx3f(k) = pmb->pmy_mesh->NewXf_(pmb->pcoord->x3f(k),pmb->pmy_mesh->time,dt,dirPrim+2,pmb->pmy_mesh->ExpGridData) - pmb->pcoord->x3f(k);
-      //velx3f(k) = delx3f(k)/dt;
+      v3f(k) = pmb->pmy_mesh->GridDiffEq_(pmb->pcoord->x3f(k),k,pmb->pmy_mesh->time,dt,2,pmb->pmy_mesh->GridData);
     }
     for (int j = jl;j<=ju+1;++j){      
-      delx2f(j) = pmb->pmy_mesh->NewXf_(pmb->pcoord->x2f(j),pmb->pmy_mesh->time,dt,dirPrim+1,pmb->pmy_mesh->ExpGridData) - pmb->pcoord->x2f(j);
+      v2f(j) = pmb->pmy_mesh->GridDiffEq_(pmb->pcoord->x2f(j),j,pmb->pmy_mesh->time,dt,1,pmb->pmy_mesh->GridData);
       //velx2f(j) = delx2f(j)/dt;
     }
-    Real dx;
     for (int i = il; i<=iu+1;++i){
-      dx = pmb->pmy_mesh->NewXf_(pmb->pcoord->x1f(i),pmb->pmy_mesh->time,dt,dirPrim,pmb->pmy_mesh->ExpGridData) - pmb->pcoord->x1f(i);
-      if (dt!=0.0) delv1f(i) = (dx-delx1f(i))/(dt);
-      delx1f(i) = dx;
-
-      //velx1f(i) = delx1f(i)/dt;
-      //if (i >= iu) std::cout << delx1f(i) << std::endl;
+      v1f(i) = pmb->pmy_mesh->GridDiffEq_(pmb->pcoord->x1f(i),i,pmb->pmy_mesh->time,dt,0,pmb->pmy_mesh->GridData); 
     }
-
-    //Real dV1p, dV1m, dV2p, dV2m, dV3p, dV3m = 0.0;
-    for (int k = kl; k<=ku; ++k) {
-      for (int j = jl; j<=ju; ++j) {
-        for (int i = il; i<=iu; ++i) {
-          //for (int n = 0; i<NHYDRO; ++i) {
-          nCons(IDN,k,j,i) = pmb->phydro->w(IDN,k,j,i);
-          nCons(IS0,k,j,i) = pmb->phydro->w(IDN,k,j,i)*pmb->phydro->w(IS0,k,j,i);
-          //dV1p = delx1f(i+1) * pmb->pcoord->GetFace1Area(k,j,i+1);
-          //dV2p = delx2f(j+1) * pmb->pcoord->GetFace2Area(k,j+1,i);
-          //dV3p = delx3f(k+1) * pmb->pcoord->GetFace3Area(k+1,j,i);
-          //dV1m = delx1f(i) * pmb->pcoord->GetFace1Area(k,j,i);
-          //dV2m = delx2f(j) * pmb->pcoord->GetFace2Area(k,j,i);
-          //dV3m = delx3f(k) * pmb->pcoord->GetFace3Area(k,j,i);
-          //volPrime(k,j,i) = 0.0;//(dV1p+dV2p+dV3p-dV1m-dV2m-dV3m)/dt;
-          //}
-        }
-      }
-    }
-  }
-   
+  } 
   return;
 }
 
-void Expansion::ExpGridEdit(MeshBlock *pmb){
+void Expansion::GridEdit(MeshBlock *pmb){
   //pmb->pcoord->x1f(0) += 0.1;
   //std::cout << "Editing Grid" << std::endl;
   //FACE CENTERED
   //x1
   for (int i=il; i<=iu+1; ++i){
-    pmb->pcoord->x1f(i) += delx1f(i);
+    pmb->pcoord->x1f(i) = x1_0(i);
   }
   for (int i=il; i<=iu; ++i) {
     //std::cout << "i=" << i << " dxi n = " << pmb->pcoord->dx1f(i) ;
@@ -245,26 +216,18 @@ void Expansion::ExpGridEdit(MeshBlock *pmb){
   }
   
   //x2  
-  if (pmb->block_size.nx2 ==1){
-    pmb->pcoord->x2f(jl) += delx2f(jl);
-    pmb->pcoord->x2f(jl+1) += delx2f(jl+1);
-    pmb->pcoord->dx2f(jl) = pmb->pcoord->x2f(jl+1) - pmb->pcoord->x2f(jl);
-  } else {
+  if (pmb->block_size.nx2 !=1){
     for (int j=jl; j<=ju+1; ++j){
-      pmb->pcoord->x2f(j) += delx2f(j);
+      pmb->pcoord->x2f(j) = x2_0(j);
     }
     for (int j=jl; j<=ju; ++j) {
       pmb->pcoord->dx2f(j) = pmb->pcoord->x2f(j+1)- pmb->pcoord->x2f(j);
     }
   }                      
   //x3
-  if (pmb->block_size.nx3 ==1){
-    pmb->pcoord->x3f(kl) += delx3f(kl);
-    pmb->pcoord->x3f(kl+1) += delx3f(kl+1);
-    pmb->pcoord->dx3f(kl) = pmb->pcoord->x3f(kl+1)- pmb->pcoord->x3f(kl);
-  } else {  
+  if (pmb->block_size.nx3 !=1){
     for (int k=kl; k<=ku+1; ++k){
-      pmb->pcoord->x3f(k) += delx3f(k);
+      pmb->pcoord->x3f(k) = x3_0(k);
     }
     for (int k=kl; k<=ku; ++k) {
       pmb->pcoord->dx3f(k) = pmb->pcoord->x3f(k+1)- pmb->pcoord->x3f(k);

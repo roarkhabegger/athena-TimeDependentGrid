@@ -2368,3 +2368,38 @@ void Mesh::AdaptiveMeshRefinement(ParameterInput *pin) {
 unsigned int Mesh::CreateAMRMPITag(int lid, int ox1, int ox2, int ox3) {
   return (lid<<8) | (ox1<<7)| (ox2<<6) | (ox3<<5) | TAG_AMR;
 }
+
+
+//----------------------------------------------------------------------------------------
+//! \fn void Mesh::EnrollGridDiffEq(WallVel_t my_func)
+//  \brief Enroll a user-defined function for velocity of cell walls for moving grid
+
+void Mesh::EnrollGridDiffEq(WallVel_t my_func) {
+  if (EXPANDING) {
+    GridDiffEq_ = my_func;
+  }
+  return;
+}
+//----------------------------------------------------------------------------------------
+//! \fn void Mesh::EnrollCalcGridData(CalcGridData_t my_func)
+//  \brief Enroll a user-defined function for mesh level data used in calculating the 
+//  movement of the grid. Changes entries in GridData AthenaArray used in the GridDiffEq
+
+void Mesh::EnrollCalcGridData(CalcGridData_t my_func) {
+  if (EXPANDING) {
+    CalcGridData_ = my_func;
+  }
+  return;
+}
+
+
+//----------------------------------------------------------------------------------------
+//! \fn void Mesh::SetGridData(int n)
+//  \brief Set AthenaArray GridData with n Real entries 
+
+void Mesh::SetGridData(int n) {
+  if (EXPANDING) {
+    GridData.NewAthenaArray(n);
+  }
+  return;
+}

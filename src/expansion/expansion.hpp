@@ -39,14 +39,13 @@ public:
   AthenaArray<Real> x1_2, x2_2, x3_2;
 
   Real mydt;
-  int coordSys; //1 = Cartesian, 2 = Cylindrical, 3 = Spherical
   int il, iu, jl, ju, kl, ku, ng; //With Ghost cells
   int ie,is,je,js,ke,ks; //Without ghost cells
 
   void WeightedAverageX(AthenaArray<Real> &x_out, AthenaArray<Real> &x_in1, AthenaArray<Real> &x_in2, const Real wght[3]);
   void AddWallFluxDivergence( Real dt, AthenaArray<Real> &prim, AthenaArray<Real> &cons);
   void GridEdit(MeshBlock *pmb);
-  void UpdateGridData(MeshBlock *pmb, int stage ,Real time, Real dt);
+  void UpdateVelData(MeshBlock *pmb, int stage ,Real time, Real dt);
 
 private:
   MeshBlock* pmy_block;    // ptr to MeshBlock containing this Expansion

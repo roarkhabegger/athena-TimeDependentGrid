@@ -49,15 +49,14 @@ Real LogMeshSpacingX1(Real x, RegionSize rs);
 void ReflectInnerX1_nonuniform(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
      FaceField &b, Real time, Real dt, int is, int ie, int js, int je, int ks, int ke, int ngh);
 
-Real NewFaceCoord(Real xf, Real time, Real dt, int dir,AthenaArray<Real> gridData);
-void UpdateGridData( int stage, Mesh *pm);
+Real WallVel(Real xf, int i, Real time, Real dt, int dir, AthenaArray<Real> gridData);
+void CalcGridData(Mesh *pm);
 int ShockDetector(AthenaArray<Real> data, AthenaArray<Real> grid, Real eps);
 
 
 void ExpandingOuterX1_UniformMedium(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
      FaceField &b, Real time, Real dt, int is, int ie, int js, int je, int ks, int ke, int ngh);
 
-Real ExpGridTimeStep(MeshBlock *pmb);
 
 Real outerDens;
 Real outerVel;
@@ -70,7 +69,7 @@ Real outerS;
 //New face coord. Depending on direction and GridAData and time, return where the cell
 //wall at xf needs to move to. I.e. given xf_n return xf_{n+1} the position at the 
 //new time step
-Real NewFaceCoord(Real xf, Real time, Real dt, int dir, AthenaArray<Real> gridData) {
+Real WallVel(Real xf, int i, Real time, Real dt, int dir, AthenaArray<Real> gridData) {
   Real retVal = xf;
   //std::cout << xf << std::endl;
   // 0 -> x0, 1 -> shock Location, 2 -> Shock Velocity, 3 -> half of comoving width     
@@ -106,7 +105,7 @@ Real NewFaceCoord(Real xf, Real time, Real dt, int dir, AthenaArray<Real> gridDa
 //throughout the process of calcualting source terms and moving the grid
 //NOTE: You have access to Mesh here as well as the ExpGridData array in Mesh which
 //is where you should store it
-void UpdateGridData( int stage, Mesh *pm) {
+void UpdateGridData(Mesh *pm) {
   //This gets called once per mesh dt
   //std::cout << "Updating Grid Data" << std::endl; 
 
@@ -211,6 +210,24 @@ int ShockDetector(AthenaArray<Real> data, AthenaArray<Real> grid, Real eps ) {
   return loc;
 }
 
+//====================================================================================
+// "Logarithmic" (power-law) mesh
+// Note that the grid setup asks for the **local** x1min, x1max etc. 
+// x is the "logical" position in the grid, with the logical grid runing
+// from 0 to 1, i.e. x = i/Nx
+Real LogMeshSpacingX1(Real x, RegionSize rs) {
+  Real xf, xrat;
+  xrat   = pow(rs.x1max/rs.x1min,1.0/((Real) rs.nx1)); // Only valid for fixed grid, no MPI
+  xf     = rs.x1min*pow(xrat,x*rs.nx1); // x = i/Nx
+  return xf;
+}
+
+//Global Variables for OuterX1
+Real outerDens;
+Real outerVel;
+Real outerPres;
+Real outerS;
+
 void ExpandingOuterX1_UniformMedium(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
      FaceField &b, Real time, Real dt, int is, int ie, int js, int je, int ks, int ke, int ngh) {
   
@@ -263,51 +280,6 @@ void ExpandingOuterX1_UniformMedium(MeshBlock *pmb, Coordinates *pco, AthenaArra
   
 
   return;
-}
-//====================================================================================
-// Enroll user-specific functions
-void Mesh::InitUserMeshData(ParameterInput *pin) {
-  Real x1rat = pin->GetOrAddReal("mesh","x1rat",0.0);
-  
-  if (x1rat < 0.0) {
-    EnrollUserMeshGenerator(X1DIR, LogMeshSpacingX1);
-  }
-  if (mesh_bcs[INNER_X1] == GetBoundaryFlag("user")) {
-    EnrollUserBoundaryFunction(INNER_X1, ReflectInnerX1_nonuniform);
-  }
-  
-  if (EXPANDING) {
-    SetExpGridData(4);
-    EnrollNewXf(NewFaceCoord);
-    EnrollExpMeshData(UpdateGridData);
-    
-    if (mesh_bcs[OUTER_X1] == GetBoundaryFlag("user")) {
-      EnrollUserBoundaryFunction(OUTER_X1,ExpandingOuterX1_UniformMedium);
-    }
-    //EnrollUserTimeStepFunction(ExpGridTimeStep);
-
-    ExpGridData(0) = pin->GetReal("mesh","x1min");
-    ExpGridData(1) = pin->GetReal("problem","rGrid");
-    ExpGridData(2) = pin->GetReal("problem","vGrid");
-    ExpGridData(3) = pin->GetReal("problem","comWidth");
-    
-  }
-
-  return;
-}
-
-//Make sure grid does not move too far
-
-//====================================================================================
-// "Logarithmic" (power-law) mesh
-// Note that the grid setup asks for the **local** x1min, x1max etc. 
-// x is the "logical" position in the grid, with the logical grid runing
-// from 0 to 1, i.e. x = i/Nx
-Real LogMeshSpacingX1(Real x, RegionSize rs) {
-  Real xf, xrat;
-  xrat   = pow(rs.x1max/rs.x1min,1.0/((Real) rs.nx1)); // Only valid for fixed grid, no MPI
-  xf     = rs.x1min*pow(xrat,x*rs.nx1); // x = i/Nx
-  return xf;
 }
 
 //========================================================================================
@@ -367,6 +339,39 @@ void ReflectInnerX1_nonuniform(MeshBlock *pmb, Coordinates *pco, AthenaArray<Rea
   return;
 }
 
+//====================================================================================
+// Enroll user-specific functions
+void Mesh::InitUserMeshData(ParameterInput *pin) {
+  Real x1rat = pin->GetOrAddReal("mesh","x1rat",0.0);
+  
+  if (x1rat < 0.0) {
+    EnrollUserMeshGenerator(X1DIR, LogMeshSpacingX1);
+  }
+  if (mesh_bcs[INNER_X1] == GetBoundaryFlag("user")) {
+    EnrollUserBoundaryFunction(INNER_X1, ReflectInnerX1_nonuniform);
+  }
+  
+  if (EXPANDING) {
+    SetGridData(4);
+    EnrollGridDiffEq(WallVel);
+    EnrollCalcGridData(UpdateGridData);
+    
+    if (mesh_bcs[OUTER_X1] == GetBoundaryFlag("user")) {
+      EnrollUserBoundaryFunction(OUTER_X1,ExpandingOuterX1_UniformMedium);
+    }
+    //EnrollUserTimeStepFunction(ExpGridTimeStep);
+
+    GridData(0) = pin->GetReal("mesh","x1min");
+    GridData(1) = pin->GetReal("problem","rGrid");
+    GridData(2) = pin->GetReal("problem","vGrid");
+    GridData(3) = pin->GetReal("problem","comWidth");
+    
+  }
+
+  return;
+}
+
+//Make sure grid does not move too far
 //========================================================================================
 //! \fn void MeshBlock::InitOTFOutput(ParameterInput *pin)
 //  \brief Sets data structures etc for on-the-fly analysis.

@@ -189,4 +189,6 @@ typedef void (*FieldDiffusionCoeff_t)(FieldDiffusion *pfdif, MeshBlock *pmb,
                                       const AthenaArray<Real> &bmag,
                                       int is, int ie, int js, int je, int ks, int ke);
 
+typedef Real (*WallVel_t)(Real xf, int i, Real time, Real dt, int dir, AthenaArray<Real> gridData);
+typedef void (*CalcGridData_t)(Mesh *pm);
 #endif // ATHENA_HPP_
