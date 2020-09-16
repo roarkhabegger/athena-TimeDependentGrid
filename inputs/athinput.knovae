@@ -1,0 +1,68 @@
+<comment>
+problem   = spherical blast wave in spherical coordinates
+reference = Gardiner. T.A. & Stone, J.M., JCP, 205, 509 (2005) (for MHD version of test)
+configure = --prob=blast --coord=spherical_polar
+
+<job>
+problem_id = knovae      # problem ID: basename of output filenames
+
+<output1>
+file_type  = hdf5        # Binary data dump
+variable   = cons
+dt         = 0.01       # time increment between outputs
+
+<time>
+cfl_number = 0.2        # The Courant, Friedrichs, & Lewy (CFL) Number
+nlim       = -1         # cycle limit
+tlim       =  2.0     # time limit
+integrator  = rk4    # time integration algorithm
+xorder      = 3         # order of spatial reconstruction
+ncycle_out  = 10      # interval for stdout summary info
+
+<mesh>
+nx1        = 64     # Number of zones in X1-direction
+x1min      = 10      # minimum value of X1
+x1max      = 70        # maximum value of X1 
+ix1_bc     = reflecting    # inner-X1 boundary flag
+ox1_bc     = user  # outer-X1 boundary flag
+
+nx2        = 1             # Number of zones in X2-direction
+x2min      = 0.52359877559  # minimum value of X2
+x2max      = 1.57079632679  # maximum value of X2
+ix2_bc     = reflecting        # inner-X2 boundary flag
+ox2_bc     = reflecting        # outer-X2 boundary flag
+
+nx3        = 1             # Number of zones in X3-direction
+x3min      = -0.78539816339 # minimum value of X3
+x3max      =  0.78539816339 # maximum value of X3
+ix3_bc     = reflecting        # inner-X3 boundary flag
+ox3_bc     = reflecting      # outer-X3 boundary flag
+
+
+<hydro>
+gamma           = 1.666666666667  # gamma = C_p/C_v
+iso_sound_speed = 1.0
+dfloor          = 1e-12
+pfloor          = 1e-12
+
+<problem>
+compute_error = false         # check whether blast is spherical at end
+
+d0            = 1.0           # ambient density
+p0            = 2.0       # ambient pressure
+dej            = 2.0         # eject mass
+rej            = 50          # Radius ejecta
+pej            = 2.0       # total energy of ejecta
+dr            = 1e-3          # steepness of transition
+vej            = 0.0          # ejecta speed
+
+vGrid          = 0.5
+rGrid          = 65
+
+
+
+comWidth      = 0.12
+x1_0          = 0.0           # r-coord of center of blast
+x2_0          = 0.0           # theta-coord of center of blast (pi/3)
+x3_0          = 0.0           # phi-coord of center of blast
+

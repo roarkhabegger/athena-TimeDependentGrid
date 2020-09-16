@@ -51,6 +51,7 @@ struct RegionSize;
 class HydroDiffusion;
 class FieldDiffusion;
 
+class Mesh;
 //--------------------------------------------------------------------------------------
 //! \struct LogicalLocation
 //  \brief stores logical location and level of meshblock

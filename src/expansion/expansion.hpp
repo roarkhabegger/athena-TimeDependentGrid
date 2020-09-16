@@ -42,11 +42,18 @@ public:
   int il, iu, jl, ju, kl, ku, ng; //With Ghost cells
   int ie,is,je,js,ke,ks; //Without ghost cells
 
-  void WeightedAverageX(AthenaArray<Real> &x_out, AthenaArray<Real> &x_in1, AthenaArray<Real> &x_in2, const Real wght[3]);
+  void WeightedAveX(const int low, const int up, AthenaArray<Real> &x_out, AthenaArray<Real> &x_in1, AthenaArray<Real> &x_in2, const Real wght[3]);
   void AddWallFluxDivergence( Real dt, AthenaArray<Real> &prim, AthenaArray<Real> &cons);
-  void GridEdit(MeshBlock *pmb);
-  void UpdateVelData(MeshBlock *pmb, int stage ,Real time, Real dt);
+  void IntegrateWalls(Real dt);
 
+  void GridEdit(MeshBlock *pmb);
+  void UpdateVelData(MeshBlock *pmb,Real time, Real dt);
+  Real GridTimeStep(MeshBlock *pmb);
+  void UpdateMeshSize(MeshBlock *pmb);
+
+  void InterpData( const int myn, const int myk, const int myj, const int myi, const double dt,
+                   const AthenaArray<Real> grid, const AthenaArray<Real> gridVel,
+                   const AthenaArray<Real> data, AthenaArray<Real> &output); 
 private:
   MeshBlock* pmy_block;    // ptr to MeshBlock containing this Expansion
 

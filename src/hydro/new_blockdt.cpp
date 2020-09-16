@@ -171,11 +171,14 @@ Real Hydro::NewBlockTimeStep(void) {
     min_dt = std::min(min_dt,mindt_oa);
     min_dt = std::min(min_dt,mindt_h);
   } // field diffusion
-
+  
   min_dt *= pmb->pmy_mesh->cfl_number;
 
   if (UserTimeStep_!=NULL) {
     min_dt = std::min(min_dt, UserTimeStep_(pmb));
+  }
+  if (EXPANDING) {
+    min_dt = std::min(min_dt, pmb->pex->GridTimeStep(pmb));
   }
 
   pmb->new_block_dt=min_dt;

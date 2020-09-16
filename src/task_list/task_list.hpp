@@ -130,8 +130,8 @@ public:
 
   enum TaskStatus HydroSend(MeshBlock *pmb, int stage);
   enum TaskStatus FieldSend(MeshBlock *pmb, int stage);
-	enum TaskStatus InternalEnergySync(MeshBlock *pmb, int stage); 
-	enum TaskStatus InternalEnergyCheck(MeshBlock *pmb, int stage); 
+  enum TaskStatus InternalEnergySync(MeshBlock *pmb, int stage); 
+  enum TaskStatus InternalEnergyCheck(MeshBlock *pmb, int stage); 
 
   enum TaskStatus HydroReceive(MeshBlock *pmb, int stage);
   enum TaskStatus FieldReceive(MeshBlock *pmb, int stage);
@@ -158,18 +158,24 @@ public:
 
   enum TaskStatus StartupIntegrator(MeshBlock *pmb, int stage);
 
-	enum TaskStatus ClessCalculateFluxes(MeshBlock *pmb, int stage); 
-	enum TaskStatus ClessIntegrate(MeshBlock *pmb, int stage); 
-	enum TaskStatus ClessSourceTerms(MeshBlock *pmb, int stage); 
-	enum TaskStatus ClessSend(MeshBlock *pmb, int stage);
-	enum TaskStatus ClessReceive(MeshBlock *pmb, int stage);
-	enum TaskStatus ClessProlongation(MeshBlock *pmb, int stage);
+  enum TaskStatus ClessCalculateFluxes(MeshBlock *pmb, int stage); 
+  enum TaskStatus ClessIntegrate(MeshBlock *pmb, int stage); 
+  enum TaskStatus ClessSourceTerms(MeshBlock *pmb, int stage); 
+  enum TaskStatus ClessSend(MeshBlock *pmb, int stage);
+  enum TaskStatus ClessReceive(MeshBlock *pmb, int stage);
+  enum TaskStatus ClessProlongation(MeshBlock *pmb, int stage);
   enum TaskStatus ClessPrimitives(MeshBlock *pmb, int stage);
   enum TaskStatus ClessPhysicalBoundary(MeshBlock *pmb, int stage);
-	enum TaskStatus ClessFluxCorrectSend(MeshBlock *pmb, int stage);
-	enum TaskStatus ClessFluxCorrectReceive(MeshBlock *pmb, int stage);
-	enum TaskStatus ClessStartupIntegrator(MeshBlock *pmb, int stage); 
-	enum TaskStatus ClessNewBlockTimeStep(MeshBlock *pmb, int stage);
+  enum TaskStatus ClessFluxCorrectSend(MeshBlock *pmb, int stage);
+  enum TaskStatus ClessFluxCorrectReceive(MeshBlock *pmb, int stage);
+  enum TaskStatus ClessStartupIntegrator(MeshBlock *pmb, int stage); 
+  enum TaskStatus ClessNewBlockTimeStep(MeshBlock *pmb, int stage);
+
+  enum TaskStatus GridMove(MeshBlock *pmb, int stage);
+  enum TaskStatus GridCalculate(MeshBlock *pmb, int stage);
+  enum TaskStatus GridIntegrate(MeshBlock *pmb, int stage);
+
+
 };
 
 
@@ -248,22 +254,28 @@ namespace HydroIntegratorTaskNames {
   const uint128_t DIFFUSE_FLD=1LL<<54;
   const uint128_t CALC_DIFFUSIVITY=1LL<<55;
 
-	const uint128_t SYNC_IE=1LL<<56;
-	const uint128_t CHECK_IE=1LL<<57;
+  const uint128_t SYNC_IE=1LL<<56;
+  const uint128_t CHECK_IE=1LL<<57;
 
-	// cless tasks 
-	const uint128_t CL_CALC_FLX =(uint128_t)1LL<<58;
-	const uint128_t CL_INT      =(uint128_t)1LL<<59;
-	const uint128_t CL_SRCTERM  =(uint128_t)1LL<<60;
-	const uint128_t CL_SEND     =(uint128_t)1LL<<61;
-	const uint128_t CL_RECV     =(uint128_t)1LL<<62;
-	const uint128_t CL_PROLONG  =(uint128_t)1LL<<63; 
-	const uint128_t CL_CON2PRIM =(uint128_t)1LL<<64;
-	const uint128_t CL_PHY_BVAL =(uint128_t)1LL<<65;
-	const uint128_t CL_SEND_FLX =(uint128_t)1LL<<66;
-	const uint128_t CL_RECV_FLX =(uint128_t)1LL<<67; 
-	const uint128_t CL_START_INT=(uint128_t)1LL<<68;
-	const uint128_t CL_NEW_DT		=(uint128_t)1LL<<69;
+  // cless tasks 
+  const uint128_t CL_CALC_FLX =(uint128_t)1LL<<58;
+  const uint128_t CL_INT      =(uint128_t)1LL<<59;
+  const uint128_t CL_SRCTERM  =(uint128_t)1LL<<60;
+  const uint128_t CL_SEND     =(uint128_t)1LL<<61;
+  const uint128_t CL_RECV     =(uint128_t)1LL<<62;
+  const uint128_t CL_PROLONG  =(uint128_t)1LL<<63; 
+  const uint128_t CL_CON2PRIM =(uint128_t)1LL<<64;
+  const uint128_t CL_PHY_BVAL =(uint128_t)1LL<<65;
+  const uint128_t CL_SEND_FLX =(uint128_t)1LL<<66;
+  const uint128_t CL_RECV_FLX =(uint128_t)1LL<<67; 
+  const uint128_t CL_START_INT=(uint128_t)1LL<<68;
+  const uint128_t CL_NEW_DT		=(uint128_t)1LL<<69;
+  
+  //Time Dependent Grid Tasks
+  const uint128_t EXP_EDIT = (uint128_t)1LL<<70;
+  const uint128_t EXP_INT = (uint128_t)1LL<<71;
+  const uint128_t EXP_CALC = (uint128_t)1LL<<72;
+
 }; // namespace HydroIntegratorTaskNames
 
 

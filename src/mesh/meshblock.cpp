@@ -37,6 +37,7 @@
 #include "mesh_refinement.hpp"
 #include "meshblock_tree.hpp"
 #include "mesh.hpp"
+#include "../expansion/expansion.hpp"
 
 //----------------------------------------------------------------------------------------
 // MeshBlock constructor: constructs coordinate, boundary condition, hydro, field
@@ -139,6 +140,7 @@ MeshBlock::MeshBlock(int igid, int ilid, LogicalLocation iloc, RegionSize input_
   // Initialize OTF output if necessary.
   InitOTFOutput(pin);
 
+  pex = new Expansion(this,pin);
   return;
 }
 

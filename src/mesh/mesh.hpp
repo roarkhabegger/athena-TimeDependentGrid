@@ -44,7 +44,7 @@ class EquationOfState;
 class FFTDriver;
 class FFTGravityDriver;
 class TurbulenceDriver;
-
+class Expansion;
 //----------------------------------------------------------------------------------------
 //! \class MeshBlock
 //  \brief data/functions associated with a single block
@@ -108,6 +108,8 @@ public:
   Gravity *pgrav;
   EquationOfState *peos;
 
+  Expansion *pex;
+
   MeshBlock *prev, *next;
 
   // functions
@@ -159,6 +161,7 @@ class Mesh {
   friend class MGGravityDriver;
   friend class Gravity;
   friend class HydroDiffusion;
+  friend class Expansion;
   friend class FieldDiffusion;
 #ifdef HDF5OUTPUT
   friend class ATHDF5Output;
@@ -206,6 +209,11 @@ public:
   void ApplyOTFWorkBeforeOutput(ParameterInput *pin);
   void UserWorkAfterLoop(ParameterInput *pin); // method in ../pgen
 
+
+  WallVel_t GridDiffEq_;
+  CalcGridData_t CalcGridData_;
+  AthenaArray<Real> GridData; 
+
 private:
   // data
   int root_level, max_level, current_level;
@@ -240,10 +248,6 @@ private:
   ConductionCoeff_t ConductionCoeff_;
   FieldDiffusionCoeff_t FieldDiffusivity_;
   MGBoundaryFunc_t MGBoundaryFunction_[6];
-
-  WallVel_t GridDiffEq_;
-  CalcGridData_t CalcGridData_;
-  AthenaArray<Real> GridData; 
 
   void AllocateRealUserMeshDataField(int n);
   void AllocateIntUserMeshDataField(int n);

@@ -119,7 +119,7 @@ Real CenterIntegration(double xArr[],double prims[], Real myX, int xArrSize) {
 //! \fn Reconstruction::PiecewiseParabolicX1()
 //  \brief Returns L/R interface values in X1-dir constructed using fourth-order PPM and
 //         Colella-Sekora or Mignone limiting over [kl,ku][jl,ju][il,iu]
-void  Expansion::SrcTermDataX1( const int myn, const int myk, const int myj, const int myi, const AthenaArray<Real> grid, const AthenaArray<Real> gridDel, const AthenaArray<Real> data, AthenaArray<Real> &output) {
+void  Expansion::InterpData( const int myn, const int myk, const int myj, const int myi, const double dt, const AthenaArray<Real> grid, const AthenaArray<Real> gridVel, const AthenaArray<Real> data, AthenaArray<Real> &output) {
 
   double xArrL[7], xArrC[7], xArrR[7];
   double primsL[6], primsC[7], primsR[6];
@@ -180,9 +180,9 @@ void  Expansion::SrcTermDataX1( const int myn, const int myk, const int myj, con
   output(1) = valCi;
   output(2) = valRi;
 
-  MyxL = xArrL[2]+gridDel(myi);	
-  MyxR = xArrR[2]+gridDel(myi+1);    
-  MyxC = xArrC[2] + 0.5*(gridDel(myi)+gridDel(myi+1));    
+  MyxL = xArrL[2]+gridVel(myi)*dt;	
+  MyxR = xArrR[2]+gridVel(myi+1)*dt;    
+  MyxC = xArrC[2] + 0.5*(gridVel(myi)+gridVel(myi+1))*dt;    
   valLi =  WallIntegration(xArrL,primsL,MyxL,5);
   valRi = WallIntegration(xArrR,primsR,MyxR,5);
   valCi = CenterIntegration(xArrC, primsC,MyxC,5);
@@ -193,33 +193,4 @@ void  Expansion::SrcTermDataX1( const int myn, const int myk, const int myj, con
 }
 
 
-void  Expansion::FlxCenterX1( const int myn, const int myk, const int myj, const int myi,
-                                         const AthenaArray<Real> grid, const AthenaArray<Real> gridDel,
-                                         const AthenaArray<Real> data, Real &output, const int dir) {
-
-  double xArrC[5];
-  double primsC[5];
-  double termsC[5];
-  double Myx;
-  int m,p,l;
-  double valCi;
-
-    xArrC[0] = 0.5*(grid(myi-2)+grid(myi-1));
-    xArrC[1] = 0.5*(grid(myi-1)+grid(myi));
-    xArrC[2] = 0.5*(grid(myi)+grid(myi+1));
-    xArrC[3] = 0.5*(grid(myi+1)+grid(myi+2));
-    xArrC[4] = 0.5*(grid(myi+2)+grid(myi+3));
-    Myx = xArrC[2]+0.25*(gridDel(myi)+gridDel(myi+1));	
-
-  //std::cout << xArrC << std::endl;
-  primsC[0] = data(myn,myk,myj,myi-2);   
-  primsC[1] = data(myn,myk,myj,myi-1);
-  primsC[2] = data(myn,myk,myj,myi  );
-  primsC[3] = data(myn,myk,myj,myi+1);
-  primsC[4] = data(myn,myk,myj,myi+2);
-  valCi = 0.0;
-  valCi = CenterIntegration(xArrC, primsC,Myx,5);
-  output = valCi; 
-  return;
-}
 

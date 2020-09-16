@@ -57,12 +57,6 @@ int ShockDetector(AthenaArray<Real> data, AthenaArray<Real> grid, Real eps);
 void ExpandingOuterX1_UniformMedium(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
      FaceField &b, Real time, Real dt, int is, int ie, int js, int je, int ks, int ke, int ngh);
 
-
-Real outerDens;
-Real outerVel;
-Real outerPres;
-Real outerS;
-
 //====================================================================================
 // IMplement Expanding Functions
 
@@ -70,7 +64,7 @@ Real outerS;
 //wall at xf needs to move to. I.e. given xf_n return xf_{n+1} the position at the 
 //new time step
 Real WallVel(Real xf, int i, Real time, Real dt, int dir, AthenaArray<Real> gridData) {
-  Real retVal = xf;
+  Real retVal = 0.0;
   //std::cout << xf << std::endl;
   // 0 -> x0, 1 -> shock Location, 2 -> Shock Velocity, 3 -> half of comoving width     
 
@@ -90,7 +84,7 @@ Real WallVel(Real xf, int i, Real time, Real dt, int dir, AthenaArray<Real> grid
     //std::cout << "alpha " << alpha << std::endl;
     //Real delAlpha = (dT)*(LockData(2));
     //if in x-direction
-    retVal += gridData(2)*dt;//(xf-gridData(0)) / (gridData(1)-gridData(0)) * (gridData(2)*dt);
+    retVal += gridData(2);//(xf-gridData(0)) / (gridData(1)-gridData(0)) * (gridData(2)*dt);
     //std::cout << Vel  <<std::endl;
     //std::cout << dT << std::endl;
   } 

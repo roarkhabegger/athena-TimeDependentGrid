@@ -8,6 +8,9 @@
 
 // C/C++ headers
 #include <string>
+#include <algorithm>  // min()
+#include <cfloat>     // FLT_MAX
+#include <cmath>      // fabs(), sqrt()
 
 // Athena++ headers
 #include "expansion.hpp"
@@ -22,11 +25,8 @@
 // constructor, initializes data structures and parameters
 
 Expansion::Expansion(MeshBlock *pmb, ParameterInput *pin) {
-  //std::cout << "Start Exp" << std::endl;
-  //int ie,is,je,js,ke,ks;
   bool coarse_flag=pmb->pcoord->coarse_flag;
   pmy_block = pmb;
-  //int il, iu, jl, ju, kl, ku, ng;
   if (coarse_flag==true) {
     is = pmb->cis; js = pmb->cjs; ks = pmb->cks;
     ie = pmb->cie; je = pmb->cje; ke = pmb->cke;
@@ -45,125 +45,160 @@ Expansion::Expansion(MeshBlock *pmb, ParameterInput *pin) {
   ju = js;
   kl = ks;
   ku = ks;
-  //std::cout <<ncells1 << std::endl;
   if (pmb->block_size.nx2 > 1) {ncells2 = (je-js+1) + 2*ng; jl = js-ng; ju = je+ng;}
   if (pmb->block_size.nx3 > 1) {ncells3 = (ke-ks+1) + 2*ng; kl = ks-ng; ku = ke+ng;}
 
-  delx1f.NewAthenaArray((ncells1+1));
-  //std::cout << "After x1" << std::cout;
-  delx2f.NewAthenaArray((ncells2+1));
-  delx3f.NewAthenaArray((ncells3+1));
-  delv1f.NewAthenaArray((ncells1+1)); 
-  //std::cout << "After alloc Exp" << std::endl;
-  //velx1f.NewAthenaArray((ncells1+1));
-  //velx2f.NewAthenaArray((ncells2+1));
-  //velx3f.NewAthenaArray((ncells3+1));
-
-
-  myFlux[X1DIR].NewAthenaArray(NHYDRO,ncells3,ncells2,ncells1+1);
-  if (pmy_block->block_size.nx2 > 1)
-    myFlux[X2DIR].NewAthenaArray(NHYDRO,ncells3,ncells2+1,ncells1);
-  if (pmy_block->block_size.nx3 > 1)
-    myFlux[X3DIR].NewAthenaArray(NHYDRO,ncells3+1,ncells2,ncells1);
+  //Allocate velocities and grid data
+  v1f.NewAthenaArray((ncells1+1));
+  v2f.NewAthenaArray((ncells2+1));
+  v3f.NewAthenaArray((ncells3+1));
+  x1_0.NewAthenaArray((ncells1+1));
+  x2_0.NewAthenaArray((ncells2+1));
+  x3_0.NewAthenaArray((ncells3+1));
+  x1_1.NewAthenaArray((ncells1+1));
+  x2_1.NewAthenaArray((ncells2+1));
+  x3_1.NewAthenaArray((ncells3+1));
+  x1_2.NewAthenaArray((ncells1+1));
+  x2_2.NewAthenaArray((ncells2+1));
+  x3_2.NewAthenaArray((ncells3+1));
  
-  for (int i=il; i<=iu+1;++i) {delx1f(i) = 0.0;}
+  for (int i=il; i<=iu+1;++i) {
+    v1f(i) = 0.0;
+    x1_0(i) = pmb->pcoord->x1f(i);
+    //if (x1_0(i) == pmb->pmy_mesh->mesh_size.x1min) {
+    //  std::cout << "x1min is i=" << i << " where il=" << il << ", is=" << is << std::endl;
+    //}
+    //if (x1_0(i) == pmb->pmy_mesh->mesh_size.x1max) {
+    //  std::cout << "x1max is i=" << i << " where iu+1=" << iu+1 << ", ie+1=" << ie+1 << std::endl;
+    //}
+  }
 
-  for (int j=jl; j<=ju+1;++j) {delx2f(j) = 0.0;}
+  for (int j=jl; j<=ju+1;++j) {
+    v2f(j) = 0.0;
+    x2_0(j) = pmb->pcoord->x2f(j);
+  }
   
-  for (int k=kl; k<=ku+1;++k) {delx3f(k) = 0.0;}
+  for (int k=kl; k<=ku+1;++k) {
+    v3f(k) = 0.0;
+    x3_0(k) = pmb->pcoord->x3f(k);
+  }
   
-  mydt = 1.0;
-  if (COORDINATE_SYSTEM == "cartesian") {coordSys = 1;}
-  else if(COORDINATE_SYSTEM == "cylindrical") {coordSys = 2;}
-  else if(COORDINATE_SYSTEM == "spherical_polar") {coordSys = 3;}  
-  else {
-    std::cout << "### FATAL WARNING in expansion.cpp" << std::endl
-              << "Invalid coordinate system: must be cartesian or radial expansion "
-              << std::endl;
-       
-  //std::cout << "End Exp" << std::endl;
-  } 
+  mydt = (FLT_MAX);
 }
 // destructor
 
 Expansion::~Expansion() {
-//  std::cout<< "Deleting x1f" << std::endl;
-  delx1f.DeleteAthenaArray();
-//  std::cout<< "Deleted x1f" << std::endl;
-  delx2f.DeleteAthenaArray();
-  delx3f.DeleteAthenaArray(); 
-  //velx1f.DeleteAthenaArray();
- //velx2f.DeleteAthenaArray();
-  //velx3f.DeleteAthenaArray(); 
-  delv1f.DeleteAthenaArray();
-  nCons.DeleteAthenaArray();
+  v1f.DeleteAthenaArray();
+  v2f.DeleteAthenaArray();
+  v3f.DeleteAthenaArray(); 
 
-  myFlux[X1DIR].DeleteAthenaArray();
-  if (pmy_block->block_size.nx2 > 1) myFlux[X2DIR].DeleteAthenaArray();
-  if (pmy_block->block_size.nx3 > 1) myFlux[X3DIR].DeleteAthenaArray();
+  x1_0.DeleteAthenaArray();
+  x2_0.DeleteAthenaArray();
+  x3_0.DeleteAthenaArray();
+  x1_1.DeleteAthenaArray();
+  x2_1.DeleteAthenaArray();
+  x3_1.DeleteAthenaArray();
+  x1_2.DeleteAthenaArray();
+  x2_2.DeleteAthenaArray();
+  x3_2.DeleteAthenaArray();
 }
 
+void Expansion::WeightedAveX(const int low, const int up, AthenaArray<Real> &x_out, AthenaArray<Real> &x_in1, AthenaArray<Real> &x_in2, const Real wght[3]){
+
+  if (wght[2] != 0.0) {
+#pragma omp simd
+    for (int i=low; i<=up; ++i) {
+      x_out(i) = wght[0]*x_out(i) + wght[1]*x_in1(i) + wght[2]*x_in2(i);
+    }     
+  } else { // do not dereference u_in2
+    if (wght[1] != 0.0) {
+#pragma omp simd
+      for (int i=low; i<=up; ++i) {
+        x_out(i) = wght[0]*x_out(i) + wght[1]*x_in1(i);
+      }     
+    } else { // do not dereference u_in1
+      if (wght[0] != 0.0) {
+#pragma omp simd
+        for (int i=low; i<=up; ++i) {
+          x_out(i) = wght[0]*x_out(i);
+        }
+      } else { // directly initialize u_out to 0
+#pragma omp simd
+        for (int i=low; i<=up; ++i) {
+          x_out(i) = 0.0;
+        }
+      }
+    }
+  }
+  return;
+}
+
+
+void Expansion::IntegrateWalls(Real dt){
+
+  for (int i=il; i<=iu+1; ++i) {
+    x1_0(i) += dt*v1f(i);
+  }
+  for (int j=jl; j<=ju+1; ++j) {
+    x2_0(j) += dt*v2f(j);
+  }
+  for (int k=kl; k<=ku+1; ++k) {
+    x3_0(k) += dt*v3f(k);
+  }
+
+  return;
+}
 //Source Term Funciton
-void Expansion::ExpAddSourceTerms(Real myDt, AthenaArray<Real> &prim, AthenaArray<Real> &cons){
-  Real r1, r2, d1, d2 = 0.0;
-  Real dxN,dxN1 = 0.0;
-  Real oldL,oldC,oldR,newL,newC,newR = 0.0;
+void Expansion::AddWallFluxDivergence(Real dt, AthenaArray<Real> &prim, AthenaArray<Real> &cons){
+  Real vol,A1,A2 = 0.0;
+  Real flxL,flxR = 0.0;
+  Real divF = 0.0;
+  Real qL,qR = 0.0;
   Real gm1 = pmy_block->peos->GetGamma()-1.0;
   AthenaArray<Real> IDNArr, IVXArr, IPRArr, ISNArr;
   IDNArr.NewAthenaArray(6);
   IVXArr.NewAthenaArray(6);
   IPRArr.NewAthenaArray(6);
   ISNArr.NewAthenaArray(6);
-  for (int k = ks; k<=ke+1;++k) {
-    for (int j = js; j<=je+1;++j) {      
-      for (int i = is; i<=ie+1;++i) {
-        r1 = pmy_block->pcoord->x1f(i);
-        r2 = pmy_block->pcoord->x1f(i+1);
-        d1 = delx1f(i);
-        d2 = delx1f(i+1);
-
-        dxN = r2-r1;
-        dxN1 = dxN-d1+d2;
-        //std::cout << "ConsPreSrc: " << cons(IDN,k,j,i) ;
-        SrcTermDataX1(IDN,k,j,i,pmy_block->pcoord->x1f,delx1f,prim,IDNArr); 
-        SrcTermDataX1(IVX,k,j,i,pmy_block->pcoord->x1f,delx1f,prim,IVXArr); 
-        SrcTermDataX1(IPR,k,j,i,pmy_block->pcoord->x1f,delx1f,prim,IPRArr); 
-        SrcTermDataX1(IS0,k,j,i,pmy_block->pcoord->x1f,delx1f,prim,ISNArr); 
- 
-        oldL = IDNArr(0);
-        oldC = IDNArr(1);
-        oldR = IDNArr(2);
-        newL = IDNArr(3);
-        newC = IDNArr(4);
-        newR = IDNArr(5);
-        //std::cout << "i=" << i << ", primN=" << prim(IDN,k,j,i) << ", consN=" << cons(IDN,k,j,i) << ", myN=" << oldC << ", newC=" << newC << std::endl;
-        //cons(IDN,k,j,i) -= oldC;
-        //cons(IDN,k,j,i) += newC ;
-        //pmy_block->phydro->u1(IDN,k,j,i) += newC- oldC;
-        //cons(IDN,k,j,i) += 0.25*(newL-oldL+2.0*(newC-oldC)+newR-oldR);
-        //cons(IDN,k,j,i) += ((newR)*d2-(newL)*d1)/dxN1;
-        //cons(IDN,k,j,i) *= dxN/dxN1;
-
-        oldL = ISNArr(0)*IDNArr(0);
-        oldC = ISNArr(1)*IDNArr(1);
-        oldR = ISNArr(2)*IDNArr(2);
-        newL = ISNArr(3)*IDNArr(3);
-        newC = ISNArr(4)*IDNArr(4);
-        newR = ISNArr(5)*IDNArr(5);
-        ///cons(IS0,k,j,i) += 0.25*(newL-oldL+2.0*(newC-oldC)+newR-oldR);
-        ///cons(IS0,k,j,i) += 0.5*((newR+oldR)*d2-(newL+oldL)*d1)/dxN;
-        ///cons(IS0,k,j,i) *= dxN/dxN1;
- //       p2 = IDNArr(1)*IVXArr(1);
-   //     p1 = IVXArr(0)*IDNArr(0);
-        //cons(IM1,k,j,i) += p2*d2/dxN-p1*d1/dxN;
-        //cons(IM1,k,j,i) *= dxN/dxN1;
-
-     //   p2 = IPRArr(1)/gm1+pow(IVXArr(1),2.0)*IDNArr(1)*0.5;
-       // p1 = IPRArr(0)/gm1+ pow(IVXArr(0),2.0)*IDNArr(0)*0.5;
-        //cons(IEN,k,j,i) += p2*d2/dxN-p1*d1/dxN;
-        //cons(IEN,k,j,i) *= dxN/dxN1;
-
+  MeshBlock *pmb = pmy_block;
+  for (int k = ks; k<=ke;++k) {
+    for (int j = js; j<=je;++j) {      
+      for (int i = is; i<=ie;++i) {
+        A1 = pmb->pcoord->GetFace1Area(k,j,i);
+        A2 = pmb->pcoord->GetFace1Area(k,j,i+1);
+        vol = pmb->pcoord->GetCellVolume(k,j,i);
+        InterpData(IDN,k,j,i,dt,x1_0,v1f,prim,IDNArr);
+        InterpData(IVX,k,j,i,dt,x1_0,v1f,prim,IVXArr);
+        InterpData(IPR,k,j,i,dt,x1_0,v1f,prim,IPRArr);
+        InterpData(IS0,k,j,i,dt,x1_0,v1f,prim,ISNArr);
         
+        qL = IDNArr(0);
+        qR = IDNArr(2);
+        flxL = v1f(i) * qL;
+        flxR = v1f(i+1) *qR;
+        divF = flxR*A2 - flxL * A1;
+        cons(IDN,k,j,i) += dt/vol*divF;        
+         
+        qL = IDNArr(0)*IVXArr(0);
+        qR = IDNArr(2)*IVXArr(2);
+        flxL = v1f(i) * qL;
+        flxR = v1f(i+1) *qR;
+        divF = flxR*A2 - flxL * A1;
+        cons(IM1,k,j,i) += dt/vol*divF;        
+        
+        qL = 0.5*IDNArr(0)*SQR(IVXArr(0)) + IPRArr(0)/gm1;
+        qR = 0.5*IDNArr(2)*SQR(IVXArr(2)) +IPRArr(2)/gm1;
+        flxL = v1f(i) * qL;
+        flxR = v1f(i+1) *qR;
+        divF = flxR*A2 - flxL * A1;
+        cons(IEN,k,j,i) += dt/vol*divF;        
+
+        qL = IDNArr(0)*ISNArr(0);
+        qR = IDNArr(2)*ISNArr(2);
+        flxL = v1f(i) * qL;
+        flxR = v1f(i+1) *qR;
+        divF = flxR*A2 - flxL * A1;
+        cons(IS0,k,j,i) += dt/vol*divF;        
       }
     }
   }
@@ -183,7 +218,7 @@ void Expansion::ExpAddSourceTerms(Real myDt, AthenaArray<Real> &prim, AthenaArra
   return;
 }
 
-void Expansion::UpdatVelData(MeshBlock *pmb, int  stage ,Real time, Real dt){
+void Expansion::UpdateVelData(MeshBlock *pmb ,Real time, Real dt){
   mydt = dt;
   if (pmb->pmy_mesh->GridDiffEq_ != NULL) {
     //Edit each delx1f, delx2f, delx3f before source terms and editing of grid      
@@ -208,6 +243,8 @@ void Expansion::GridEdit(MeshBlock *pmb){
   //x1
   for (int i=il; i<=iu+1; ++i){
     pmb->pcoord->x1f(i) = x1_0(i);
+    
+    //if (i == ie) std::cout << "i=" << i << ", x1_0 = " << x1_0(i) << ", x1f = " << pmb->pcoord->x1f(i) <<std::endl;
   }
   for (int i=il; i<=iu; ++i) {
     //std::cout << "i=" << i << " dxi n = " << pmb->pcoord->dx1f(i) ;
@@ -233,16 +270,17 @@ void Expansion::GridEdit(MeshBlock *pmb){
       pmb->pcoord->dx3f(k) = pmb->pcoord->x3f(k+1)- pmb->pcoord->x3f(k);
     }
   }
+
   //Set Reconstruction Coefficients
-  for (int i=(pmb->is)-(NGHOST)+1; i<=(pmb->ie)+(NGHOST)-1; ++i) {
-    Real& dx_im1 = pmb->pcoord->dx1f(i-1);
-    Real& dx_i   = pmb->pcoord->dx1f(i  );
-    Real& dx_ip1 = pmb->pcoord->dx1f(i+1);
+  for (int i=il+1; i<=iu-1; ++i) {
+    Real dx_im1 = pmb->pcoord->dx1f(i-1);
+    Real dx_i   = pmb->pcoord->dx1f(i  );
+    Real dx_ip1 = pmb->pcoord->dx1f(i+1);
     Real qe = dx_i/(dx_im1 + dx_i + dx_ip1);       // Outermost coeff in CW eq 1.7
     pmb->precon->c1i(i) = qe*(2.0*dx_im1+dx_i)/(dx_ip1 + dx_i); // First term in CW eq 1.7
     pmb->precon->c2i(i) = qe*(2.0*dx_ip1+dx_i)/(dx_im1 + dx_i); // Second term in CW eq 1.7
-    if (i > (pmb->is)-(NGHOST)+1) {  // c3-c6 are not computed in first iteration
-      Real& dx_im2 = pmb->pcoord->dx1f(i-2);
+    if (i > il+1) {  // c3-c6 are not computed in first iteration
+      Real dx_im2 = pmb->pcoord->dx1f(i-2);
       Real qa = dx_im2 + dx_im1 + dx_i + dx_ip1;
       Real qb = dx_im1/(dx_im1 + dx_i);
       Real qc = (dx_im2 + dx_im1)/(2.0*dx_im1 + dx_i);
@@ -252,8 +290,8 @@ void Expansion::GridEdit(MeshBlock *pmb){
       pmb->precon->c4i(i) = qb;
       pmb->precon->c5i(i) = dx_i/qa*qd;
       pmb->precon->c6i(i) = -dx_im1/qa*qc;
-     }
-   }
+    }
+  }
   //VOLUME BASED QUANTITIES 
   if (COORDINATE_SYSTEM == "cartesian") {
     //Cartesian
@@ -587,14 +625,19 @@ void Expansion::GridEdit(MeshBlock *pmb){
     }
   }
 
-
-  pmb->block_size.x1min += delx1f(is);
-  pmb->block_size.x2min += delx2f(js);
-  pmb->block_size.x3min += delx3f(ks);
+  if (pmb->block_size.x1min == pmb->pmy_mesh->mesh_size.x1min) {
+    pmb->pmy_mesh->mesh_size.x1min = x1_0(is);
+  }  
+  if (pmb->block_size.x1max == pmb->pmy_mesh->mesh_size.x1max) {
+    pmb->pmy_mesh->mesh_size.x1max = x1_0(ie);
+  }  
+  pmb->block_size.x1min = x1_0(is);
+  pmb->block_size.x2min = x2_0(js);
+  pmb->block_size.x3min = x3_0(ks);
   
-  pmb->block_size.x1max += delx1f(ie);
-  pmb->block_size.x2max += delx2f(je);
-  pmb->block_size.x3max += delx3f(ke);
+  pmb->block_size.x1max = x1_0(ie);
+  pmb->block_size.x2max = x2_0(je);
+  pmb->block_size.x3max = x3_0(ke);
    
   //std::cout << pmb->pcoord->x1f(10) << std::endl;    
   
@@ -602,7 +645,15 @@ void Expansion::GridEdit(MeshBlock *pmb){
   return;
 }
 
-Real ExpGridTimeStep(MeshBlock *pmb){ 
+void Expansion::UpdateMeshSize(MeshBlock *pmb) {
+  
+    
+  
+  return;
+}
+
+
+Real Expansion::GridTimeStep(MeshBlock *pmb){ 
   
   Real nextPosDelta, minCellSize;//, dt;
   
@@ -616,7 +667,7 @@ Real ExpGridTimeStep(MeshBlock *pmb){
 
   Real min_dt = mydt*100000;
   for (int i = is; i<=ie+1;i++){
-    nextPosDelta = NewFaceCoord(pmb->pcoord->x1f(i),pmesh->time,mydt,0,pmesh->ExpGridData)- pmb->pcoord->x1f(i);
+    nextPosDelta = pmesh->GridDiffEq_(pmb->pcoord->x1f(i),i,pmesh->time,mydt,0,pmesh->GridData)*mydt;
 
     if (nextPosDelta < 0 && i != ie-ng){ 
       minCellSize = pmb->pcoord->dx1f(i-1);
@@ -624,7 +675,7 @@ Real ExpGridTimeStep(MeshBlock *pmb){
       minCellSize = pmb->pcoord->dx1f(i);
     }
 
-    minCellSize *= 0.5;
+    minCellSize *= pmesh->cfl_number;
     nextPosDelta = fabs(nextPosDelta);
 
     if (nextPosDelta != 0.0 && minCellSize != 0.0){
@@ -632,7 +683,7 @@ Real ExpGridTimeStep(MeshBlock *pmb){
       int count = 0;
       while (overStep <= 0){
         mydt *= 0.9;
-        nextPosDelta = fabs(NewFaceCoord(pmb->pcoord->x1f(i), pmesh->time,mydt,0,pmesh->ExpGridData) - pmb->pcoord->x1f(i));
+        nextPosDelta = pmesh->GridDiffEq_(pmb->pcoord->x1f(i),i,pmesh->time,mydt,0,pmesh->GridData)*mydt;
         overStep = minCellSize - nextPosDelta;      
         count++;
         if (count >= 100) {
@@ -641,11 +692,11 @@ Real ExpGridTimeStep(MeshBlock *pmb){
         }
         
       }
-      Real dtEx = mydt;//fabs(minCellSize* 0.5/nextPosDelta * (pmesh->dt));
+      Real dtEx = mydt;//*pmesh->cfl_number;//fabs(minCellSize* 0.5/nextPosDelta * (pmesh->dt));
       //Real& dt_Ex =  dtEx;
       min_dt = std::min(min_dt, dtEx);
     } else {
-      Real dtEx = pmesh->dt * 100000;
+      Real dtEx = pmesh->dt;
       //Real& dt_Ex = dtEx;
       min_dt = std::min(min_dt,dtEx);
     }
@@ -654,3 +705,5 @@ Real ExpGridTimeStep(MeshBlock *pmb){
   //std::cout << "New Time Step: " << min_dt << std::endl;
   return min_dt;
 }
+
+
