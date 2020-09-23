@@ -253,6 +253,7 @@ TimeIntegratorTaskList::TimeIntegratorTaskList(ParameterInput *pin, Mesh *pm)
       
       if (EXPANDING) {
         AddTimeIntegratorTask(EXP_INT,EXP_CALC);
+        //AddTimeIntegratorTask(EXP_EDIT,EXP_INT);  
       }
       // regular athena-mode 
       if (CLESS_ENABLED) 

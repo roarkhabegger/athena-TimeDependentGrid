@@ -84,7 +84,7 @@ Real WallVel(Real xf, int i, Real time, Real dt, int dir, AthenaArray<Real> grid
     //std::cout << "alpha " << alpha << std::endl;
     //Real delAlpha = (dT)*(LockData(2));
     //if in x-direction
-    retVal += gridData(2);//(xf-gridData(0)) / (gridData(1)-gridData(0)) * (gridData(2)*dt);
+    retVal = gridData(2)*(xf-gridData(0)) / (gridData(1)-gridData(0));
     //std::cout << Vel  <<std::endl;
     //std::cout << dT << std::endl;
   } 

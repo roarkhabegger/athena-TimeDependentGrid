@@ -177,21 +177,21 @@ void Expansion::AddWallFluxDivergence(Real dt, AthenaArray<Real> &prim, AthenaAr
         flxL = v1f(i) * qL;
         flxR = v1f(i+1) *qR;
         divF = flxR*A2 - flxL * A1;
-        cons(IDN,k,j,i) += dt/vol*divF;        
-         
+        //cons(IDN,k,j,i) *= pmb->pcoord->dx1f(i)/(x1_0(i+1)-x1_0(i));        
+        cons(IDN,k,j,i) += dt/vol*divF;//*pmb->pcoord->dx1f(i)/(x1_0(i+1)-x1_0(i));        
         qL = IDNArr(0)*IVXArr(0);
         qR = IDNArr(2)*IVXArr(2);
         flxL = v1f(i) * qL;
         flxR = v1f(i+1) *qR;
         divF = flxR*A2 - flxL * A1;
-        cons(IM1,k,j,i) += dt/vol*divF;        
+        cons(IM1,k,j,i) += dt/vol*divF;//* pmb->pcoord->dx1f(i)/(x1_0(i+1)-x1_0(i));        
         
         qL = 0.5*IDNArr(0)*SQR(IVXArr(0)) + IPRArr(0)/gm1;
-        qR = 0.5*IDNArr(2)*SQR(IVXArr(2)) +IPRArr(2)/gm1;
+        qR = 0.5*IDNArr(2)*SQR(IVXArr(2)) + IPRArr(2)/gm1;
         flxL = v1f(i) * qL;
         flxR = v1f(i+1) *qR;
         divF = flxR*A2 - flxL * A1;
-        cons(IEN,k,j,i) += dt/vol*divF;        
+        cons(IEN,k,j,i) += dt/vol*divF;/// *  pmb->pcoord->dx1f(i)/(x1_0(i+1)-x1_0(i));        
 
         qL = IDNArr(0)*ISNArr(0);
         qR = IDNArr(2)*ISNArr(2);
@@ -199,6 +199,7 @@ void Expansion::AddWallFluxDivergence(Real dt, AthenaArray<Real> &prim, AthenaAr
         flxR = v1f(i+1) *qR;
         divF = flxR*A2 - flxL * A1;
         cons(IS0,k,j,i) += dt/vol*divF;        
+        //cons(IS0,k,j,i) *= pmb->pcoord->dx1f(i)/(x1_0(i+1)-x1_0(i));        
       }
     }
   }
@@ -217,6 +218,24 @@ void Expansion::AddWallFluxDivergence(Real dt, AthenaArray<Real> &prim, AthenaAr
 
   return;
 }
+
+void Expansion::ExpansionSourceTerms(const Real dt, const AthenaArray<Real> *flx, 
+                      const AthenaArray<Real> &p, AthenaArray<Real> &c) {
+  Real vm = 0.0;
+  for (int k = ks; k<=ke;++k) {
+    for (int j = js; j<=je;++j) {      
+      for (int i = is; i<=ie;++i) {
+        for (int n = 0; n<(NHYDRO+NSCALARS); ++n) {
+          vm = (v1f(i+1)-v1f(i));
+          c(n,k,j,i) *= 1.0/(vm*dt/(pmy_block->pcoord->dx1f(i))+1);        
+        }
+      }
+    }
+  }
+
+  return;
+}
+
 
 void Expansion::UpdateVelData(MeshBlock *pmb ,Real time, Real dt){
   mydt = dt;
@@ -273,14 +292,14 @@ void Expansion::GridEdit(MeshBlock *pmb){
 
   //Set Reconstruction Coefficients
   for (int i=il+1; i<=iu-1; ++i) {
-    Real dx_im1 = pmb->pcoord->dx1f(i-1);
-    Real dx_i   = pmb->pcoord->dx1f(i  );
-    Real dx_ip1 = pmb->pcoord->dx1f(i+1);
+    Real& dx_im1 = pmb->pcoord->dx1f(i-1);
+    Real& dx_i   = pmb->pcoord->dx1f(i  );
+    Real& dx_ip1 = pmb->pcoord->dx1f(i+1);
     Real qe = dx_i/(dx_im1 + dx_i + dx_ip1);       // Outermost coeff in CW eq 1.7
     pmb->precon->c1i(i) = qe*(2.0*dx_im1+dx_i)/(dx_ip1 + dx_i); // First term in CW eq 1.7
     pmb->precon->c2i(i) = qe*(2.0*dx_ip1+dx_i)/(dx_im1 + dx_i); // Second term in CW eq 1.7
     if (i > il+1) {  // c3-c6 are not computed in first iteration
-      Real dx_im2 = pmb->pcoord->dx1f(i-2);
+      Real& dx_im2 = pmb->pcoord->dx1f(i-2);
       Real qa = dx_im2 + dx_im1 + dx_i + dx_ip1;
       Real qb = dx_im1/(dx_im1 + dx_i);
       Real qc = (dx_im2 + dx_im1)/(2.0*dx_im1 + dx_i);

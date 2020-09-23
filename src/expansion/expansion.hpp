@@ -46,6 +46,9 @@ public:
   void AddWallFluxDivergence( Real dt, AthenaArray<Real> &prim, AthenaArray<Real> &cons);
   void IntegrateWalls(Real dt);
 
+  void ExpansionSourceTerms(const Real dt, const AthenaArray<Real> *flx, 
+                      const AthenaArray<Real> &p, AthenaArray<Real> &c); 
+
   void GridEdit(MeshBlock *pmb);
   void UpdateVelData(MeshBlock *pmb,Real time, Real dt);
   Real GridTimeStep(MeshBlock *pmb);

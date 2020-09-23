@@ -63,6 +63,8 @@ HydroSourceTerms::HydroSourceTerms(Hydro *phyd, ParameterInput *pin) {
   if (SELF_GRAVITY_ENABLED) hydro_sourceterms_defined = true;
 
   if (DUAL_ENERGY) hydro_sourceterms_defined = true; 
+  
+  if (EXPANDING) hydro_sourceterms_defined = true;
 
   StaticGravPot  = phyd->pmy_block->pmy_mesh->StaticGravPot_;
   if (StaticGravPot != NULL) hydro_sourceterms_defined = true;
@@ -100,6 +102,7 @@ void HydroSourceTerms::AddHydroSourceTerms(const Real time, const Real dt,
   // Internal-energy source terms: -P \div v
   if (DUAL_ENERGY) InternalEnergy(dt, flux, prim, cons);
 
+  if (EXPANDING) pmb->pex->ExpansionSourceTerms(dt,flux,prim,cons);
   // MyNewSourceTerms()
 
   // Static Gravitational Potential
