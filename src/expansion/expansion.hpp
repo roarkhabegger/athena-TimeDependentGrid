@@ -37,6 +37,9 @@ public:
   AthenaArray<Real> x1_0, x2_0, x3_0;
   AthenaArray<Real> x1_1, x2_1, x3_1;
   AthenaArray<Real> x1_2, x2_2, x3_2;
+  
+  AthenaArray<Real> Expwl, Expwr;//, Expwl2, Expwr2;
+  AthenaArray<Real> expFlux[3];  // face-averaged flux vector
 
   Real mydt;
   int il, iu, jl, ju, kl, ku, ng; //With Ghost cells
@@ -54,9 +57,21 @@ public:
   Real GridTimeStep(MeshBlock *pmb);
   void UpdateMeshSize(MeshBlock *pmb);
 
-  void InterpData( const int myn, const int myk, const int myj, const int myi, const double dt,
-                   const AthenaArray<Real> grid, const AthenaArray<Real> gridVel,
-                   const AthenaArray<Real> data, AthenaArray<Real> &output); 
+  void FluxSolver(const int kl, const int ku, const int jl, const int ju,
+    const int il, const int iu, const int ivx, const AthenaArray<Real> &bx,
+    AthenaArray<Real> &wL, AthenaArray<Real> &wR, 
+    AthenaArray<Real> &flx,
+    AthenaArray<Real> &e1, AthenaArray<Real> &e2);
+
+  void PiecewiseLinearOffsetX1(MeshBlock *pmb,
+    const int kl, const int ku, const int jl, const int ju, const int il, const int iu,
+    const AthenaArray<Real> &w, const AthenaArray<Real> &bcc,
+    AthenaArray<Real> &wL, AthenaArray<Real> &wR, const Real dt);
+
+  void PiecewiseParabolicOffsetX1(MeshBlock *pmb,
+    const int kl, const int ku, const int jl, const int ju, const int il, const int iu,
+    const AthenaArray<Real> &w, const AthenaArray<Real> &bcc,
+    AthenaArray<Real> &wL, AthenaArray<Real> &wR, const Real dt);
 private:
   MeshBlock* pmy_block;    // ptr to MeshBlock containing this Expansion
 

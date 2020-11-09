@@ -149,12 +149,13 @@ void Hydro::RiemannSolver(const int kl, const int ku, const int jl, const int ju
 
 //--- Step 9.  Compute the HLLC flux at interface, including the weighted contribution
 // of the flux along the contact
+
     flxi[IDN] = sl*fl[IDN] + sr*fr[IDN];
     flxi[IVX] = sl*fl[IVX] + sr*fr[IVX] + sm*cp;
     flxi[IVY] = sl*fl[IVY] + sr*fr[IVY];
     flxi[IVZ] = sl*fl[IVZ] + sr*fr[IVZ];
     flxi[IEN] = sl*fl[IEN] + sr*fr[IEN] + sm*cp*am;
-   
+
     flx(IDN,k,j,i) = flxi[IDN];
     flx(ivx,k,j,i) = flxi[IVX];
     flx(ivy,k,j,i) = flxi[IVY];
@@ -170,7 +171,6 @@ void Hydro::RiemannSolver(const int kl, const int ku, const int jl, const int ju
     }
   }
   }}
- 
 
   // There seems no other way. OMP within the n loop leads to failure for
   // more than one scalar.

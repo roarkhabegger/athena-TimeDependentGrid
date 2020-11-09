@@ -42,11 +42,16 @@ Expansion::Expansion(MeshBlock *pmb, ParameterInput *pin) {
   iu = ie+ng;
   int ncells2 = 1, ncells3 = 1;
   jl = js;
-  ju = js;
+  ju = je;
   kl = ks;
-  ku = ks;
+  ku = ke;
   if (pmb->block_size.nx2 > 1) {ncells2 = (je-js+1) + 2*ng; jl = js-ng; ju = je+ng;}
   if (pmb->block_size.nx3 > 1) {ncells3 = (ke-ks+1) + 2*ng; kl = ks-ng; ku = ke+ng;}
+
+  //std::cout << "In Expansion constructor" << std::endl;
+  //std::cout << "i Dir: is=" << is << " ie=" << ie << " nCells1=" << ncells1 << std::endl;
+  //std::cout << "j Dir: js=" << js << " je=" << je << " nCells2=" << ncells2 <<std::endl;
+  //std::cout << "k Dir: ks=" << ks << " ke=" << ke << " nCells3=" << ncells3 <<std::endl;
 
   //Allocate velocities and grid data
   v1f.NewAthenaArray((ncells1+1));
@@ -62,6 +67,15 @@ Expansion::Expansion(MeshBlock *pmb, ParameterInput *pin) {
   x2_2.NewAthenaArray((ncells2+1));
   x3_2.NewAthenaArray((ncells3+1));
  
+  Expwl.NewAthenaArray((NWAVE+NINT+NSCALARS),ncells3,ncells2,ncells1);
+  Expwr.NewAthenaArray((NWAVE+NINT+NSCALARS),ncells3,ncells2,ncells1);
+  //Expwl2.NewAthenaArray((NWAVE+NINT+NSCALARS),ncells3,ncells2,ncells1);
+  //Expwr2.NewAthenaArray((NWAVE+NINT+NSCALARS),ncells3,ncells2,ncells1);
+  expFlux[X1DIR].NewAthenaArray(NHYDRO,ncells3,ncells2,ncells1+1);
+  if (pmy_block->block_size.nx2 > 1)
+    expFlux[X2DIR].NewAthenaArray(NHYDRO,ncells3,ncells2+1,ncells1);
+  if (pmy_block->block_size.nx3 > 1)
+    expFlux[X3DIR].NewAthenaArray(NHYDRO,ncells3+1,ncells2,ncells1);
   for (int i=il; i<=iu+1;++i) {
     v1f(i) = 0.0;
     x1_0(i) = pmb->pcoord->x1f(i);
@@ -101,6 +115,14 @@ Expansion::~Expansion() {
   x1_2.DeleteAthenaArray();
   x2_2.DeleteAthenaArray();
   x3_2.DeleteAthenaArray();
+
+  Expwl.DeleteAthenaArray();
+  Expwr.DeleteAthenaArray();
+  expFlux[X1DIR].DeleteAthenaArray();
+  if (pmy_block->block_size.nx2 > 1)
+    expFlux[X2DIR].DeleteAthenaArray();
+  if (pmy_block->block_size.nx3 > 1)
+    expFlux[X3DIR].DeleteAthenaArray();
 }
 
 void Expansion::WeightedAveX(const int low, const int up, AthenaArray<Real> &x_out, AthenaArray<Real> &x_in1, AthenaArray<Real> &x_in2, const Real wght[3]){
@@ -153,69 +175,136 @@ void Expansion::AddWallFluxDivergence(Real dt, AthenaArray<Real> &prim, AthenaAr
   Real vol,A1,A2 = 0.0;
   Real flxL,flxR = 0.0;
   Real divF = 0.0;
-  Real qL,qR = 0.0;
+  Real qLi,qRi,qLp1,qRp1 = 0.0;
   Real gm1 = pmy_block->peos->GetGamma()-1.0;
-  AthenaArray<Real> IDNArr, IVXArr, IPRArr, ISNArr;
-  IDNArr.NewAthenaArray(6);
-  IVXArr.NewAthenaArray(6);
-  IPRArr.NewAthenaArray(6);
-  ISNArr.NewAthenaArray(6);
+  int order = 3;
   MeshBlock *pmb = pmy_block;
+  AthenaArray<Real> &x1flux=expFlux[X1DIR];
+  AthenaArray<Real> &x2flux=expFlux[X2DIR];
+  AthenaArray<Real> &x3flux=expFlux[X3DIR];
+  AthenaArray<Real> b1,b2,b3,w_x1f,w_x2f,w_x3f,e2x1,e3x1,e1x2,e3x2,e1x3,e2x3;
+  if (MAGNETIC_FIELDS_ENABLED) {
+    b1.InitWithShallowCopy(pmb->pfield->b.x1f);
+    b2.InitWithShallowCopy(pmb->pfield->b.x2f);
+    b3.InitWithShallowCopy(pmb->pfield->b.x3f);
+    w_x1f.InitWithShallowCopy(pmb->pfield->wght.x1f);
+    w_x2f.InitWithShallowCopy(pmb->pfield->wght.x2f);
+    w_x3f.InitWithShallowCopy(pmb->pfield->wght.x3f);
+    e2x1.InitWithShallowCopy(pmb->pfield->e2_x1f);
+    e3x1.InitWithShallowCopy(pmb->pfield->e3_x1f);
+    e1x2.InitWithShallowCopy(pmb->pfield->e1_x2f);
+    e3x2.InitWithShallowCopy(pmb->pfield->e3_x2f);
+    e1x3.InitWithShallowCopy(pmb->pfield->e1_x3f);
+    e2x3.InitWithShallowCopy(pmb->pfield->e2_x3f);
+  }
+//  if (order == 1) {
+//    pmb->precon->DonorCellX1(pmb,ks,ke,js,je,is,ie+1,prim,pmb->pfield->bcc,Expwl1,Expwr1);
+//  } else if (order == 2) {
+//    pmb->precon->PiecewiseLinearX1(pmb,ks,ke,js,je,is,ie+1,prim,pmb->pfield->bcc,Expwl1,Expwr1);
+//  } else {
+//    pmb->precon->PiecewiseParabolicX1(pmb,ks,ke,js,je,is,ie+1,prim,pmb->pfield->bcc,Expwl1,Expwr1);
+//  }
+
+  if (order ==3) {
+    PiecewiseParabolicOffsetX1(pmb,ks,ke,js,je,is,ie+1,prim,pmb->pfield->bcc,Expwl,Expwr,dt);
+  } else {
+    PiecewiseLinearOffsetX1(pmb,ks,ke,js,je,is,ie+1,prim,pmb->pfield->bcc,Expwl,Expwr,dt);
+  }
+
+  FluxSolver(ks,ke,js,je,is,ie+1,IVX,b1,Expwl,Expwr,x1flux,e3x1,e2x1);
+
+
   for (int k = ks; k<=ke;++k) {
     for (int j = js; j<=je;++j) {      
       for (int i = is; i<=ie;++i) {
         A1 = pmb->pcoord->GetFace1Area(k,j,i);
         A2 = pmb->pcoord->GetFace1Area(k,j,i+1);
         vol = pmb->pcoord->GetCellVolume(k,j,i);
-        InterpData(IDN,k,j,i,dt,x1_0,v1f,prim,IDNArr);
-        InterpData(IVX,k,j,i,dt,x1_0,v1f,prim,IVXArr);
-        InterpData(IPR,k,j,i,dt,x1_0,v1f,prim,IPRArr);
-        InterpData(IS0,k,j,i,dt,x1_0,v1f,prim,ISNArr);
-        
-        qL = IDNArr(0);
-        qR = IDNArr(2);
-        flxL = v1f(i) * qL;
-        flxR = v1f(i+1) *qR;
-        divF = flxR*A2 - flxL * A1;
-        //cons(IDN,k,j,i) *= pmb->pcoord->dx1f(i)/(x1_0(i+1)-x1_0(i));        
-        cons(IDN,k,j,i) += dt/vol*divF;//*pmb->pcoord->dx1f(i)/(x1_0(i+1)-x1_0(i));        
-        qL = IDNArr(0)*IVXArr(0);
-        qR = IDNArr(2)*IVXArr(2);
-        flxL = v1f(i) * qL;
-        flxR = v1f(i+1) *qR;
-        divF = flxR*A2 - flxL * A1;
-        cons(IM1,k,j,i) += dt/vol*divF;//* pmb->pcoord->dx1f(i)/(x1_0(i+1)-x1_0(i));        
-        
-        qL = 0.5*IDNArr(0)*SQR(IVXArr(0)) + IPRArr(0)/gm1;
-        qR = 0.5*IDNArr(2)*SQR(IVXArr(2)) + IPRArr(2)/gm1;
-        flxL = v1f(i) * qL;
-        flxR = v1f(i+1) *qR;
-        divF = flxR*A2 - flxL * A1;
-        cons(IEN,k,j,i) += dt/vol*divF;/// *  pmb->pcoord->dx1f(i)/(x1_0(i+1)-x1_0(i));        
-
-        qL = IDNArr(0)*ISNArr(0);
-        qR = IDNArr(2)*ISNArr(2);
-        flxL = v1f(i) * qL;
-        flxR = v1f(i+1) *qR;
-        divF = flxR*A2 - flxL * A1;
-        cons(IS0,k,j,i) += dt/vol*divF;        
-        //cons(IS0,k,j,i) *= pmb->pcoord->dx1f(i)/(x1_0(i+1)-x1_0(i));        
+        for (int n=0; n<NHYDRO;++n) {
+          divF = x1flux(n,k,j,i+1)*A2 - x1flux(n,k,j,i) * A1;
+          //std::cout << "i="<< i <<  " divF=" << divF << std::endl;
+          cons(n,k,j,i) += dt/vol*divF;//*pmb->pcoord->dx1f(i)/(x1_0(i+1)-x1_0(i));        
+        }
+//
+//        //DENSITY FLUX 
+//        qLi = Expwl(IDN,k,j,i);
+//        qRi = Expwr(IDN,k,j,i);
+//        if (v1f(i) < 0) {
+//          flxL = v1f(i) *qLi;
+//        } else if (v1f(i)>0){
+//          flxL = v1f(i) * qRi;
+//        } else {
+//          flxL = 0.0;
+//        }
+//
+//        qLp1 = Expwl(IDN,k,j,i+1);
+//        qRp1 = Expwr(IDN,k,j,i+1);
+//        if (v1f(i+1) < 0) {
+//          flxR = v1f(i+1) *qLp1;
+//        } else if (v1f(i+1)>0){
+//          flxR = v1f(i+1) * qRp1;
+//        } else {
+//          flxR = 0.0;
+//        }
+//        divF = x1flux(IDN,k,j,i+1)*A2 - x1flux(IDN,k,j,i) * A1;
+//        std::cout << "i="<< i <<  " divF=" << divF << std::endl;
+//        cons(IDN,k,j,i) += dt/vol*divF;//*pmb->pcoord->dx1f(i)/(x1_0(i+1)-x1_0(i));        
+//
+//        //MOMENTUM FLUX
+//        qLi *= Expwl(IVX,k,j,i);
+//        qRi *= Expwr(IVX,k,j,i);
+//        if (v1f(i) < 0) {
+//          flxL = v1f(i) *qLi;
+//        } else if (v1f(i)>0){
+//          flxL = v1f(i) * qRi;
+//        } else {
+//          flxL = 0.0;
+//        }
+//
+//        qLp1 *= Expwl(IVX,k,j,i+1);
+//        qRp1 *= Expwr(IVX,k,j,i+1);
+//        if (v1f(i+1) < 0) {
+//          flxR = v1f(i+1) *qLp1;
+//        } else if (v1f(i+1)>0){
+//          flxR = v1f(i+1) * qRp1;
+//        } else {
+//          flxR = 0.0;
+//        }
+//        divF = x1flux(IVX,k,j,i+1)*A2 - x1flux(IVX,k,j,i) * A1;
+//        cons(IM1,k,j,i) += dt/vol*divF;//*pmb->pcoord->dx1f(i)/(x1_0(i+1)-x1_0(i));        
+//
+//        //ENERGY FLUX
+//        qLi *= 0.5*Expwl(IVX,k,j,i);
+//        qRi *= 0.5*Expwr(IVX,k,j,i);
+//        qLi += Expwl(IPR,k,j,i)/gm1;
+//        qRi += Expwr(IPR,k,j,i)/gm1;
+//        if (v1f(i) < 0) {
+//          flxL = v1f(i) *qLi;
+//        } else if (v1f(i)>0){
+//          flxL = v1f(i) * qRi;
+//        } else {
+//          flxL = 0.0;
+//        }
+//
+//        qLp1 *=0.5* Expwl(IVX,k,j,i+1);
+//        qRp1 *= 0.5*Expwr(IVX,k,j,i+1);
+//        qLp1 += Expwl(IPR,k,j,i+1)/gm1;
+//        qRp1 += Expwr(IPR,k,j,i+1)/gm1;
+//        if (v1f(i+1) < 0) {
+//          flxR = v1f(i+1) *qLp1;
+//        } else if (v1f(i+1)>0){
+//          flxR = v1f(i+1) * qRp1;
+//        } else {
+//          flxR = 0.0;
+//        }
+//        divF = x1flux(IEN,k,j,i+1)*A2 - x1flux(IEN,k,j,i) * A1;
+//        cons(IEN,k,j,i) += dt/vol*divF;//*pmb->pcoord->dx1f(i)/(x1_0(i+1)-x1_0(i));        
+//
+//        //cons(IS0,k,j,i) += dt/vol*divF;        
+//        //cons(IS0,k,j,i) *= pmb->pcoord->dx1f(i)/(x1_0(i+1)-x1_0(i));        
       }
     }
   }
-
-  IDNArr.DeleteAthenaArray(); 
-  IVXArr.DeleteAthenaArray(); 
-  IPRArr.DeleteAthenaArray(); 
-  ISNArr.DeleteAthenaArray(); 
-
-
-
-
-
-
-
-
   return;
 }
 
@@ -228,6 +317,9 @@ void Expansion::ExpansionSourceTerms(const Real dt, const AthenaArray<Real> *flx
         for (int n = 0; n<(NHYDRO+NSCALARS); ++n) {
           vm = (v1f(i+1)-v1f(i));
           c(n,k,j,i) *= 1.0/(vm*dt/(pmy_block->pcoord->dx1f(i))+1);        
+          //if ((i==256) and (n==IEN)) {
+          //  std::cout <<"i=" << i << " cons E=" << c(IEN,k,j,i)  << std::endl;
+          //}
         }
       }
     }
@@ -309,6 +401,8 @@ void Expansion::GridEdit(MeshBlock *pmb){
       pmb->precon->c4i(i) = qb;
       pmb->precon->c5i(i) = dx_i/qa*qd;
       pmb->precon->c6i(i) = -dx_im1/qa*qc;
+
+
     }
   }
   //VOLUME BASED QUANTITIES 

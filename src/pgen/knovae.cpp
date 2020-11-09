@@ -50,7 +50,7 @@ void ReflectInnerX1_nonuniform(MeshBlock *pmb, Coordinates *pco, AthenaArray<Rea
      FaceField &b, Real time, Real dt, int is, int ie, int js, int je, int ks, int ke, int ngh);
 
 Real WallVel(Real xf, int i, Real time, Real dt, int dir, AthenaArray<Real> gridData);
-void CalcGridData(Mesh *pm);
+void UpdateGridData(Mesh *pm);
 int ShockDetector(AthenaArray<Real> data, AthenaArray<Real> grid, Real eps);
 
 
@@ -70,11 +70,11 @@ Real WallVel(Real xf, int i, Real time, Real dt, int dir, AthenaArray<Real> grid
 
   if (dir != 0){
     retVal += 0.0;
-  //} else if (xf==gridData(0)){
-  //  retVal += 0.0;
-  //} else if (gridData(1) == gridData(0)){
-  //  retVal += 0.0;
- // } else if ((xf>=gridData(1)-gridData(3))&(xf<=gridData(1)+gridData(3))) {
+  } else if (xf==gridData(0)){
+    retVal += 0.0;
+  } else if (gridData(1) == gridData(0)){
+    retVal += 0.0;
+  //} else if ((xf>=gridData(1)-gridData(3))&(xf<=gridData(1)+gridData(3))) {
  //   retVal = dt*gridData(2);
   //} else if (fabs(xf-gridData(1)) <= gridData(3)) {
   //  retVal += gridData(2)*dt;
@@ -103,15 +103,16 @@ void UpdateGridData(Mesh *pm) {
   //This gets called once per mesh dt
   //std::cout << "Updating Grid Data" << std::endl; 
 
-  Real xu = pm->mesh_size.x1min;
-  Real xl = pm->mesh_size.x1max;
-  int n1 =2*NGHOST +  pm->mesh_size.nx1;
-  //AthenaArray<Real> myData;
-  //AthenaArray<Real> myGrid;
-  //AthenaArray<Real> myVel;
-  //myData.NewAthenaArray(n1);
-  //myGrid.NewAthenaArray(n1);
-  //myVel.NewAthenaArray(n1);
+  //Real xu = pm->mesh_size.x1min;
+  //Real xl = pm->mesh_size.x1max;
+  int n1 =  pm->mesh_size.nx1;
+  int ng = (NGHOST);
+  AthenaArray<Real> myData;
+  AthenaArray<Real> myGrid;
+  AthenaArray<Real> myVel;
+  myData.NewAthenaArray(n1);
+  myGrid.NewAthenaArray(n1);
+  myVel.NewAthenaArray(n1);
 
   MeshBlock *pmb = pm->pblock;  
   //Should be on first meshBlock at this point.
@@ -122,24 +123,30 @@ void UpdateGridData(Mesh *pm) {
   Real DyeMoment = 0.0;
 
   for (int i=pmb->is;i<=pmb->ie;++i) {
-    //myData(i) = pmb->phydro->u(IDN,pmb->ks,pmb->js,i)* pmb->phydro->u(NHYDRO-NSCALARS,pmb->ks,pmb->js,i);
-    //myGrid(i) = pmb->pcoord->x1v(i);
-    //myVel(i)  = pmb->phydro->u(IVX,pmb->ks,pmb->js,i);
+    //std::cout << i << " "<< pmb->phydro->u(IDN,0,0,i) <<std::endl;
+    myData(i-ng) = pmb->phydro->u(IDN,pmb->ks,pmb->js,i);
+    myGrid(i-ng) = pmb->pcoord->x1v(i);
+    myVel(i-ng)  = pmb->phydro->u(IVX,pmb->ks,pmb->js,i)/myData(i-ng);
     //Dye += pmb->pcoord->dx1f(i)*myData(i);
     //DyeMoment += pmb->pcoord->dx1f(i)*myData(i)*myGrid(i);
   }
-  while(pmb->next !=NULL) {
-    std::cout << "More than one MeshBlock" << std::endl;
-    pmb = pmb->next;  
-    for (int i=pmb->is;i<=pmb->ie;++i) {
+//  while(pmb->next !=NULL) {
+  //  std::cout << "More than one MeshBlock" << std::endl;
+  //  pmb = pmb->next;  
+  //  for (int i=pmb->is;i<=pmb->ie;++i) {
       //myData(i) += pmb->phydro->u(IDN,pmb->ks,pmb->js,i);
       //myGrid(i) = pmb->pcoord->x1v(i);
       //myVel(i)  = pmb->phydro->u(IVX,pmb->ks,pmb->js,i);
-    }
+  //  }
+  //}
+  myI = ShockDetector(myData, myGrid, 1.0);
+  Real vel = 0.0;
+  for (int i=myI-ng;i<=myI+ng;++i){
+    vel += myVel(i);
   }
-  //int myI = ShockDetector(myData, myGrid, 1.0); 
+  vel *= 1.0/(2.0*ng);
   //Real CoM = DyeMoment/Dye;
-  for (int i=pmb->is;i<=pmb->ie;++i) {
+  //for (int i=pmb->is;i<=pmb->ie;++i) {
     //DyeMoment += pmb->pcoord->dx1f(i)*myData(i);
     //if (DyeMoment/Dye > 0.9){
       //myI = i;
@@ -149,13 +156,13 @@ void UpdateGridData(Mesh *pm) {
     //  del = fabs(myGrid(i) - CoM);
     //  myI = i;
     //}
-  }
-  //pm->ExpGridData(1) = myGrid(myI);
-  //pm->ExpGridData(2) = myVel(myI); 
-  //std::cout << pm->ExpGridData(1) << std::endl;
-  //myVel.DeleteAthenaArray();
-  //myData.DeleteAthenaArray();
-  //myGrid.DeleteAthenaArray();
+  //}
+  //pm->GridData(1) = myGrid(myI);
+  //pm->GridData(2) = vel; 
+  std::cout << vel << std::endl;
+  myVel.DeleteAthenaArray();
+  myData.DeleteAthenaArray();
+  myGrid.DeleteAthenaArray();
 
   return; 
   //Real dt = (stage_wghts[(stage-1)].beta)*(pm->dt);
