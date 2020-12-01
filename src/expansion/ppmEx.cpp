@@ -42,7 +42,7 @@
 Real WallIntegration(double xArr[],double prims[],Real myX1, Real myX2, int xArrSize);
 Real CenterIntegration(double xArr[],double prims[], Real myX, int xArrSize);
 
-Real WallIntegration(double xArr[], double prims[], Real myX1, Real myX2, int xArrSize) {
+void WallIntegration(double xArr[], double prims[],  int xArrSize, double coeff[]) {
   // Prims are cell centered, xArr has cell wall locations 
   // Prims should be length one less than xArr
   int n  = xArrSize;
@@ -100,32 +100,98 @@ Real WallIntegration(double xArr[], double prims[], Real myX1, Real myX2, int xA
   g2 =  1.0*(a1*b21 + a2*b22 + a3*b23 + a4*b24);
   g1 = -1.0*(a1*b11 + a2*b12 + a3*b13 + a4*b14);
 
-  if (myX2!=myX1){
-    val = (g4*(pow(myX2,4.0)-pow(myX1,4.0)) + g3*(pow(myX2,3.0)-pow(myX1,3.0)) 
-	 + g2*(pow(myX2,2.0)-pow(myX1,2.0)) + g1*(pow(myX2,1.0)-pow(myX1,1.0)))/(myX2-myX1);
-  } else {
-    val = 4.0*g4*pow(myX1,3.0) + 3.0*g3*pow(myX1,2.0) + 2.0*g2*pow(myX1,1.0) + g1;
-  }
+  coeff[0] = g1;
+  coeff[1] = g2;
+  coeff[2] = g3;
+  coeff[3] = g4;
 
-  return val;
+
+  return;
 }
 
 Real CenterIntegration(double xArr[],double prims[], Real myX, int xArrSize) {
   int n = xArrSize;
-  double termsC[5];
-  double Myx;
-  int m,l;
-  Real valCi = 0.0;
-  for (m=0;m<=4;++m){
-    termsC[m] = 1.0;
-    for (l=0;l<=4;++l){
-      if (l != m) {
-        termsC[m] *= (myX-xArr[l])/(xArr[m]-xArr[l]);
-      }
-    }
-    valCi += prims[m]*termsC[m];
-  }       
-  return valCi; 
+  double dxArr[n-1];
+  int m;
+
+  Real a0, a1, a2, a3, a4;
+  Real b00, b01, b02, b03, b04;
+  Real b10, b11, b12, b13, b14;
+  Real b20, b21, b22, b23, b24;
+  Real b30, b31, b32, b33, b34;
+  Real b40, b41, b42, b43, b44;
+  Real g4, g3, g2, g1, g0;
+  Real val;
+
+  for (m=0;m<=(n-2);++m) { 
+     dxArr[m]=xArr[m+1]-xArr[m];
+  }
+
+  a0 = 1.0*prims[0]
+	/((dxArr[0])*(dxArr[0]+dxArr[1])*(dxArr[0]+dxArr[1]+dxArr[2])*(dxArr[0]+dxArr[1]+dxArr[2]+dxArr[3]));
+  a1 = -1.0*prims[1]
+	/((dxArr[0])*(dxArr[1])*(dxArr[1]+dxArr[2])*(dxArr[1]+dxArr[2]+dxArr[3]));
+  a2 = 1.0*prims[2]
+	/((dxArr[0]+dxArr[1])*(dxArr[1])*(dxArr[2])*(dxArr[2]+dxArr[3]));
+  a3 = -1.0*prims[3]
+        /((dxArr[0]+dxArr[1]+dxArr[2])*(dxArr[1]+dxArr[2])*(dxArr[2])*(dxArr[3]));
+  a4 = 1.0*prims[4]
+	/((dxArr[0]+dxArr[1]+dxArr[2]+dxArr[3])*(dxArr[1]+dxArr[2]+dxArr[3])*(dxArr[2]+dxArr[3])*(dxArr[3]));
+
+  b00 = xArr[1]*xArr[2]*xArr[3]*xArr[4];
+  b10 = xArr[0]*xArr[2]*xArr[3]*xArr[4];
+  b20 = xArr[0]*xArr[1]*xArr[3]*xArr[4];
+  b30 = xArr[0]*xArr[1]*xArr[2]*xArr[4];
+  b40 = xArr[0]*xArr[1]*xArr[2]*xArr[3];
+
+  b01 = -1.0*(xArr[1]*xArr[2]*xArr[3] + xArr[1]*xArr[2]*xArr[4] + xArr[1]*xArr[3]*xArr[4] + xArr[2]*xArr[3]*xArr[4]);
+  b11 = -1.0*(xArr[0]*xArr[2]*xArr[3] + xArr[0]*xArr[2]*xArr[4] + xArr[0]*xArr[3]*xArr[4] + xArr[2]*xArr[3]*xArr[4]);
+  b21 = -1.0*(xArr[0]*xArr[1]*xArr[3] + xArr[0]*xArr[1]*xArr[4] + xArr[0]*xArr[3]*xArr[4] + xArr[1]*xArr[3]*xArr[4]);
+  b31 = -1.0*(xArr[0]*xArr[1]*xArr[2] + xArr[0]*xArr[1]*xArr[4] + xArr[0]*xArr[2]*xArr[4] + xArr[1]*xArr[2]*xArr[4]);
+  b41 = -1.0*(xArr[0]*xArr[1]*xArr[2] + xArr[0]*xArr[1]*xArr[3] + xArr[0]*xArr[2]*xArr[3] + xArr[1]*xArr[2]*xArr[3]);
+
+  b02 = xArr[1]*xArr[2] + xArr[1]*xArr[3] + xArr[2]*xArr[3] + xArr[1]*xArr[4] + xArr[2]*xArr[4] + xArr[3]*xArr[4];
+  b12 = xArr[0]*xArr[2] + xArr[0]*xArr[3] + xArr[2]*xArr[3] + xArr[0]*xArr[4] + xArr[2]*xArr[4] + xArr[3]*xArr[4];
+  b22 = xArr[0]*xArr[1] + xArr[0]*xArr[3] + xArr[1]*xArr[3] + xArr[0]*xArr[4] + xArr[1]*xArr[4] + xArr[3]*xArr[4];
+  b32 = xArr[0]*xArr[1] + xArr[0]*xArr[2] + xArr[1]*xArr[2] + xArr[0]*xArr[4] + xArr[1]*xArr[4] + xArr[2]*xArr[4];
+  b42 = xArr[0]*xArr[1] + xArr[0]*xArr[2] + xArr[1]*xArr[2] + xArr[0]*xArr[3] + xArr[1]*xArr[3] + xArr[2]*xArr[3];
+
+  b03 = -1.0*(xArr[1] + xArr[2] + xArr[3] + xArr[4]);
+  b13 = -1.0*(xArr[0] + xArr[2] + xArr[3] + xArr[4]);
+  b23 = -1.0*(xArr[0] + xArr[1] + xArr[3] + xArr[4]);
+  b33 = -1.0*(xArr[0] + xArr[1] + xArr[2] + xArr[4]);
+  b43 = -1.0*(xArr[0] + xArr[1] + xArr[2] + xArr[3]);
+
+  b04 = 1.0;
+  b14 = 1.0;
+  b24 = 1.0;
+  b34 = 1.0;
+  b44 = 1.0;
+
+  g0 = a0*b00 + a1*b10 + a2*b20 + a3*b30 + a4*b40;
+  g1 = a0*b01 + a1*b11 + a2*b21 + a3*b31 + a4*b41;
+  g2 = a0*b02 + a1*b12 + a2*b22 + a3*b32 + a4*b42;
+  g3 = a0*b03 + a1*b13 + a2*b23 + a3*b33 + a4*b43;
+  g4 = a0*b04 + a1*b14 + a2*b24 + a3*b34 + a4*b44;
+
+  val = g0 + g1*(pow(myX,1.0));
+  val += g2*(pow(myX,2.0)) + g3*(pow(myX,3.0));
+  val += g4*(pow(myX,4.0));
+
+  Real OldX;
+  if (myX < xArr[2]) OldX = xArr[1];
+  if (myX > xArr[2]) OldX = xArr[3];
+  
+ 
+
+
+  val = g0*(myX-OldX) + g1/2.0*(pow(myX,2.0)-pow(OldX,2.0));
+  val += g2/3.0*(pow(myX,3.0)-pow(OldX,3.0)) + g3/4.0*(pow(myX,4.0)-pow(OldX,4.0));
+  val += g4/5.0*(pow(myX,5.0)-pow(OldX,5.0));
+  val *= 1/(myX-OldX); 
+
+
+  return val; 
 
 }
 
@@ -147,249 +213,113 @@ void Expansion::PiecewiseParabolicOffsetX1(MeshBlock *pmb,
   const AthenaArray<Real> &w, const AthenaArray<Real> &bcc,
   AthenaArray<Real> &wL, AthenaArray<Real> &wR, const Real dt) {
 
-  double xArrL[6], xArrR[6];
-  double primsL[5], primsR[5];
+  double xArrL[5], xArrR[5];
+  double primsL[4], primsR[4];
+  double primsC[5], xArrC[5];
   double MyxL, MyxR;
-  double valLi, valRi;
+  double valLn, valRn, valLp1, valRp1;
+  double coeffL[4], coeffR[4];
 
   for (int k=kl; k<=ku; ++k) {
   for (int j=jl; j<=ju; ++j) {
     // cache the x1-sliced primitive states for eigensystem calculation
     for (int n=0; n<(NHYDRO); ++n) {
-
-      //Deal with Left Boundary
-      xArrL[0] = pmb->pcoord->x1f(il-3);
-      xArrL[1] = pmb->pcoord->x1f(il-2);
-      xArrL[2] = pmb->pcoord->x1f(il-1);
-      xArrL[3] = pmb->pcoord->x1f(il  );
-      xArrL[4] = pmb->pcoord->x1f(il+1);
-      
-      primsL[0] = w(n,k,j,il-3);
-      primsL[1] = w(n,k,j,il-2);
-      primsL[2] = w(n,k,j,il-1);
-      primsL[3] = w(n,k,j,il);
-  
-      MyxL = xArrL[2]+v1f(il-1)*dt;	
-      valLi =  WallIntegration(xArrL,primsL,xArrL[2],MyxL,5);
- 
-      if (valLi > std::max(primsL[2],primsL[1])) valLi = std::max(primsL[2],primsL[1]);
-      if (valLi < std::min(primsL[2],primsL[1])) valLi = std::min(primsL[2],primsL[1]);
-    
-      xArrR[0] = pmb->pcoord->x1f(il-2);
-      xArrR[1] = pmb->pcoord->x1f(il-1);
-      xArrR[2] = pmb->pcoord->x1f(il  );
-      xArrR[3] = pmb->pcoord->x1f(il+1);
-      xArrR[4] = pmb->pcoord->x1f(il+2);
-          
-      primsR[0] = w(n,k,j,il-2);
-      primsR[1] = w(n,k,j,il-1);
-      primsR[2] = w(n,k,j,il  );
-      primsR[3] = w(n,k,j,il+1);
- 
-      MyxR = xArrR[2]+v1f(il)*dt;	
-      valRi =  WallIntegration(xArrR,primsR,xArrR[2],MyxR,5);
-  
-      if (valRi > std::max(primsR[2],primsR[1])) valRi = std::max(primsR[2],primsR[1]);
-      if (valRi < std::min(primsR[2],primsR[1])) valRi = std::min(primsR[2],primsR[1]);
-  
-      //Extrema Detector
-      Real dqm = w(n,k,j,il-1) - valLi;
-      Real dqp = valRi-w(n,k,j,il-1);
-    
-      if (dqp*dqm <= 0.0){
-        valLi = w(n,k,j,il-1);
-        valRi = w(n,k,j,il-1);
-      } else {
-        // Overshoot i-1/2,R / i,(-) state
-        if (fabs(dqm) >= pmb->precon->hplus_ratio_i(il-1)*fabs(dqp)) {
-          valLi = w(n,k,j,il-1) - pmb->precon->hplus_ratio_i(il-1)*dqp;
-        }
-        // Overshoot i+1/2,L / i,(+) state
-        if (fabs(dqp) >= pmb->precon->hminus_ratio_i(il-1)*fabs(dqm)) {
-          valRi = w(n,k,j,il-1) + pmb->precon->hminus_ratio_i(il-1)*dqm;
-        }
-      }
-      wL(n,k,j,il) = valRi;
-      wR(n,k,j,il-1) = valLi;
-
-      //Deal with Right Boundary
-      xArrL[0] = pmb->pcoord->x1f(iu-2);
-      xArrL[1] = pmb->pcoord->x1f(iu-1);
-      xArrL[2] = pmb->pcoord->x1f(iu  );
-      xArrL[3] = pmb->pcoord->x1f(iu+1);
-      xArrL[4] = pmb->pcoord->x1f(iu+2);
-      
-      primsL[0] = w(n,k,j,iu-2);
-      primsL[1] = w(n,k,j,iu-1);
-      primsL[2] = w(n,k,j,iu  );
-      primsL[3] = w(n,k,j,iu+1);
-  
-      MyxL = xArrL[2]+v1f(iu)*dt;	
-      valLi =  WallIntegration(xArrL,primsL,xArrL[2],MyxL,5);
- 
-      if (valLi > std::max(primsL[2],primsL[1])) valLi = std::max(primsL[2],primsL[1]);
-      if (valLi < std::min(primsL[2],primsL[1])) valLi = std::min(primsL[2],primsL[1]);
-    
-      xArrR[0] = pmb->pcoord->x1f(iu-1);
-      xArrR[1] = pmb->pcoord->x1f(iu);
-      xArrR[2] = pmb->pcoord->x1f(iu+1);
-      xArrR[3] = pmb->pcoord->x1f(iu+2);
-      xArrR[4] = pmb->pcoord->x1f(iu+3);
-          
-      primsR[0] = w(n,k,j,iu-1);
-      primsR[1] = w(n,k,j,iu  );
-      primsR[2] = w(n,k,j,iu+1);
-      primsR[3] = w(n,k,j,iu+2);
- 
-      MyxR = xArrR[2]+v1f(iu+1)*dt;	
-      valRi =  WallIntegration(xArrR,primsR,xArrR[2],MyxR,5);
-  
-      if (valRi > std::max(primsR[2],primsR[1])) valRi = std::max(primsR[2],primsR[1]);
-      if (valRi < std::min(primsR[2],primsR[1])) valRi = std::min(primsR[2],primsR[1]);
-  
-      //Extrema Detector
-      dqm = w(n,k,j,iu) - valLi;
-      dqp = valRi-w(n,k,j,iu);
-    
-      if (dqp*dqm <= 0.0){
-        valLi = w(n,k,j,iu);
-        valRi = w(n,k,j,iu);
-      } else {
-        // Overshoot i-1/2,R / i,(-) state
-        if (fabs(dqm) >= pmb->precon->hplus_ratio_i(iu)*fabs(dqp)) {
-          valLi = w(n,k,j,iu) - pmb->precon->hplus_ratio_i(iu)*dqp;
-        }
-        // Overshoot i+1/2,L / i,(+) state
-        if (fabs(dqp) >= pmb->precon->hminus_ratio_i(iu)*fabs(dqm)) {
-          valRi = w(n,k,j,iu) + pmb->precon->hminus_ratio_i(iu)*dqm;
-        }
-      }
-      wL(n,k,j,iu+1) = valRi;
-      wR(n,k,j,iu) = valLi;
 #pragma omp simd
-
-      for (int i=il; i<=iu-1; ++i) {
-        if (v1f(i) > 0.0) {
-          //Get i-1/2 average state
-          xArrL[0] = pmb->pcoord->x1f(i-1);
-          xArrL[1] = pmb->pcoord->x1f(i  );
-          xArrL[2] = pmb->pcoord->x1f(i+1);
-          xArrL[3] = pmb->pcoord->x1f(i+2);
-          xArrL[4] = pmb->pcoord->x1f(i+3);
-          
-          primsL[0] = w(n,k,j,i-1);
-          primsL[1] = w(n,k,j,i  );
-          primsL[2] = w(n,k,j,i+1  );
-          primsL[3] = w(n,k,j,i+2);
-    
-          MyxL = xArrL[1]+v1f(i)*dt;	
-          valLi =  WallIntegration(xArrL,primsL,xArrL[1],MyxL,5);
-      
-          //Get i+1/2 average state
-          xArrR[0] = pmb->pcoord->x1f(i);
-          xArrR[1] = pmb->pcoord->x1f(i+1);
-          xArrR[2] = pmb->pcoord->x1f(i+2);
-          xArrR[3] = pmb->pcoord->x1f(i+3);
-          xArrR[4] = pmb->pcoord->x1f(i+4);
+      for (int i=il-1; i<=iu; ++i) {
+        //get i-1/2 profile
+        xArrL[0] = pmb->pcoord->x1f(i-2) - pmb->pcoord->x1f(i);
+        xArrL[1] = pmb->pcoord->x1f(i-1) - pmb->pcoord->x1f(i);
+        xArrL[2] = 0.0;
+        xArrL[3] = pmb->pcoord->x1f(i+1) - pmb->pcoord->x1f(i);
+        xArrL[4] = pmb->pcoord->x1f(i+2) - pmb->pcoord->x1f(i);
+        
+        primsL[0] = w(n,k,j,i-2);
+        primsL[1] = w(n,k,j,i-1);
+        primsL[2] = w(n,k,j,i  );
+        primsL[3] = w(n,k,j,i+1);
+        WallIntegration(xArrL,primsL,5,coeffL);
+     
+        //Get i+1/2 profile
+        xArrR[0] = pmb->pcoord->x1f(i-1) - pmb->pcoord->x1f(i+1);
+        xArrR[1] = pmb->pcoord->x1f(i)   - pmb->pcoord->x1f(i+1);
+        xArrR[2] = 0.0;
+        xArrR[3] = pmb->pcoord->x1f(i+2) - pmb->pcoord->x1f(i+1);
+        xArrR[4] = pmb->pcoord->x1f(i+3) - pmb->pcoord->x1f(i+1);
             
-          primsR[0] = w(n,k,j,i);
-          primsR[1] = w(n,k,j,i+1);
-          primsR[2] = w(n,k,j,i+2);
-          primsR[3] = w(n,k,j,i+3);
-   
-          MyxR = xArrR[1]+v1f(i+1)*dt;	
-          valRi =  WallIntegration(xArrR,primsR,xArrR[1],MyxR,5);
+        primsR[0] = w(n,k,j,i-1);
+        primsR[1] = w(n,k,j,i  );
+        primsR[2] = w(n,k,j,i+1);
+        primsR[3] = w(n,k,j,i+2);
+        WallIntegration(xArrR,primsR,5,coeffR);     
 
-        } else if (v1f(i) < 0.0) {
-          //Get i-1/2 average state
-          xArrL[0] = pmb->pcoord->x1f(i-3);
-          xArrL[1] = pmb->pcoord->x1f(i-2);
-          xArrL[2] = pmb->pcoord->x1f(i-1);
-          xArrL[3] = pmb->pcoord->x1f(i  );
-          xArrL[4] = pmb->pcoord->x1f(i+1);
-          
-          primsL[0] = w(n,k,j,i-3);
-          primsL[1] = w(n,k,j,i-2);
-          primsL[2] = w(n,k,j,i-1);
-          primsL[3] = w(n,k,j,i  );
-    
-          MyxL = xArrL[3]+v1f(i)*dt;	
-          valLi =  WallIntegration(xArrL,primsL,xArrL[3],MyxL,5);
-      
-          //Get i+1/2 average state
-          xArrR[0] = pmb->pcoord->x1f(i-2);
-          xArrR[1] = pmb->pcoord->x1f(i-1);
-          xArrR[2] = pmb->pcoord->x1f(i  );
-          xArrR[3] = pmb->pcoord->x1f(i+1);
-          xArrR[4] = pmb->pcoord->x1f(i+2);
-            
-          primsR[0] = w(n,k,j,i-2);
-          primsR[1] = w(n,k,j,i-1);
-          primsR[2] = w(n,k,j,i );
-          primsR[3] = w(n,k,j,i+1);
-   
-          MyxR = xArrR[2]+v1f(i+1)*dt;	
-          valRi =  WallIntegration(xArrR,primsR,xArrR[2],MyxR,5);
+        // Get base line L R states
+        valLn = coeffL[0];
+        valRn = coeffR[0];
 
-        } else if (v1f(i) == 0.0) {
-          //Get i-1/2 average state
-          xArrL[0] = pmb->pcoord->x1f(i-2);
-          xArrL[1] = pmb->pcoord->x1f(i-1);
-          xArrL[2] = pmb->pcoord->x1f(i);
-          xArrL[3] = pmb->pcoord->x1f(i+1);
-          xArrL[4] = pmb->pcoord->x1f(i+2);
-          
-          primsL[0] = w(n,k,j,i-2);
-          primsL[1] = w(n,k,j,i-1);
-          primsL[2] = w(n,k,j,i  );
-          primsL[3] = w(n,k,j,i+1);
-    
-          MyxL = xArrL[2];//+v1f(i)*dt;	
-          valLi =  WallIntegration(xArrL,primsL,xArrL[2],MyxL,5);
-      
-          //Get i+1/2 average state
-          xArrR[0] = pmb->pcoord->x1f(i-1);
-          xArrR[1] = pmb->pcoord->x1f(i);
-          xArrR[2] = pmb->pcoord->x1f(i+1);
-          xArrR[3] = pmb->pcoord->x1f(i+2);
-          xArrR[4] = pmb->pcoord->x1f(i+3);
-            
-          primsR[0] = w(n,k,j,i-1);
-          primsR[1] = w(n,k,j,i  );
-          primsR[2] = w(n,k,j,i+1);
-          primsR[3] = w(n,k,j,i+2);
-   
-          MyxR = xArrR[2];//+v1f(i+1)*dt;	
-          valRi =  WallIntegration(xArrR,primsR,xArrR[2],MyxR,5);     
-        }
+        if (valLn > std::max(primsL[2],primsL[1])) valLn = std::max(primsL[2],primsL[1]);
+        if (valLn < std::min(primsL[2],primsL[1])) valLn = std::min(primsL[2],primsL[1]);
 
-        //SLOPE LIMITING i-1/2
-        if (valLi > std::max(w(n,k,j,i),w(n,k,j,i-1))) valLi = std::max(w(n,k,j,i),w(n,k,j,i-1));
-        if (valLi < std::min(w(n,k,j,i),w(n,k,j,i-1))) valLi = std::min(w(n,k,j,i),w(n,k,j,i-1));
-        //SLOPE LIMITING i+1/2
-        if (valRi > std::max(w(n,k,j,i+1),w(n,k,j,i))) valRi = std::max(w(n,k,j,i+1),w(n,k,j,i));
-        if (valRi < std::min(w(n,k,j,i+1),w(n,k,j,i))) valRi = std::min(w(n,k,j,i+1),w(n,k,j,i));
+        if (valRn > std::max(primsR[2],primsR[1])) valRn = std::max(primsR[2],primsR[1]);
+        if (valRn < std::min(primsR[2],primsR[1])) valRn = std::min(primsR[2],primsR[1]);
 
         //Extrema Detector
-        dqm = w(n,k,j,i) - valLi;
-        dqp = valRi-w(n,k,j,i);
+        Real dqm = w(n,k,j,i) - valLn;
+        Real dqp = valRn - w(n,k,j,i);
       
         if (dqp*dqm <= 0.0){
-          valLi = w(n,k,j,i);
-          valRi = w(n,k,j,i);
+          valLn = w(n,k,j,i);
+          valRn = w(n,k,j,i);
         } else {
           // Overshoot i-1/2,R / i,(-) state
           if (fabs(dqm) >= pmb->precon->hplus_ratio_i(i)*fabs(dqp)) {
-            valLi = w(n,k,j,i) - pmb->precon->hplus_ratio_i(i)*dqp;
+            valLn = w(n,k,j,i) - pmb->precon->hplus_ratio_i(i)*dqp;
           }
           // Overshoot i+1/2,L / i,(+) state
           if (fabs(dqp) >= pmb->precon->hminus_ratio_i(i)*fabs(dqm)) {
-            valRi = w(n,k,j,i) + pmb->precon->hminus_ratio_i(i)*dqm;
+            valRn = w(n,k,j,i) + pmb->precon->hminus_ratio_i(i)*dqm;
           }
         }
-   
-        wL(n,k,j,i+1) = valRi;
-        wR(n,k,j,i  ) = valLi;
+
+        xArrC[1] = pmb->pcoord->x1f(i)   - pmb->pcoord->x1v(i);
+        xArrC[2] = 0.0;
+        xArrC[3] = pmb->pcoord->x1f(i+1) - pmb->pcoord->x1v(i);
+        
+        primsC[1] = valLn;
+        primsC[2] = w(n,k,j,i);
+        primsC[3] = valRn;
+
+        Real A, B, C;
+        A = primsC[1]/(xArrC[1]*(xArrC[1]-xArrC[3]));
+        B = primsC[2]/(xArrC[1]*xArrC[3]);
+        C = primsC[3]/(xArrC[3]*(xArrC[3]-xArrC[1]));
+
+        Real c1, c2, c0;
+        c2 = A + B + C;
+        c1 = -1.0*(A*(xArrC[3])+B*(xArrC[1]+xArrC[3])+C*xArrC[1]);
+        c0 = B*xArrC[1]*xArrC[3];
+        
+
+        // Get next time step states
+        MyxL = xArrC[1] + abs(v1f(i))*dt;	
+        MyxR = xArrC[3] - abs(v1f(i+1))*dt;	
+
+        // Get base line L R states
+        valLp1 = ( c2*(pow(MyxL,3.0)-pow(xArrC[1],3.0))/3.0 
+                 + c1*(pow(MyxL,2.0)-pow(xArrC[1],2.0))/2.0 
+                 + c0*(pow(MyxL,1.0)-pow(xArrC[1],1.0))) / (MyxL - xArrC[1]) ;
+        valRp1 = ( c2*(pow(MyxR,3.0)-pow(xArrC[3],3.0))/3.0 
+                 + c1*(pow(MyxR,2.0)-pow(xArrC[3],2.0))/2.0 
+                 + c0*(pow(MyxR,1.0)-pow(xArrC[3],1.0))) / (MyxR - xArrC[3]) ;
+
+        if (valLp1 > std::max(primsC[2],primsC[1])) valLp1 = std::max(primsC[2],primsC[1]);
+        if (valLp1 < std::min(primsC[2],primsC[1])) valLp1 = std::min(primsC[2],primsC[1]);
+        if (valRp1 > std::max(primsC[2],primsC[3])) valRp1 = std::max(primsC[2],primsC[3]);
+        if (valRp1 < std::min(primsC[2],primsC[3])) valRp1 = std::min(primsC[2],primsC[3]);
+
+        if (MyxR==xArrC[3]) valRp1 = valRn;
+        if (MyxL==xArrC[1]) valLp1 = valLn;
+        wL(n,k,j,i+1) = valRp1;
+        wR(n,k,j,i  ) = valLp1;
       }
     }
   }}

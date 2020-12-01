@@ -43,7 +43,7 @@ void Expansion::FluxSolver(const int kl, const int ku, const int jl, const int j
     const int il, const int iu, const int ivx, const AthenaArray<Real> &bx,
     AthenaArray<Real> &wL, AthenaArray<Real> &wR, 
     AthenaArray<Real> &flx,
-    AthenaArray<Real> &e1, AthenaArray<Real> &e2){
+    AthenaArray<Real> &e1, AthenaArray<Real> &e2, AthenaArray<Real> &vArr){
 
   int ivy = IVX + ((ivx-IVX)+1)%3;
   int ivz = IVX + ((ivx-IVX)+2)%3;
@@ -61,7 +61,7 @@ void Expansion::FluxSolver(const int kl, const int ku, const int jl, const int j
  
 //--- Step 1.  Load L/R states into local variables
 
-    wallV = v1f(i);
+    wallV = vArr(i);
     Real midV = 0.5*(wR(ivx,k,j,i) + wL(ivx,k,j,i));
     if (wallV > 0.0) {    
       wi[IDN]=wR(IDN,k,j,i);

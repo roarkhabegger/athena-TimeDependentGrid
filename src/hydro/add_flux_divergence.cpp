@@ -46,6 +46,7 @@ void Hydro::AddFluxDivergenceToAverage(AthenaArray<Real> &w, AthenaArray<Real> &
   vol.InitWithShallowCopy(cell_volume_);
   dflx.InitWithShallowCopy(dflx_);
 
+
   for (int k=ks; k<=ke; ++k) {
     for (int j=js; j<=je; ++j) {
 

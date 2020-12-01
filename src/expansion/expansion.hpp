@@ -61,7 +61,7 @@ public:
     const int il, const int iu, const int ivx, const AthenaArray<Real> &bx,
     AthenaArray<Real> &wL, AthenaArray<Real> &wR, 
     AthenaArray<Real> &flx,
-    AthenaArray<Real> &e1, AthenaArray<Real> &e2);
+    AthenaArray<Real> &e1, AthenaArray<Real> &e2, AthenaArray<Real> &vArr);
 
   void PiecewiseLinearOffsetX1(MeshBlock *pmb,
     const int kl, const int ku, const int jl, const int ju, const int il, const int iu,
@@ -72,6 +72,7 @@ public:
     const int kl, const int ku, const int jl, const int ju, const int il, const int iu,
     const AthenaArray<Real> &w, const AthenaArray<Real> &bcc,
     AthenaArray<Real> &wL, AthenaArray<Real> &wR, const Real dt);
+
 private:
   MeshBlock* pmy_block;    // ptr to MeshBlock containing this Expansion
 

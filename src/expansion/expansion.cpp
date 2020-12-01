@@ -48,12 +48,7 @@ Expansion::Expansion(MeshBlock *pmb, ParameterInput *pin) {
   if (pmb->block_size.nx2 > 1) {ncells2 = (je-js+1) + 2*ng; jl = js-ng; ju = je+ng;}
   if (pmb->block_size.nx3 > 1) {ncells3 = (ke-ks+1) + 2*ng; kl = ks-ng; ku = ke+ng;}
 
-  //std::cout << "In Expansion constructor" << std::endl;
-  //std::cout << "i Dir: is=" << is << " ie=" << ie << " nCells1=" << ncells1 << std::endl;
-  //std::cout << "j Dir: js=" << js << " je=" << je << " nCells2=" << ncells2 <<std::endl;
-  //std::cout << "k Dir: ks=" << ks << " ke=" << ke << " nCells3=" << ncells3 <<std::endl;
-
-  //Allocate velocities and grid data
+   //Allocate velocities and grid data
   v1f.NewAthenaArray((ncells1+1));
   v2f.NewAthenaArray((ncells2+1));
   v3f.NewAthenaArray((ncells3+1));
@@ -69,8 +64,6 @@ Expansion::Expansion(MeshBlock *pmb, ParameterInput *pin) {
  
   Expwl.NewAthenaArray((NWAVE+NINT+NSCALARS),ncells3,ncells2,ncells1);
   Expwr.NewAthenaArray((NWAVE+NINT+NSCALARS),ncells3,ncells2,ncells1);
-  //Expwl2.NewAthenaArray((NWAVE+NINT+NSCALARS),ncells3,ncells2,ncells1);
-  //Expwr2.NewAthenaArray((NWAVE+NINT+NSCALARS),ncells3,ncells2,ncells1);
   expFlux[X1DIR].NewAthenaArray(NHYDRO,ncells3,ncells2,ncells1+1);
   if (pmy_block->block_size.nx2 > 1)
     expFlux[X2DIR].NewAthenaArray(NHYDRO,ncells3,ncells2+1,ncells1);
@@ -79,13 +72,7 @@ Expansion::Expansion(MeshBlock *pmb, ParameterInput *pin) {
   for (int i=il; i<=iu+1;++i) {
     v1f(i) = 0.0;
     x1_0(i) = pmb->pcoord->x1f(i);
-    //if (x1_0(i) == pmb->pmy_mesh->mesh_size.x1min) {
-    //  std::cout << "x1min is i=" << i << " where il=" << il << ", is=" << is << std::endl;
-    //}
-    //if (x1_0(i) == pmb->pmy_mesh->mesh_size.x1max) {
-    //  std::cout << "x1max is i=" << i << " where iu+1=" << iu+1 << ", ie+1=" << ie+1 << std::endl;
-    //}
-  }
+ }
 
   for (int j=jl; j<=ju+1;++j) {
     v2f(j) = 0.0;
@@ -197,13 +184,6 @@ void Expansion::AddWallFluxDivergence(Real dt, AthenaArray<Real> &prim, AthenaAr
     e1x3.InitWithShallowCopy(pmb->pfield->e1_x3f);
     e2x3.InitWithShallowCopy(pmb->pfield->e2_x3f);
   }
-//  if (order == 1) {
-//    pmb->precon->DonorCellX1(pmb,ks,ke,js,je,is,ie+1,prim,pmb->pfield->bcc,Expwl1,Expwr1);
-//  } else if (order == 2) {
-//    pmb->precon->PiecewiseLinearX1(pmb,ks,ke,js,je,is,ie+1,prim,pmb->pfield->bcc,Expwl1,Expwr1);
-//  } else {
-//    pmb->precon->PiecewiseParabolicX1(pmb,ks,ke,js,je,is,ie+1,prim,pmb->pfield->bcc,Expwl1,Expwr1);
-//  }
 
   if (order ==3) {
     PiecewiseParabolicOffsetX1(pmb,ks,ke,js,je,is,ie+1,prim,pmb->pfield->bcc,Expwl,Expwr,dt);
@@ -211,7 +191,7 @@ void Expansion::AddWallFluxDivergence(Real dt, AthenaArray<Real> &prim, AthenaAr
     PiecewiseLinearOffsetX1(pmb,ks,ke,js,je,is,ie+1,prim,pmb->pfield->bcc,Expwl,Expwr,dt);
   }
 
-  FluxSolver(ks,ke,js,je,is,ie+1,IVX,b1,Expwl,Expwr,x1flux,e3x1,e2x1);
+  FluxSolver(ks,ke,js,je,is,ie+1,IVX,b1,Expwl,Expwr,x1flux,e3x1,e2x1,v1f);
 
 
   for (int k = ks; k<=ke;++k) {
@@ -222,86 +202,8 @@ void Expansion::AddWallFluxDivergence(Real dt, AthenaArray<Real> &prim, AthenaAr
         vol = pmb->pcoord->GetCellVolume(k,j,i);
         for (int n=0; n<NHYDRO;++n) {
           divF = x1flux(n,k,j,i+1)*A2 - x1flux(n,k,j,i) * A1;
-          //std::cout << "i="<< i <<  " divF=" << divF << std::endl;
-          cons(n,k,j,i) += dt/vol*divF;//*pmb->pcoord->dx1f(i)/(x1_0(i+1)-x1_0(i));        
+          cons(n,k,j,i) += dt/vol*divF;        
         }
-//
-//        //DENSITY FLUX 
-//        qLi = Expwl(IDN,k,j,i);
-//        qRi = Expwr(IDN,k,j,i);
-//        if (v1f(i) < 0) {
-//          flxL = v1f(i) *qLi;
-//        } else if (v1f(i)>0){
-//          flxL = v1f(i) * qRi;
-//        } else {
-//          flxL = 0.0;
-//        }
-//
-//        qLp1 = Expwl(IDN,k,j,i+1);
-//        qRp1 = Expwr(IDN,k,j,i+1);
-//        if (v1f(i+1) < 0) {
-//          flxR = v1f(i+1) *qLp1;
-//        } else if (v1f(i+1)>0){
-//          flxR = v1f(i+1) * qRp1;
-//        } else {
-//          flxR = 0.0;
-//        }
-//        divF = x1flux(IDN,k,j,i+1)*A2 - x1flux(IDN,k,j,i) * A1;
-//        std::cout << "i="<< i <<  " divF=" << divF << std::endl;
-//        cons(IDN,k,j,i) += dt/vol*divF;//*pmb->pcoord->dx1f(i)/(x1_0(i+1)-x1_0(i));        
-//
-//        //MOMENTUM FLUX
-//        qLi *= Expwl(IVX,k,j,i);
-//        qRi *= Expwr(IVX,k,j,i);
-//        if (v1f(i) < 0) {
-//          flxL = v1f(i) *qLi;
-//        } else if (v1f(i)>0){
-//          flxL = v1f(i) * qRi;
-//        } else {
-//          flxL = 0.0;
-//        }
-//
-//        qLp1 *= Expwl(IVX,k,j,i+1);
-//        qRp1 *= Expwr(IVX,k,j,i+1);
-//        if (v1f(i+1) < 0) {
-//          flxR = v1f(i+1) *qLp1;
-//        } else if (v1f(i+1)>0){
-//          flxR = v1f(i+1) * qRp1;
-//        } else {
-//          flxR = 0.0;
-//        }
-//        divF = x1flux(IVX,k,j,i+1)*A2 - x1flux(IVX,k,j,i) * A1;
-//        cons(IM1,k,j,i) += dt/vol*divF;//*pmb->pcoord->dx1f(i)/(x1_0(i+1)-x1_0(i));        
-//
-//        //ENERGY FLUX
-//        qLi *= 0.5*Expwl(IVX,k,j,i);
-//        qRi *= 0.5*Expwr(IVX,k,j,i);
-//        qLi += Expwl(IPR,k,j,i)/gm1;
-//        qRi += Expwr(IPR,k,j,i)/gm1;
-//        if (v1f(i) < 0) {
-//          flxL = v1f(i) *qLi;
-//        } else if (v1f(i)>0){
-//          flxL = v1f(i) * qRi;
-//        } else {
-//          flxL = 0.0;
-//        }
-//
-//        qLp1 *=0.5* Expwl(IVX,k,j,i+1);
-//        qRp1 *= 0.5*Expwr(IVX,k,j,i+1);
-//        qLp1 += Expwl(IPR,k,j,i+1)/gm1;
-//        qRp1 += Expwr(IPR,k,j,i+1)/gm1;
-//        if (v1f(i+1) < 0) {
-//          flxR = v1f(i+1) *qLp1;
-//        } else if (v1f(i+1)>0){
-//          flxR = v1f(i+1) * qRp1;
-//        } else {
-//          flxR = 0.0;
-//        }
-//        divF = x1flux(IEN,k,j,i+1)*A2 - x1flux(IEN,k,j,i) * A1;
-//        cons(IEN,k,j,i) += dt/vol*divF;//*pmb->pcoord->dx1f(i)/(x1_0(i+1)-x1_0(i));        
-//
-//        //cons(IS0,k,j,i) += dt/vol*divF;        
-//        //cons(IS0,k,j,i) *= pmb->pcoord->dx1f(i)/(x1_0(i+1)-x1_0(i));        
       }
     }
   }
@@ -317,9 +219,6 @@ void Expansion::ExpansionSourceTerms(const Real dt, const AthenaArray<Real> *flx
         for (int n = 0; n<(NHYDRO+NSCALARS); ++n) {
           vm = (v1f(i+1)-v1f(i));
           c(n,k,j,i) *= 1.0/(vm*dt/(pmy_block->pcoord->dx1f(i))+1);        
-          //if ((i==256) and (n==IEN)) {
-          //  std::cout <<"i=" << i << " cons E=" << c(IEN,k,j,i)  << std::endl;
-          //}
         }
       }
     }
@@ -338,7 +237,6 @@ void Expansion::UpdateVelData(MeshBlock *pmb ,Real time, Real dt){
     }
     for (int j = jl;j<=ju+1;++j){      
       v2f(j) = pmb->pmy_mesh->GridDiffEq_(pmb->pcoord->x2f(j),j,pmb->pmy_mesh->time,dt,1,pmb->pmy_mesh->GridData);
-      //velx2f(j) = delx2f(j)/dt;
     }
     for (int i = il; i<=iu+1;++i){
       v1f(i) = pmb->pmy_mesh->GridDiffEq_(pmb->pcoord->x1f(i),i,pmb->pmy_mesh->time,dt,0,pmb->pmy_mesh->GridData); 
@@ -348,19 +246,13 @@ void Expansion::UpdateVelData(MeshBlock *pmb ,Real time, Real dt){
 }
 
 void Expansion::GridEdit(MeshBlock *pmb){
-  //pmb->pcoord->x1f(0) += 0.1;
-  //std::cout << "Editing Grid" << std::endl;
   //FACE CENTERED
   //x1
   for (int i=il; i<=iu+1; ++i){
-    pmb->pcoord->x1f(i) = x1_0(i);
-    
-    //if (i == ie) std::cout << "i=" << i << ", x1_0 = " << x1_0(i) << ", x1f = " << pmb->pcoord->x1f(i) <<std::endl;
+    pmb->pcoord->x1f(i) = x1_0(i);  
   }
   for (int i=il; i<=iu; ++i) {
-    //std::cout << "i=" << i << " dxi n = " << pmb->pcoord->dx1f(i) ;
     pmb->pcoord->dx1f(i) = pmb->pcoord->x1f(i+1)-pmb->pcoord->x1f(i);
-    //std::cout << " dxi n1 = " << pmb->pcoord->dx1f(i) << std::endl;
   }
   
   //x2  
@@ -401,8 +293,30 @@ void Expansion::GridEdit(MeshBlock *pmb){
       pmb->precon->c4i(i) = qb;
       pmb->precon->c5i(i) = dx_i/qa*qd;
       pmb->precon->c6i(i) = -dx_im1/qa*qc;
-
-
+    }
+  }
+  // Compute curvilinear geometric factors for limiter (Mignone eq 48)
+  for (int i=il+1; i<=iu-1; ++i) {
+    if ((COORDINATE_SYSTEM == "cylindrical") ||
+        (COORDINATE_SYSTEM == "spherical_polar")) {
+      Real h_plus, h_minus;
+      Real& dx_i   = pmb->pcoord->dx1f(i);
+      Real& xv_i   = pmb->pcoord->x1v(i);
+      if (COORDINATE_SYSTEM == "cylindrical") {
+        // cylindrical radial coordinate
+        h_plus = 3.0 + dx_i/(2.0*xv_i);
+        h_minus = 3.0 - dx_i/(2.0*xv_i);
+      } else {
+        // spherical radial coordinate
+        h_plus = 3.0 + (2.0*dx_i*(10.0*xv_i + dx_i))/(20.0*SQR(xv_i) + SQR(dx_i));
+        h_minus = 3.0 + (2.0*dx_i*(-10.0*xv_i + dx_i))/(20.0*SQR(xv_i) + SQR(dx_i));
+      }
+      pmb->precon->hplus_ratio_i(i) = (h_plus + 1.0)/(h_minus - 1.0);
+      pmb->precon->hminus_ratio_i(i) = (h_minus + 1.0)/(h_plus - 1.0);
+    } else { // Cartesian, SR, GR
+        // Ratios are = 2 for Cartesian coords, as in original PPM overshoot limiter
+        pmb->precon->hplus_ratio_i(i) = 2.0;
+        pmb->precon->hminus_ratio_i(i) = 2.0;
     }
   }
   //VOLUME BASED QUANTITIES 
@@ -738,12 +652,30 @@ void Expansion::GridEdit(MeshBlock *pmb){
     }
   }
 
+  //Check Mesh_Size object and reset bounds if necessary
+  //x1
   if (pmb->block_size.x1min == pmb->pmy_mesh->mesh_size.x1min) {
     pmb->pmy_mesh->mesh_size.x1min = x1_0(is);
   }  
   if (pmb->block_size.x1max == pmb->pmy_mesh->mesh_size.x1max) {
     pmb->pmy_mesh->mesh_size.x1max = x1_0(ie);
+  } 
+  //x2 
+  if (pmb->block_size.x2min == pmb->pmy_mesh->mesh_size.x2min) {
+    pmb->pmy_mesh->mesh_size.x2min = x2_0(js);
   }  
+  if (pmb->block_size.x2max == pmb->pmy_mesh->mesh_size.x2max) {
+    pmb->pmy_mesh->mesh_size.x2max = x2_0(je);
+  }  
+  //x3
+  if (pmb->block_size.x3min == pmb->pmy_mesh->mesh_size.x3min) {
+    pmb->pmy_mesh->mesh_size.x3min = x3_0(ks);
+  }  
+  if (pmb->block_size.x3max == pmb->pmy_mesh->mesh_size.x3max) {
+    pmb->pmy_mesh->mesh_size.x3max = x3_0(ke);
+  } 
+
+  //Reset block_size object 
   pmb->block_size.x1min = x1_0(is);
   pmb->block_size.x2min = x2_0(js);
   pmb->block_size.x3min = x3_0(ks);
@@ -752,9 +684,6 @@ void Expansion::GridEdit(MeshBlock *pmb){
   pmb->block_size.x2max = x2_0(je);
   pmb->block_size.x3max = x3_0(ke);
    
-  //std::cout << pmb->pcoord->x1f(10) << std::endl;    
-  
- 
   return;
 }
 
@@ -801,21 +730,16 @@ Real Expansion::GridTimeStep(MeshBlock *pmb){
         count++;
         if (count >= 100) {
           mydt*=0.5;
-          //std::cout << "In Loop. MinCell = " << minCellSize << std::endl;
         }
         
       }
       Real dtEx = mydt;//*pmesh->cfl_number;//fabs(minCellSize* 0.5/nextPosDelta * (pmesh->dt));
-      //Real& dt_Ex =  dtEx;
       min_dt = std::min(min_dt, dtEx);
     } else {
       Real dtEx = pmesh->dt;
-      //Real& dt_Ex = dtEx;
       min_dt = std::min(min_dt,dtEx);
     }
-    //std::cout << i  << " ->  " << mydt  <<std::endl; 
   }
-  //std::cout << "New Time Step: " << min_dt << std::endl;
   return min_dt;
 }
 

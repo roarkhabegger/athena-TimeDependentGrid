@@ -46,25 +46,52 @@ void InnerX1_UniformMedium(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &
 //will be the location of the ith cell wall at time time
 Real WallVel(Real xf, int i, Real time, Real dt, int dir, AthenaArray<Real> gridData) {
   Real retVal = 0.0;
-  Real nl = gridData(3);
-  Real nr = gridData(5);
-  Real myI = i;
+  Real x0l = gridData(3);
+  Real x0r = gridData(5);
+  Real myX = xf;
   //std::cout << gridData(0) << std::endl;
   if (dir+1 != gridData(1)){
     retVal = 0.0;
-  } else if (myI==gridData(0)){
+  } else if (myX==gridData(0)){
     retVal = 0.0;
-  } else if (myI < gridData(0)){
+  } else if (myX < gridData(0)){
     if (gridData(2)==0.0) retVal = 0.0;
-    else retVal = gridData(2) * (gridData(0)-myI)/nl;
-  } else if (myI > gridData(0)){ 
+    else retVal = gridData(2) * (gridData(0)-myX)/(gridData(0)-x0l);
+  } else if (myX > gridData(0)){ 
     if (gridData(4)==0.0) retVal = 0.0;
-    else retVal = gridData(4) * (myI-gridData(0))/nr;
+    else retVal = gridData(4) * (myX-gridData(0))/(x0r-gridData(0));
   } 
   return retVal; 
 }
 
 void UpdateGridData(Mesh *pm) {
+   
+
+    Real xMin;
+    Real xMax;
+
+    int shk_dir = pm->GridData(1);
+    switch(shk_dir) {
+      //--- shock in 1-direction
+      case 1:
+        xMin = pm->mesh_size.x1min;
+        xMax = pm->mesh_size.x1max;
+      break;
+      //--- shock in 2-direction
+      case 2:
+        xMin = pm->mesh_size.x2min;
+        xMax = pm->mesh_size.x2max;
+      break;
+      //--- shock in 3-direction
+      case 3:   
+        xMin = pm->mesh_size.x3min;
+        xMax = pm->mesh_size.x3max;
+      break;
+    }
+
+    pm->GridData(3) = xMin;
+    pm->GridData(5) = xMax;
+
   return;
 }
 
@@ -85,7 +112,6 @@ void OuterX1_UniformMedium(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &
         prim(IPR,k,j,ie+i) = outerPres;  
         prim(IVY,k,j,ie+i) = 0.0;
         prim(IVZ,k,j,ie+i) = 0.0;
-        //std::cout << "i,j,k=" << i << "," << j <<"," << k << " outerDens=" << outerDens << " prim(ie+i)" << prim(IDN,k,j,ie+i) << std::endl; 
       }
     }
   }
@@ -222,7 +248,7 @@ void Mesh::InitUserMeshData(ParameterInput *pin) {
         n = pin->GetReal("mesh","nx3");
       break;
     }
-    GridData(0) = n*0.5;
+    GridData(0) = 0.0; //(xMin+xMax)/n*0.5;
     Real Fudge = pin->GetOrAddReal("problem","Fudge",1.0);
     
     Real maxXR = Fudge*(pin->GetReal("problem","maxRight"));
@@ -230,228 +256,11 @@ void Mesh::InitUserMeshData(ParameterInput *pin) {
     vGridL = (maxXL-xMin)/tLim;
     vGridR = (maxXR-xMax)/tLim;
     GridData(2) = vGridL;
-    GridData(3) = n*0.5;
+    GridData(3) = xMin; 
     GridData(4) = vGridR;
-    GridData(5) = n*0.5;
+    GridData(5) = xMax;
     
   }
-
-  return;
-}
-//========================================================================================
-//! \fn void Mesh::UserWorkAfterLoop(ParameterInput *pin)
-//  \brief Calculate L1 errors in Sod (hydro) and RJ2a (MHD) tests
-//========================================================================================
-
-void Mesh::UserWorkAfterLoop(ParameterInput *pin) {
-  MeshBlock *pmb = pblock;
-
-  if (!pin->GetOrAddBoolean("problem","compute_error",false)) return;
-
-  // Read shock direction and set array indices
-  int shk_dir = pin->GetInteger("problem","shock_dir");
-  int im1,im2,im3,ib1,ib2,ib3;
-  if (shk_dir == 1) {
-    im1 = IM1; im2 = IM2; im3 = IM3;
-    ib1 = IB1; ib2 = IB2; ib3 = IB3;
-  } else if (shk_dir == 2) {
-    im1 = IM2; im2 = IM3; im3 = IM1;
-    ib1 = IB2; ib2 = IB3; ib3 = IB1;
-  } else {
-    im1 = IM3; im2 = IM1; im3 = IM2;
-    ib1 = IB3; ib2 = IB1; ib3 = IB2;
-  }
-
-  // Initialize errors to zero
-  Real err[NHYDRO+NFIELD];
-  for (int i=0; i<(NHYDRO+NFIELD); ++i) err[i]=0.0;
-
-  // Errors in RJ2a test (Dai & Woodward 1994 Tables Ia and Ib)
-  if (MAGNETIC_FIELDS_ENABLED) {
-    Real xfp = 2.2638*tlim;
-    Real xrp = (0.53432 + 1.0/std::sqrt(PI*1.309))*tlim;
-    Real xsp = (0.53432 + 0.48144/1.309)*tlim;
-    Real xc = 0.57538*tlim;
-    Real xsm = (0.60588 - 0.51594/1.4903)*tlim;
-    Real xrm = (0.60588 - 1.0/std::sqrt(PI*1.4903))*tlim;
-    Real xfm = (1.2 - 2.3305/1.08)*tlim;
-    Real gm1 = pmb->peos->GetGamma() - 1.0;
-    for (int k=pmb->ks; k<=pmb->ke; k++) {
-    for (int j=pmb->js; j<=pmb->je; j++) {
-      for (int i=pmb->is; i<=pmb->ie; i++) {
-        Real r, d0, mx, my, mz, e0, bx, by, bz;
-        if (shk_dir == 1) r = pmb->pcoord->x1v(i);
-        if (shk_dir == 2) r = pmb->pcoord->x2v(j);
-        if (shk_dir == 3) r = pmb->pcoord->x3v(k);
-
-        bx = 2.0/std::sqrt(4.0*PI);
-        if (r > xfp) {
-          d0 = 1.0;
-          mx = 0.0;
-          my = 0.0;
-          mz = 0.0;
-          by = 4.0/std::sqrt(4.0*PI);
-          bz = 2.0/std::sqrt(4.0*PI);
-          e0 = 1.0/gm1 + 0.5*((mx*mx+my*my+mz*mz)/d0 + (bx*bx+by*by+bz*bz));
-        } else if (r > xrp) {
-          d0 = 1.3090;
-          mx = 0.53432*d0;
-          my = -0.094572*d0;
-          mz = -0.047286*d0;
-          by = 5.3452/std::sqrt(4.0*PI);
-          bz = 2.6726/std::sqrt(4.0*PI);
-          e0 = 1.5844/gm1 + 0.5*((mx*mx+my*my+mz*mz)/d0 + (bx*bx+by*by+bz*bz));
-        } else if (r > xsp) {
-          d0 = 1.3090;
-          mx = 0.53432*d0;
-          my = -0.18411*d0;
-          mz = 0.17554*d0;
-          by = 5.7083/std::sqrt(4.0*PI);
-          bz = 1.7689/std::sqrt(4.0*PI);
-          e0 = 1.5844/gm1 + 0.5*((mx*mx+my*my+mz*mz)/d0 + (bx*bx+by*by+bz*bz));
-        } else if (r > xc) {
-          d0 = 1.4735;
-          mx = 0.57538*d0;
-          my = 0.047601*d0;
-          mz = 0.24734*d0;
-          by = 5.0074/std::sqrt(4.0*PI);
-          bz = 1.5517/std::sqrt(4.0*PI);
-          e0 = 1.9317/gm1 + 0.5*((mx*mx+my*my+mz*mz)/d0 + (bx*bx+by*by+bz*bz));
-        } else if (r > xsm) {
-          d0 = 1.6343;
-          mx = 0.57538*d0;
-          my = 0.047601*d0;
-          mz = 0.24734*d0;
-          by = 5.0074/std::sqrt(4.0*PI);
-          bz = 1.5517/std::sqrt(4.0*PI);
-          e0 = 1.9317/gm1 + 0.5*((mx*mx+my*my+mz*mz)/d0 + (bx*bx+by*by+bz*bz));
-        } else if (r > xrm) {
-          d0 = 1.4903;
-          mx = 0.60588*d0;
-          my = 0.22157*d0;
-          mz = 0.30125*d0;
-          by = 5.5713/std::sqrt(4.0*PI);
-          bz = 1.7264/std::sqrt(4.0*PI);
-          e0 = 1.6558/gm1 + 0.5*((mx*mx+my*my+mz*mz)/d0 + (bx*bx+by*by+bz*bz));
-        } else if (r > xfm) {
-          d0 = 1.4903;
-          mx = 0.60588*d0;
-          my = 0.11235*d0;
-          mz = 0.55686*d0;
-          by = 5.0987/std::sqrt(4.0*PI);
-          bz = 2.8326/std::sqrt(4.0*PI);
-          e0 = 1.6558/gm1 + 0.5*((mx*mx+my*my+mz*mz)/d0 + (bx*bx+by*by+bz*bz));
-        } else {
-          d0 = 1.08;
-          mx = 1.2*d0;
-          my = 0.01*d0;
-          mz = 0.5*d0;
-          by = 3.6/std::sqrt(4.0*PI);
-          bz = 2.0/std::sqrt(4.0*PI);
-          e0 = 0.95/gm1 + 0.5*((mx*mx+my*my+mz*mz)/d0 + (bx*bx+by*by+bz*bz));
-        }
-
-        err[IDN] += fabs(d0 - pmb->phydro->u(IDN,k,j,i));
-        err[im1] += fabs(mx - pmb->phydro->u(im1,k,j,i));
-        err[im2] += fabs(my - pmb->phydro->u(im2,k,j,i));
-        err[im3] += fabs(mz - pmb->phydro->u(im3,k,j,i));
-        err[IEN] += fabs(e0 - pmb->phydro->u(IEN,k,j,i));
-        err[NHYDRO + ib1] += fabs(bx - pmb->pfield->bcc(ib1,k,j,i));
-        err[NHYDRO + ib2] += fabs(by - pmb->pfield->bcc(ib2,k,j,i));
-        err[NHYDRO + ib3] += fabs(bz - pmb->pfield->bcc(ib3,k,j,i));
-      }
-    }}
-
-  // Errors in Sod solution
-  } else {
-    // Positions of shock, contact, head and foot of rarefaction for Sod test
-    Real xs = 1.7522*tlim;
-    Real xc = 0.92745*tlim;
-    Real xf = -0.07027*tlim;
-    Real xh = -1.1832*tlim;
-
-    for (int k=pmb->ks; k<=pmb->ke; k++) {
-    for (int j=pmb->js; j<=pmb->je; j++) {
-      for (int i=pmb->is; i<=pmb->ie; i++) {
-        Real r,d0,m0,e0;
-        if (shk_dir == 1) r = pmb->pcoord->x1v(i);
-        if (shk_dir == 2) r = pmb->pcoord->x2v(j);
-        if (shk_dir == 3) r = pmb->pcoord->x3v(k);
-
-        if (r > xs) {
-          d0 = 0.125;
-          m0 = 0.0;
-          e0 = 0.25;
-        } else if (r > xc) {
-          d0 = 0.26557;
-          m0 = 0.92745*d0;
-          e0 = 0.87204;
-        } else if (r > xf) {
-          d0 = 0.42632;
-          m0 = 0.92745*d0;
-          e0 = 0.94118;
-        } else if (r > xh) {
-          Real v0 = 0.92745*(r-xh)/(xf-xh);
-          d0 = 0.42632*pow((1.0+0.20046*(0.92745-v0)),5);
-          m0 = v0*d0;
-          e0 = (0.30313*pow((1.0+0.20046*(0.92745-v0)),7))/0.4 + 0.5*d0*v0*v0;
-        } else {
-          d0 = 1.0;
-          m0 = 0.0;
-          e0 = 2.5;
-        }
-        err[IDN] += fabs(d0  - pmb->phydro->u(IDN,k,j,i));
-        err[im1] += fabs(m0  - pmb->phydro->u(im1,k,j,i));
-        err[im2] += fabs(0.0 - pmb->phydro->u(im2,k,j,i));
-        err[im3] += fabs(0.0 - pmb->phydro->u(im3,k,j,i));
-        err[IEN] += fabs(e0  - pmb->phydro->u(IEN,k,j,i));
-      }
-    }}
-  }
-
-  // normalize errors by number of cells, compute RMS
-  for (int i=0; i<(NHYDRO+NFIELD); ++i) {
-    err[i] = err[i]/static_cast<Real>(GetTotalCells());
-  }
-  Real rms_err = 0.0;
-  for (int i=0; i<(NHYDRO+NFIELD); ++i) rms_err += SQR(err[i]);
-  rms_err = std::sqrt(rms_err);
-
-  // open output file and write out errors
-  std::string fname;
-  fname.assign("shock-errors.dat");
-  std::stringstream msg;
-  FILE *pfile;
-
-  // The file exists -- reopen the file in append mode
-  if ((pfile = fopen(fname.c_str(),"r")) != NULL) {
-    if ((pfile = freopen(fname.c_str(),"a",pfile)) == NULL) {
-      msg << "### FATAL ERROR in function [Mesh::UserWorkAfterLoop]"
-          << std::endl << "Error output file could not be opened" <<std::endl;
-      throw std::runtime_error(msg.str().c_str());
-    }
-
-  // The file does not exist -- open the file in write mode and add headers
-  } else {
-    if ((pfile = fopen(fname.c_str(),"w")) == NULL) {
-      msg << "### FATAL ERROR in function [Mesh::UserWorkAfterLoop]"
-          << std::endl << "Error output file could not be opened" <<std::endl;
-      throw std::runtime_error(msg.str().c_str());
-    }
-    fprintf(pfile,"# Nx1  Nx2  Nx3  Ncycle  RMS-Error  d  M1  M2  M3  E");
-    if (MAGNETIC_FIELDS_ENABLED) fprintf(pfile,"  B1c  B2c  B3c");
-    fprintf(pfile,"\n");
-  }
-
-  // write errors
-  fprintf(pfile,"%d  %d",pmb->block_size.nx1,pmb->block_size.nx2);
-  fprintf(pfile,"  %d  %d  %e",pmb->block_size.nx3,ncycle,rms_err);
-  fprintf(pfile,"  %e  %e  %e  %e  %e",err[IDN],err[IM1],err[IM2],err[IM3],err[IEN]);
-  if (MAGNETIC_FIELDS_ENABLED) {
-    fprintf(pfile,"  %e  %e  %e",err[NHYDRO+IB1],err[NHYDRO+IB2],err[NHYDRO+IB3]);
-  }
-  fprintf(pfile,"\n");
-  fclose(pfile);
 
   return;
 }
@@ -534,18 +343,6 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin) {
             wl[IPR]/(peos->GetGamma() - 1.0)
             + 0.5*wl[IDN]*(wl[IVX]*wl[IVX] + wl[IVY]*wl[IVY] + wl[IVZ]*wl[IVZ]);
 				
-          if (CLESS_ENABLED) {
-	    pcless->u(IDN ,k,j,i) = phydro->u(IDN,k,j,i); 
-	    pcless->u(IM1 ,k,j,i) = phydro->u(IM1,k,j,i);
-	    pcless->u(IM2 ,k,j,i) = phydro->u(IM2,k,j,i);
-	    pcless->u(IM3 ,k,j,i) = phydro->u(IM3,k,j,i);
-	    pcless->u(IE11,k,j,i) = wl[IPR] + wl[IDN]*wl[IVX]*wl[IVX];
-	    pcless->u(IE22,k,j,i) = wl[IPR] + wl[IDN]*wl[IVY]*wl[IVY];
-	    pcless->u(IE33,k,j,i) = wl[IPR] + wl[IDN]*wl[IVZ]*wl[IVZ];
-	    pcless->u(IE12,k,j,i) = wl[IPR] + wl[IDN]*wl[IVX]*wl[IVY];
-            pcless->u(IE13,k,j,i) = wl[IPR] + wl[IDN]*wl[IVX]*wl[IVZ];
-            pcless->u(IE23,k,j,i) = wl[IPR] + wl[IDN]*wl[IVY]*wl[IVZ];
-	  }
         } else {
           phydro->u(IDN,k,j,i) = wr[IDN];
           phydro->u(IM1,k,j,i) = wr[IVX]*wr[IDN];
@@ -555,18 +352,6 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin) {
             wr[IPR]/(peos->GetGamma() - 1.0)
             + 0.5*wr[IDN]*(wr[IVX]*wr[IVX] + wr[IVY]*wr[IVY] + wr[IVZ]*wr[IVZ]);
 					
-	  if (CLESS_ENABLED) {
-            pcless->u(IDN ,k,j,i) = phydro->u(IDN,k,j,i); 
-            pcless->u(IM1 ,k,j,i) = phydro->u(IM1,k,j,i);
-            pcless->u(IM2 ,k,j,i) = phydro->u(IM2,k,j,i);
-            pcless->u(IM3 ,k,j,i) = phydro->u(IM3,k,j,i);
-            pcless->u(IE11,k,j,i) = wr[IPR] + wr[IDN]*wr[IVX]*wr[IVX];
-            pcless->u(IE22,k,j,i) = wr[IPR] + wr[IDN]*wr[IVY]*wr[IVY];
-            pcless->u(IE33,k,j,i) = wr[IPR] + wr[IDN]*wr[IVZ]*wr[IVZ];
-            pcless->u(IE12,k,j,i) = wr[IPR] + wr[IDN]*wr[IVX]*wr[IVY];
-            pcless->u(IE13,k,j,i) = wr[IPR] + wr[IDN]*wr[IVX]*wr[IVZ];
-            pcless->u(IE23,k,j,i) = wr[IPR] + wr[IDN]*wr[IVY]*wr[IVZ];
-          }
         }
       }
     }}
@@ -585,18 +370,6 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin) {
           if (NON_BAROTROPIC_EOS) phydro->u(IEN,k,j,i) =
             wl[IPR]/(peos->GetGamma() - 1.0)
             + 0.5*wl[IDN]*(wl[IVX]*wl[IVX] + wl[IVY]*wl[IVY] + wl[IVZ]*wl[IVZ]);
-          if (CLESS_ENABLED) {
-            pcless->u(IDN ,k,j,i) = phydro->u(IDN,k,j,i); 
-            pcless->u(IM2 ,k,j,i) = phydro->u(IM2,k,j,i);
-            pcless->u(IM3 ,k,j,i) = phydro->u(IM3,k,j,i);
-            pcless->u(IM1 ,k,j,i) = phydro->u(IM1,k,j,i);
-            pcless->u(IE22,k,j,i) = wl[IPR] + wl[IDN]*wl[IVX]*wl[IVX];
-            pcless->u(IE33,k,j,i) = wl[IPR] + wl[IDN]*wl[IVY]*wl[IVY];
-            pcless->u(IE11,k,j,i) = wl[IPR] + wl[IDN]*wl[IVZ]*wl[IVZ];
-            pcless->u(IE23,k,j,i) = wl[IPR] + wl[IDN]*wl[IVX]*wl[IVY];
-            pcless->u(IE12,k,j,i) = wl[IPR] + wl[IDN]*wl[IVX]*wl[IVZ];
-            pcless->u(IE13,k,j,i) = wl[IPR] + wl[IDN]*wl[IVY]*wl[IVZ];
-          }
         }
       } else {
         for (int i=is; i<=ie; ++i) {
@@ -607,18 +380,6 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin) {
           if (NON_BAROTROPIC_EOS) phydro->u(IEN,k,j,i) =
             wr[IPR]/(peos->GetGamma() - 1.0)
             + 0.5*wr[IDN]*(wr[IVX]*wr[IVX] + wr[IVY]*wr[IVY] + wr[IVZ]*wr[IVZ]);
-          if (CLESS_ENABLED) {
-            pcless->u(IDN ,k,j,i) = phydro->u(IDN,k,j,i); 
-            pcless->u(IM2 ,k,j,i) = phydro->u(IM2,k,j,i);
-            pcless->u(IM3 ,k,j,i) = phydro->u(IM3,k,j,i);
-            pcless->u(IM1 ,k,j,i) = phydro->u(IM1,k,j,i);
-            pcless->u(IE22,k,j,i) = wl[IPR] + wl[IDN]*wl[IVX]*wl[IVX];
-            pcless->u(IE33,k,j,i) = wl[IPR] + wl[IDN]*wl[IVY]*wl[IVY];
-            pcless->u(IE11,k,j,i) = wl[IPR] + wl[IDN]*wl[IVZ]*wl[IVZ];
-            pcless->u(IE23,k,j,i) = wl[IPR] + wl[IDN]*wl[IVX]*wl[IVY];
-            pcless->u(IE12,k,j,i) = wl[IPR] + wl[IDN]*wl[IVX]*wl[IVZ];
-            pcless->u(IE13,k,j,i) = wl[IPR] + wl[IDN]*wl[IVY]*wl[IVZ];
-          }
         }
       }
     }}
