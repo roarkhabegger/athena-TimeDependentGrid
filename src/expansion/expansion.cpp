@@ -687,13 +687,6 @@ void Expansion::GridEdit(MeshBlock *pmb){
   return;
 }
 
-void Expansion::UpdateMeshSize(MeshBlock *pmb) {
-  
-    
-  
-  return;
-}
-
 
 Real Expansion::GridTimeStep(MeshBlock *pmb){ 
   

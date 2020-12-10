@@ -1354,7 +1354,7 @@ enum TaskStatus TimeIntegratorTaskList::StartupIntegrator(MeshBlock *pmb, int st
 
 enum TaskStatus TimeIntegratorTaskList::GridMove(MeshBlock *pmb, int stage){
   pmb->pex->GridEdit(pmb);
-  pmb->pex->UpdateMeshSize(pmb);
+  //pmb->pex->UpdateMeshSize(pmb);
   return TASK_SUCCESS;
 }
 enum TaskStatus TimeIntegratorTaskList::GridCalculate(MeshBlock *pmb, int stage){

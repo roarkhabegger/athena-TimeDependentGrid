@@ -55,7 +55,7 @@ public:
   void GridEdit(MeshBlock *pmb);
   void UpdateVelData(MeshBlock *pmb,Real time, Real dt);
   Real GridTimeStep(MeshBlock *pmb);
-  void UpdateMeshSize(MeshBlock *pmb);
+  //void UpdateMeshSize(MeshBlock *pmb);
 
   void FluxSolver(const int kl, const int ku, const int jl, const int ju,
     const int il, const int iu, const int ivx, const AthenaArray<Real> &bx,
