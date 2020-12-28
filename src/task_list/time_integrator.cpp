@@ -365,9 +365,10 @@ TimeIntegratorTaskList::TimeIntegratorTaskList(ParameterInput *pin, Mesh *pm)
       if (EXPANDING) {
         AddTimeIntegratorTask(EXP_EDIT,CON2PRIM);
         AddTimeIntegratorTask(PHY_BVAL,EXP_EDIT);
-      } else {
+      } else { 
         AddTimeIntegratorTask(PHY_BVAL,CON2PRIM);
       }
+
       if (CLESS_ENABLED) {
         AddTimeIntegratorTask(CL_PHY_BVAL,CL_CON2PRIM);
         AddTimeIntegratorTask(USERWORK,(PHY_BVAL|CL_PHY_BVAL));
@@ -1353,7 +1354,10 @@ enum TaskStatus TimeIntegratorTaskList::StartupIntegrator(MeshBlock *pmb, int st
 }
 
 enum TaskStatus TimeIntegratorTaskList::GridMove(MeshBlock *pmb, int stage){
+  Real dt = (stage_wghts[(stage-1)].beta)*(pmb->pmy_mesh->dt);
+  Hydro *ph=pmb->phydro;
   pmb->pex->GridEdit(pmb);
+  //pmb->pex->ExpansionSourceTerms(pmb,dt,ph->u);
   //pmb->pex->UpdateMeshSize(pmb);
   return TASK_SUCCESS;
 }

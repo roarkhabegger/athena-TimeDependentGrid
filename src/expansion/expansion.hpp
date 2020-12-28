@@ -33,6 +33,8 @@ public:
   AthenaArray<Real> v1f;
   AthenaArray<Real> v2f;
   AthenaArray<Real> v3f;
+  AthenaArray<Real> vol;
+
   //Integration Registers
   AthenaArray<Real> x1_0, x2_0, x3_0;
   AthenaArray<Real> x1_1, x2_1, x3_1;
@@ -49,8 +51,7 @@ public:
   void AddWallFluxDivergence( Real dt, AthenaArray<Real> &prim, AthenaArray<Real> &cons);
   void IntegrateWalls(Real dt);
 
-  void ExpansionSourceTerms(const Real dt, const AthenaArray<Real> *flx, 
-                      const AthenaArray<Real> &p, AthenaArray<Real> &c); 
+  void ExpansionSourceTerms(const Real dt, const AthenaArray<Real> *flux, const AthenaArray<Real> &prim, AthenaArray<Real> &cons); 
 
   void GridEdit(MeshBlock *pmb);
   void UpdateVelData(MeshBlock *pmb,Real time, Real dt);

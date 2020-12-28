@@ -61,6 +61,7 @@ Expansion::Expansion(MeshBlock *pmb, ParameterInput *pin) {
   x1_2.NewAthenaArray((ncells1+1));
   x2_2.NewAthenaArray((ncells2+1));
   x3_2.NewAthenaArray((ncells3+1));
+  vol.NewAthenaArray(ncells3,ncells2,ncells1);
  
   Expwl.NewAthenaArray((NWAVE+NINT+NSCALARS),ncells3,ncells2,ncells1);
   Expwr.NewAthenaArray((NWAVE+NINT+NSCALARS),ncells3,ncells2,ncells1);
@@ -84,6 +85,13 @@ Expansion::Expansion(MeshBlock *pmb, ParameterInput *pin) {
     x3_0(k) = pmb->pcoord->x3f(k);
   }
   
+  for (int k=kl; k<=ku;++k) {
+    for (int j=jl; j<=ju;++j) {
+      for (int i=il; i<=iu;++i) {
+        vol(k,j,i) = pmb->pcoord->GetCellVolume(k,j,i);
+      }
+    }
+  }
   mydt = (FLT_MAX);
 }
 // destructor
@@ -154,6 +162,32 @@ void Expansion::IntegrateWalls(Real dt){
   for (int k=kl; k<=ku+1; ++k) {
     x3_0(k) += dt*v3f(k);
   }
+  //Save current volumes
+  Coordinates *pc = pmy_block->pcoord;
+  for (int k=kl; k<=ku;++k) {
+    for (int j=jl; j<=ju;++j) {
+      for (int i=il; i<=iu;++i) {
+        Real volume;
+        Real dx1, dx2, dx3;
+        dx1 = pc->dx1f(i)+v1f(i+1)*dt - v1f(i)*dt ;          
+        dx2 = pc->dx2f(j)+v2f(j+1)*dt - v2f(j)*dt ;          
+        dx3 = pc->dx3f(k)+v3f(k+1)*dt - v3f(k)*dt ;          
+
+        if (COORDINATE_SYSTEM == "cartesian") {
+          volume = dx1*dx2*dx3;          
+        } else if (COORDINATE_SYSTEM == "cylindrical") {
+
+
+        } else if (COORDINATE_SYSTEM == "spherical_polar") {
+
+
+        } else {
+          std::cout << "Unsupported cordinate system in IntegrateWalls. " << std::endl;
+        }
+        vol(k,j,i) = volume;
+      }
+    }
+  }
 
   return;
 }
@@ -210,15 +244,17 @@ void Expansion::AddWallFluxDivergence(Real dt, AthenaArray<Real> &prim, AthenaAr
   return;
 }
 
-void Expansion::ExpansionSourceTerms(const Real dt, const AthenaArray<Real> *flx, 
-                      const AthenaArray<Real> &p, AthenaArray<Real> &c) {
+void Expansion::ExpansionSourceTerms(const Real dt, const AthenaArray<Real> *flux, const AthenaArray<Real> &prim, AthenaArray<Real> &cons) {
   Real vm = 0.0;
+  Coordinates *pc = pmy_block->pcoord;
   for (int k = ks; k<=ke;++k) {
     for (int j = js; j<=je;++j) {      
       for (int i = is; i<=ie;++i) {
         for (int n = 0; n<(NHYDRO+NSCALARS); ++n) {
-          vm = (v1f(i+1)-v1f(i));
-          c(n,k,j,i) *= 1.0/(vm*dt/(pmy_block->pcoord->dx1f(i))+1);        
+          Real newVol = vol(k,j,i);
+          Real oldVol = pc->GetCellVolume(k,j,i);
+          //std::cout << oldVol-newVol << std::endl;
+          cons(n,k,j,i) *= oldVol/newVol;        
         }
       }
     }
@@ -245,7 +281,7 @@ void Expansion::UpdateVelData(MeshBlock *pmb ,Real time, Real dt){
   return;
 }
 
-void Expansion::GridEdit(MeshBlock *pmb){
+void Expansion::GridEdit(MeshBlock *pmb){  
   //FACE CENTERED
   //x1
   for (int i=il; i<=iu+1; ++i){
