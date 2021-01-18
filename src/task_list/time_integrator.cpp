@@ -756,10 +756,11 @@ enum TaskStatus TimeIntegratorTaskList::HydroIntegrate(MeshBlock *pmb, int stage
     ave_wghts[2] = stage_wghts[stage-1].gamma_3;
     ph->WeightedAveU(ph->u,ph->u1,ph->u2,ave_wghts);
     ph->AddFluxDivergenceToAverage(ph->w,pf->bcc,stage_wghts[stage-1].beta,ph->u);
-    if (EXPANDING) {
-      Real dt = (stage_wghts[stage-1].beta)*(pmb->pmy_mesh->dt);
-      pmb->pex->AddWallFluxDivergence(dt, ph->w, ph->u);
-    }
+
+    //if (EXPANDING) {
+    //  Real dt = (stage_wghts[stage-1].beta)*(pmb->pmy_mesh->dt);
+    //  pmb->pex->AddWallFluxDivergence(dt, ph->w, ph->u);
+    //}
     
     return TASK_NEXT;
   }
@@ -1380,6 +1381,7 @@ enum TaskStatus TimeIntegratorTaskList::GridCalculate(MeshBlock *pmb, int stage)
 enum TaskStatus TimeIntegratorTaskList::GridIntegrate(MeshBlock *pmb, int stage){
   Real dt = (stage_wghts[(stage-1)].beta)*(pmb->pmy_mesh->dt);
   Expansion *px = pmb->pex;
+ 
   if (stage <= nstages) {
     // This time-integrator-specific averaging operation logic is identical to FieldInt
     Real ave_wghts[3];

@@ -40,7 +40,7 @@ void InnerX1_UniformMedium(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &
 //========================================================================================
 //! \fn void WallVel(Real xf, int i, Real time, Real dt, int dir, AthenaArray<Real> gridData)
 //  \brief Function that returns the velocity of cell wall i at location xf. Time, total
-//  time step and direction are all given. Direction is one of 0,1,2, corresponding to x1,x2,x3
+//  time step and direction are all given. Direction is one of 1,2,3, corresponding to x1,x2,x3
 //  and gridData is an athena array that contains overall mesh data. gridData is updated
 //  before every time sub-step by the UpdateGridData function. Some instances do not need
 //  this data to be updated and the UpdateGridData function can be left blank. The gridData

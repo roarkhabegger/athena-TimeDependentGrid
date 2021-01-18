@@ -50,7 +50,7 @@ Real WallVel(Real xf, int i, Real time, Real dt, int dir, AthenaArray<Real> grid
   Real x0r = gridData(5);
   Real myX = xf;
   //std::cout << gridData(0) << std::endl;
-  if (dir+1 != gridData(1)){
+  if (dir != gridData(1)){
     retVal = 0.0;
   } else if (myX==gridData(0)){
     retVal = 0.0;

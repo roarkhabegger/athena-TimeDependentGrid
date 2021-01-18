@@ -40,7 +40,7 @@ public:
   AthenaArray<Real> x1_1, x2_1, x3_1;
   AthenaArray<Real> x1_2, x2_2, x3_2;
   
-  AthenaArray<Real> Expwl, Expwr;//, Expwl2, Expwr2;
+  AthenaArray<Real> ExpwL, ExpwR;
   AthenaArray<Real> expFlux[3];  // face-averaged flux vector
 
   Real mydt;
@@ -48,7 +48,7 @@ public:
   int ie,is,je,js,ke,ks; //Without ghost cells
 
   void WeightedAveX(const int low, const int up, AthenaArray<Real> &x_out, AthenaArray<Real> &x_in1, AthenaArray<Real> &x_in2, const Real wght[3]);
-  void AddWallFluxDivergence( Real dt, AthenaArray<Real> &prim, AthenaArray<Real> &cons);
+  //void AddWallFluxDivergence( Real dt, AthenaArray<Real> &prim, AthenaArray<Real> &cons);
   void IntegrateWalls(Real dt);
 
   void ExpansionSourceTerms(const Real dt, const AthenaArray<Real> *flux, const AthenaArray<Real> &prim, AthenaArray<Real> &cons); 
@@ -58,24 +58,41 @@ public:
   Real GridTimeStep(MeshBlock *pmb);
   //void UpdateMeshSize(MeshBlock *pmb);
 
-  void FluxSolver(const int kl, const int ku, const int jl, const int ju,
-    const int il, const int iu, const int ivx, const AthenaArray<Real> &bx,
-    AthenaArray<Real> &wL, AthenaArray<Real> &wR, 
-    AthenaArray<Real> &flx,
-    AthenaArray<Real> &e1, AthenaArray<Real> &e2, AthenaArray<Real> &vArr);
 
-  void PiecewiseLinearOffsetX1(MeshBlock *pmb,
-    const int kl, const int ku, const int jl, const int ju, const int il, const int iu,
-    const AthenaArray<Real> &w, const AthenaArray<Real> &bcc,
-    AthenaArray<Real> &wL, AthenaArray<Real> &wR, const Real dt);
+  //void WallFlux(const int k, const int j, const int i, const int ivx,
+  //  const AthenaArray<Real> &bx, AthenaArray<Real> &e1, AthenaArray<Real> &e2,
+  //  AthenaArray<Real> &vArr, const int dir);
+  //void AddWallFlux(const int k, const int j, const int i, const int dir, Real dt, AthenaArray<Real> &cons);
+//  void PPMOffsetX1(MeshBlock *pmb, const int n,
+//    const int k, const int j, const int i, 
+//    const AthenaArray<Real> &w, const AthenaArray<Real> &bcc);
+//
+  void PPMOffsetX2(MeshBlock *pmb, const int n,
+    const int k, const int j, const int i, 
+    const AthenaArray<Real> &w, const AthenaArray<Real> &bcc);
 
-  void PiecewiseParabolicOffsetX1(MeshBlock *pmb,
-    const int kl, const int ku, const int jl, const int ju, const int il, const int iu,
-    const AthenaArray<Real> &w, const AthenaArray<Real> &bcc,
-    AthenaArray<Real> &wL, AthenaArray<Real> &wR, const Real dt);
-
+  void PPMOffsetX3(MeshBlock *pmb, const int n,
+    const int k, const int j, const int i, 
+    const AthenaArray<Real> &w, const AthenaArray<Real> &bcc);
 private:
   MeshBlock* pmy_block;    // ptr to MeshBlock containing this Expansion
+
+  //void WallIntegrationParabolic(AthenaArray<Real> &xArr, AthenaArray<Real> &prims, AthenaArray<Real> &coeff);
+  //Real CenterIntegration(AthenaArray<Real> &xArr, AthenaArray<Real> &prims, Real myX, int xArrSize);
+
+  //Reconstruction variables
+  AthenaArray<Real> xArr, prims, coeffL, coeffR;
+  AthenaArray<Real> dxArr, intPnts;
+
+  Real a1, a2, a3, a4;
+  Real b11, b12, b13, b14;
+  Real b21, b22, b23, b24;
+  Real b31, b32, b33, b34;
+  Real g4, g3, g2, g1;
+
+  //Flux Variables
+  AthenaArray<Real> wi;
+
 
 };
 #endif // EXPANSION_EXPANSION_HPP_
