@@ -333,7 +333,7 @@ void Reconstruction::PiecewiseParabolicX1(MeshBlock *pmb,
         wr(n,k,j,i  ) = qr_imh(n,i);
       
         //---Calculate Expanding Grid average values        
-        if (EXPANDING) {
+        if ((EXPANDING)&&(pmb->pex->x1Move)) {
           Real MyxL, MyxR;
           Real valLp1, valRp1;
           AthenaArray<Real> &XARR = pmb->pex->xArr;
@@ -693,7 +693,7 @@ void Reconstruction::PiecewiseParabolicX2(MeshBlock *pmb,
         wl(n,k,j+1,i) = ql_jph(n,i);
         wr(n,k,j  ,i) = qr_jmh(n,i);
         //---Calculate Expanding Grid average values        
-        if (EXPANDING) {
+        if ((EXPANDING)&&(pmb->pex->x2Move)) {
           Real MyxL, MyxR;
           Real valLp1, valRp1;
           AthenaArray<Real> &XARR = pmb->pex->xArr;
@@ -1056,7 +1056,7 @@ void Reconstruction::PiecewiseParabolicX3(MeshBlock *pmb,
         wl(n,k+1,j,i) = ql_kph(n,i);
         wr(n,k  ,j,i) = qr_kmh(n,i);
         //---Calculate Expanding Grid average values        
-        if (EXPANDING) {
+        if ((EXPANDING)&&(pmb->pex->x3Move)) {
           Real MyxL, MyxR;
           Real valLp1, valRp1;
           AthenaArray<Real> &XARR = pmb->pex->xArr;

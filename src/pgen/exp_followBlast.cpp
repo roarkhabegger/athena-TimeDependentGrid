@@ -33,12 +33,16 @@ Real WallVel(Real xf, int i, Real time, Real dt, int dir, AthenaArray<Real> grid
 void UpdateGridData(Mesh *pm);
 
 //Global Variables for OuterX1
-Real outerDens;
-Real outerVel;
-Real outerPres;
+Real ambDens;
+Real ambVel;
+Real ambPres;
 void OuterX1_UniformMedium(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
      FaceField &b, Real time, Real dt, int is, int ie, int js, int je, int ks, int ke, int ngh);
 void OuterX2_UniformMedium(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
+     FaceField &b, Real time, Real dt, int is, int ie, int js, int je, int ks, int ke, int ngh);
+void InnerX1_UniformMedium(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
+     FaceField &b, Real time, Real dt, int is, int ie, int js, int je, int ks, int ke, int ngh);
+void InnerX2_UniformMedium(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
      FaceField &b, Real time, Real dt, int is, int ie, int js, int je, int ks, int ke, int ngh);
 
 void ShockDetector(AthenaArray<Real> data, AthenaArray<Real> grid, int outArr[], Real eps);
@@ -58,23 +62,22 @@ Real WallVel(Real xf, int i, Real time, Real dt, int dir, AthenaArray<Real> grid
   
  
   Real myX = xf;
-  Real TimeDependence = (gridData(4)+1)*pow((gridData(5)-time)/gridData(5),gridData(4)); 
   if (COORDINATE_SYSTEM == "cartesian") {
     if (dir == gridData(1)){
       if ((myX > 0.0)&&(gridData(3)>0.0)){ 
         if (gridData(2)==0.0) retVal = 0.0;
-        else retVal = gridData(2) * myX/gridData(3)*TimeDependence;
+        else retVal = gridData(2) * myX/gridData(3);
       } else if ((myX < 0.0)&&(gridData(0)<0.0)){ 
         if (gridData(2) == 0.0) retVal = 0.0;
-        else retVal = -1.0*gridData(2) * myX/gridData(0)*TimeDependence;
+        else retVal = -1.0*gridData(2) * myX/gridData(0);
       }
-    } else if (dir == gridData(7)) {
-      if ((myX > 0.0)&&(gridData(9)>0.0)){ 
-        if (gridData(8)==0.0) retVal = 0.0;
-        else retVal = gridData(8) * myX/gridData(9)*TimeDependence;
-      } else if ((myX < 0.0)&&(gridData(6)<0.0)){ 
-        if (gridData(8) == 0.0) retVal = 0.0;
-        else retVal = -1.0*gridData(8) * myX/gridData(6)*TimeDependence;
+    } else if (dir == gridData(5)) {
+      if ((myX > 0.0)&&(gridData(7)>0.0)){ 
+        if (gridData(6)==0.0) retVal = 0.0;
+        else retVal = gridData(6) * myX/gridData(7);
+      } else if ((myX < 0.0)&&(gridData(4)<0.0)){ 
+        if (gridData(6) == 0.0) retVal = 0.0;
+        else retVal = -1.0*gridData(6) * myX/gridData(4);
       }
     }   
   } else if (COORDINATE_SYSTEM == "cylindrical") {
@@ -84,7 +87,7 @@ Real WallVel(Real xf, int i, Real time, Real dt, int dir, AthenaArray<Real> grid
       retVal = 0.0;
     } else if (myX > gridData(0)){ 
       if (gridData(2)==0.0) retVal = 0.0;
-      else retVal = gridData(2) * (myX-gridData(0))/(gridData(3)-gridData(0))*TimeDependence;
+      else retVal = gridData(2) * (myX-gridData(0))/(gridData(3)-gridData(0));
     } 
   } else if (COORDINATE_SYSTEM == "spherical_polar") {
     if (dir != gridData(1)){
@@ -93,7 +96,7 @@ Real WallVel(Real xf, int i, Real time, Real dt, int dir, AthenaArray<Real> grid
       retVal = 0.0;
     } else if (myX > gridData(0)){ 
       if (gridData(2)==0.0) retVal = 0.0;
-      else retVal = gridData(2) * (myX-gridData(0))/(gridData(3)-gridData(0))*TimeDependence;
+      else retVal = gridData(2) * (myX-gridData(0))/(gridData(3)-gridData(0));
     } 
   }
 
@@ -108,8 +111,8 @@ Real WallVel(Real xf, int i, Real time, Real dt, int dir, AthenaArray<Real> grid
 //  example use of this function.
 //========================================================================================
 void UpdateGridData(Mesh *pm) {
-    Real xMax;
-    Real xMin;
+  Real xMax;
+  Real xMin;
   if (COORDINATE_SYSTEM == "cartesian") {
     xMax = pm->mesh_size.x1max;
     xMin = pm->mesh_size.x1min;
@@ -118,12 +121,71 @@ void UpdateGridData(Mesh *pm) {
 
     xMax = pm->mesh_size.x2max;  
     xMin = pm->mesh_size.x2min;
-    pm->GridData(9) = xMax;
-    pm->GridData(6) = xMin;
+    pm->GridData(7) = xMax;
+    pm->GridData(4) = xMin;
+    MeshBlock *pmb = pm->pblock;
+    Real myVel = 0.0;
+    Real pos  = 0.0;
+    Real posUp = pmb->pcoord->x1v(((pmb->ie)-3));
+    Real posLow = pmb->pcoord->x1v(((pmb->ie)-15));
+    Real mom1 = 0.0;
+    Real vol = 0.0;   
+    //while (pmb != NULL) {
+    for (int k=pmb->ks; k<=pmb->ke; ++k) {
+      for (int j=pmb->js; j<=pmb->je; ++j) {
+#pragma omp simd
+        for (int i=pmb->is; i<=pmb->ie; ++i) {
+          pos = pow( pow( pmb->pcoord->x1v(i),2.0) + pow(pmb->pcoord->x2v(j),2.0),0.5);
+          if ((pos<=posUp) && (pos>=posLow)) {
+            mom1 += 5.0*pow( pow(pmb->phydro->u(IM1,k,j,i),2.0) 
+                           + pow(pmb->phydro->u(IM2,k,j,i),2.0),0.5)
+                      /  pmb->phydro->u(IDN,k,j,i)*pmb->pcoord->GetCellVolume(k,j,i);
+            vol += pmb->pcoord->GetCellVolume(k,j,i);
+          }                  
+        }
+      }
+    }
+    myVel = mom1/vol*(pm->GridData(3)/(posLow));
+    //std::cout << myVel << std::endl;
+    if ((myVel <=0.0)) {
+      myVel = 0.0;
+    }
+    pm->GridData(2) = myVel;
+    pm->GridData(6) = myVel;
   } else {
     xMax = pm->mesh_size.x1max;
     pm->GridData(3) = xMax;
+    MeshBlock *pmb = pm->pblock;
+    Real myVel = 0.0;
+    Real pos  = 0.0;
+    Real posUp = pmb->pcoord->x1v(((pmb->ie)-3));
+    Real posLow = pmb->pcoord->x1v(((pmb->ie)-15));
+    Real mom1 = 0.0;
+    Real vol = 0.0;   
+    //while (pmb != NULL) {
+      for (int k=pmb->ks; k<=pmb->ke; ++k) {
+        for (int j=pmb->js; j<=pmb->je; ++j) {
+#pragma omp simd
+          for (int i=pmb->is; i<=pmb->ie; ++i) {
+            pos = pmb->pcoord->x1v(i);
+            if ((pos<=posUp) && (pos>=posLow)) {
+              mom1 += 5.0*pmb->phydro->u(IM1,k,j,i)/pmb->phydro->u(IDN,k,j,i)*pmb->pcoord->GetCellVolume(k,j,i);
+              vol += pmb->pcoord->GetCellVolume(k,j,i);
+            }
+                        
+          }
+        }
+      }
+    myVel = mom1/vol*(pm->GridData(3)/(posLow));
+    //std::cout << myVel << std::endl;
+    if ((myVel <=0.0)) {
+      myVel = 0.0;
+    }
+    pm->GridData(2) = myVel;
   }
+
+   
+
   return;
 }
 
@@ -188,48 +250,46 @@ void Mesh::InitUserMeshData(ParameterInput *pin) {
     EnrollGridDiffEq(WallVel);
       
     if (COORDINATE_SYSTEM == "cartesian") {
-      SetGridData(10);
+      SetGridData(8);
     } else {
-      SetGridData(6);
+      SetGridData(4);
     }
     EnrollCalcGridData(UpdateGridData);
     
-    outerDens = pin->GetReal("problem","damb");
-    outerVel  = 0.0;
-    outerPres = pin->GetReal("problem","pamb");
+    ambDens = pin->GetReal("problem","damb");
+    ambVel  = 0.0;
+    ambPres = pin->GetReal("problem","pamb");
     if (mesh_bcs[OUTER_X1] == GetBoundaryFlag("user")) {
       EnrollUserBoundaryFunction(OUTER_X1,OuterX1_UniformMedium);
     }
     if (mesh_bcs[OUTER_X2] == GetBoundaryFlag("user")) {
       EnrollUserBoundaryFunction(OUTER_X2,OuterX2_UniformMedium);
     }
+    if (mesh_bcs[INNER_X1] == GetBoundaryFlag("user")) {
+      EnrollUserBoundaryFunction(INNER_X1,InnerX1_UniformMedium);
+    }
+    if (mesh_bcs[INNER_X2] == GetBoundaryFlag("user")) {
+      EnrollUserBoundaryFunction(INNER_X2,InnerX2_UniformMedium);
+    }
     
     Real rout = pin->GetReal("problem","radius");
     Real rin  = rout - pin->GetOrAddReal("problem","ramp",0.0);
     Real vs   = pin->GetOrAddReal("problem","vel",0.0);
 
-    Real expandLimit = pin->GetReal("problem","xMax");
-    Real timeLimit = pin->GetReal("time","tlim");
-    Real n = pin->GetReal("problem","timeInd");
-
     if (COORDINATE_SYSTEM == "cartesian") {
       GridData(0) = mesh_size.x1min;
       GridData(1) = 1; 
-      GridData(2) = (expandLimit-mesh_size.x1max)/timeLimit;
+      GridData(2) = 0.0;
       GridData(3) = mesh_size.x1max; 
-      GridData(4) = n;
-      GridData(5) = timeLimit;
-      GridData(6) = mesh_size.x2min;
-      GridData(7) = 2; 
-      GridData(8) = (expandLimit-mesh_size.x2max)/timeLimit;
-      GridData(9) = mesh_size.x2max; 
+      GridData(4) = mesh_size.x2min;
+      GridData(5) = 2; 
+      GridData(6) = 0.0;
+      GridData(7) = mesh_size.x2max; 
     } else {
       GridData(0) = mesh_size.x1min;
       GridData(1) = 1; 
-      GridData(2) = (expandLimit-mesh_size.x1max)/timeLimit;
+      GridData(2) = 0.0;
       GridData(3) = mesh_size.x1max; 
-      GridData(4) = n;
-      GridData(5) = timeLimit;
     }
   }
 
@@ -251,9 +311,9 @@ void OuterX1_UniformMedium(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &
     for (int j=js; j<=je; ++j) {
 #pragma omp simd
       for (int i=1; i<=ngh; ++i) {
-        prim(IVX,k,j,ie+i) = outerVel;
-        prim(IDN,k,j,ie+i) = outerDens;
-        prim(IPR,k,j,ie+i) = outerPres;  
+        prim(IVX,k,j,ie+i) = ambVel;
+        prim(IDN,k,j,ie+i) = ambDens;
+        prim(IPR,k,j,ie+i) = ambPres;  
         prim(IVY,k,j,ie+i) = 0.0;
         prim(IVZ,k,j,ie+i) = 0.0;
       }
@@ -307,9 +367,9 @@ void OuterX2_UniformMedium(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &
     for (int i=is; i<=ie; ++i) {
 #pragma omp simd
       for (int j=1; j<=ngh; ++j) {
-        prim(IVX,k,je+j,i) = outerVel;
-        prim(IDN,k,je+j,i) = outerDens;
-        prim(IPR,k,je+j,i) = outerPres;  
+        prim(IVX,k,je+j,i) = ambVel;
+        prim(IDN,k,je+j,i) = ambDens;
+        prim(IPR,k,je+j,i) = ambPres;  
         prim(IVY,k,je+j,i) = 0.0;
         prim(IVZ,k,je+j,i) = 0.0;
       }
@@ -319,15 +379,15 @@ void OuterX2_UniformMedium(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &
   // no magnetic fields in ambient medium
   if (MAGNETIC_FIELDS_ENABLED) {
     for (int k=ks; k<=ke; ++k) {
-      for (int i=is; i<=ie; ++i) {
+      for (int i=is; i<=ie+1; ++i) {
 #pragma omp simd
         for (int j=1; j<=ngh; ++j) {
-          b.x1f(k,je+1,i) = 0.0;  
+          b.x1f(k,je+j,i) = 0.0;  
         }
       }
     }
     for (int k=ks; k<=ke; ++k) {
-      for (int i=is; i<=ie+1; ++i) {
+      for (int i=is; i<=ie; ++i) {
 #pragma omp simd
         for (int j=1; j<=ngh; ++j) {
           b.x2f(k,je+j,i) = 0.0;
@@ -347,6 +407,117 @@ void OuterX2_UniformMedium(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &
 
 }
 
+//========================================================================================
+//! \fn void InnerX1_UniformMedium(MeshBlock *pmb, Coordinates *pco, 
+//                                 AthenaArray<Real> &prim,FaceField &b, Real time,
+//                                 Real dt, int is, int ie, int js, int je,
+//                                 int ks, int ke, int ngh) {
+//  \brief Function for inner boundary being a uniform medium with density, velocity,
+//   and pressure given by the global variables listed at the beginning of the file.
+//========================================================================================
+
+void InnerX1_UniformMedium(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
+     FaceField &b, Real time, Real dt, int is, int ie, int js, int je, int ks, int ke, int ngh) {
+  
+  for (int k=ks; k<=ke; ++k) {
+    for (int j=js; j<=je; ++j) {
+#pragma omp simd
+      for (int i=1; i<=ngh; ++i) {
+        prim(IVX,k,j,is-i) = ambVel;
+        prim(IDN,k,j,is-i) = ambDens;
+        prim(IPR,k,j,is-i) = ambPres;  
+        prim(IVY,k,j,is-i) = 0.0;
+        prim(IVZ,k,j,is-i) = 0.0;
+      }
+    }
+  }
+
+  // no magnetic fields in ambient medium
+  if (MAGNETIC_FIELDS_ENABLED) {
+    for (int k=ks; k<=ke; ++k) {
+      for (int j=js; j<=je; ++j) {
+#pragma omp simd
+        for (int i=1; i<=ngh; ++i) {
+          b.x1f(k,j,(is-i)) = 0.0;  
+        }
+      }
+    }
+    for (int k=ks; k<=ke; ++k) {
+      for (int j=js; j<=je+1; ++j) {
+#pragma omp simd
+        for (int i=1; i<=ngh; ++i) {
+          b.x2f(k,j,(is-i)) = 0.0;
+        }
+      }
+    }
+    for (int k=ks; k<=ke+1; ++k) {
+      for (int j=js; j<=je; ++j) {
+#pragma omp simd
+        for (int i=1; i<=ngh; ++i) {
+          b.x3f(k,j,(is-i)) =  0.0;
+        }
+      }
+    }
+  }
+  return;
+
+}
+
+//========================================================================================
+//! \fn void InnerX2_UniformMedium(MeshBlock *pmb, Coordinates *pco, 
+//                                 AthenaArray<Real> &prim,FaceField &b, Real time,
+//                                 Real dt, int is, int ie, int js, int je,
+//                                 int ks, int ke, int ngh) {
+//  \brief Function for inner boundary being a uniform medium with density, velocity,
+//   and pressure given by the global variables listed at the beginning of the file.
+//========================================================================================
+
+void InnerX2_UniformMedium(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
+     FaceField &b, Real time, Real dt, int is, int ie, int js, int je, int ks, int ke, int ngh) {
+  
+  for (int k=ks; k<=ke; ++k) {
+    for (int j=1; j<=ngh; ++j) {
+#pragma omp simd
+      for (int i=is; i<=ie; ++i) {
+        prim(IVX,k,js-j,i) = ambVel;
+        prim(IDN,k,js-j,i) = ambDens;
+        prim(IPR,k,js-j,i) = ambPres;  
+        prim(IVY,k,js-j,i) = 0.0;
+        prim(IVZ,k,js-j,i) = 0.0;
+      }
+    }
+  }
+
+  // no magnetic fields in ambient medium
+  if (MAGNETIC_FIELDS_ENABLED) {
+    for (int k=ks; k<=ke; ++k) {
+      for (int j=1; j<=ngh; ++j) {
+#pragma omp simd
+        for (int i=is; i<=ie+1; ++i) {
+          b.x1f(k,js-j,i) = 0.0;  
+        }
+      }
+    }
+    for (int k=ks; k<=ke; ++k) {
+      for (int j=1; j<=ngh; ++j) {
+#pragma omp simd
+        for (int i=is; i<=ie; ++i) {
+          b.x2f(k,js-j,i) = 0.0;
+        }
+      }
+    }
+    for (int k=ks; k<=ke+1; ++k) {
+      for (int j=js; j<=je; ++j) {
+#pragma omp simd
+        for (int i=1; i<=ngh; ++i) {
+          b.x3f(k,j,(is-i)) =  0.0;
+        }
+      }
+    }
+  }
+  return;
+
+}
 
 //========================================================================================
 //! \fn void MeshBlock::ProblemGenerator(ParameterInput *pin)

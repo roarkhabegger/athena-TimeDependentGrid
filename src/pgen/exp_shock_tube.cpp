@@ -212,6 +212,8 @@ void Mesh::InitUserMeshData(ParameterInput *pin) {
     EnrollGridDiffEq(WallVel);
     EnrollCalcGridData(UpdateGridData);
     
+
+    
     if (mesh_bcs[OUTER_X1] == GetBoundaryFlag("user")) {
       EnrollUserBoundaryFunction(OUTER_X1,OuterX1_UniformMedium);
     }
@@ -221,33 +223,13 @@ void Mesh::InitUserMeshData(ParameterInput *pin) {
 
     int shk_dir = pin->GetInteger("problem","shock_dir");
     GridData(1) = pin->GetReal("problem","shock_dir");
-    Real xMin;
-    Real xMax;
-    Real n;
     Real vGridL = 0.0;
     Real vGridR = 0.0;
     Real tLim = pin->GetReal("time","tlim");
 
-    switch(shk_dir) {
-      //--- shock in 1-direction
-      case 1:
-        xMin = pin->GetReal("mesh","x1min");
-        xMax = pin->GetReal("mesh","x1max");
-        n = (Real)(pin->GetInteger("mesh","nx1"));
-      break;
-      //--- shock in 2-direction
-      case 2:
-        xMin = pin->GetReal("mesh","x2min");
-	n = pin->GetReal("mesh","nx2");
-        xMax = pin->GetReal("mesh","x2max");
-      break;
-      //--- shock in 3-direction
-      case 3:   
-        xMin = pin->GetReal("mesh","x3min");
-        xMax = pin->GetReal("mesh","x3max");
-        n = pin->GetReal("mesh","nx3");
-      break;
-    }
+    Real xMin = pin->GetReal("mesh","x1min");
+    Real xMax = pin->GetReal("mesh","x1max");
+    Real n = (Real)(pin->GetInteger("mesh","nx1"));
     GridData(0) = 0.0; //(xMin+xMax)/n*0.5;
     Real Fudge = pin->GetOrAddReal("problem","Fudge",1.0);
     

@@ -172,18 +172,18 @@ void Hydro::RiemannSolver(const int kl, const int ku, const int jl, const int ju
 
     //For Time Dependent grid, account for Wall Flux
     if (EXPANDING) {
-      Real wallV;
+      Real wallV = 0.0;
       Real wi[(NHYDRO)];
       Expansion *ex = pmy_block->pex;
       AthenaArray<Real> &eFlx1 = ex->expFlux[X1DIR];
       AthenaArray<Real> &eFlx2 = ex->expFlux[X2DIR];
       AthenaArray<Real> &eFlx3 = ex->expFlux[X3DIR];
       //--- Step 1. Determine Flux Direction
-      if (ivx == IVX){  
+      if ((ivx == IVX)&&(ex->x1Move)){  
         wallV = ex->v1f(i);
-      } else if (ivx == IVY) {
+      } else if ((ivx == IVY)&&(ex->x2Move)) {
         wallV = ex->v2f(j);
-      } else if (ivx == IVZ){ 
+      } else if ((ivx == IVZ)&&(ex->x3Move)){ 
         wallV = ex->v3f(k);
       }
 
@@ -210,54 +210,55 @@ void Hydro::RiemannSolver(const int kl, const int ku, const int jl, const int ju
         wi[IPR]=0.0;
         if (DUAL_ENERGY) wi[IGE]=0.0;
       }
+      if (wallV != 0.0) { 
+        Real e; 
+        e = wi[IPR]*igm1 + 0.5*wi[IDN]*(SQR(wi[IVX]) + SQR(wi[IVY]) + SQR(wi[IVZ]));
     
-      Real e; 
-      e = wi[IPR]*igm1 + 0.5*wi[IDN]*(SQR(wi[IVX]) + SQR(wi[IVY]) + SQR(wi[IVZ]));
-    
-      //--- Step 3. Based on direction, calculate wall Fluxes
-      if (ivx == IVX){  
-        eFlx1(IDN,k,j,i) = wi[IDN]*wallV;
-        eFlx1(ivx,k,j,i) = wi[IDN]*wi[IVX]*wallV;
-        eFlx1(ivy,k,j,i) = wi[IDN]*wi[IVY]*wallV;
-        eFlx1(ivz,k,j,i) = wi[IDN]*wi[IVZ]*wallV;
-        eFlx1(IEN,k,j,i) = e*wallV;
-        if (DUAL_ENERGY) {
-          if (wi[IDN]*wallV  >= 0) {
-            eFlx1(IIE,k,j,i) = wi[IDN]*wallV*wi[IGE];
-          } else {
-            eFlx1(IIE,k,j,i) = wi[IDN]*wallV*wi[IGE];
-      
+        //--- Step 3. Based on direction, calculate wall Fluxes
+        if (ivx == IVX){  
+          eFlx1(IDN,k,j,i) = wi[IDN]*wallV;
+          eFlx1(ivx,k,j,i) = wi[IDN]*wi[IVX]*wallV;
+          eFlx1(ivy,k,j,i) = wi[IDN]*wi[IVY]*wallV;
+          eFlx1(ivz,k,j,i) = wi[IDN]*wi[IVZ]*wallV;
+          eFlx1(IEN,k,j,i) = e*wallV;
+          if (DUAL_ENERGY) {
+            if (wi[IDN]*wallV  >= 0) {
+              eFlx1(IIE,k,j,i) = wi[IDN]*wallV*wi[IGE];
+            } else {
+              eFlx1(IIE,k,j,i) = wi[IDN]*wallV*wi[IGE];
+        
+            }
+          }
+        } else if (ivx == IVY) {
+          eFlx2(IDN,k,j,i) = wi[IDN]*wallV;
+          eFlx2(ivx,k,j,i) = wi[IDN]*wi[IVX]*wallV;
+          eFlx2(ivy,k,j,i) = wi[IDN]*wi[IVY]*wallV;
+          eFlx2(ivz,k,j,i) = wi[IDN]*wi[IVZ]*wallV;
+          eFlx2(IEN,k,j,i) = e*wallV;
+          if (DUAL_ENERGY) {
+            if (wi[IDN]*wallV  >= 0) {
+              eFlx2(IIE,k,j,i) = wi[IDN]*wallV*wi[IGE];
+            } else {
+              eFlx2(IIE,k,j,i) = wi[IDN]*wallV*wi[IGE];
+        
+            }
+          }
+        } else if (ivx == IVZ){ 
+          eFlx3(IDN,k,j,i) = wi[IDN]*wallV;
+          eFlx3(ivx,k,j,i) = wi[IDN]*wi[IVX]*wallV;
+          eFlx3(ivy,k,j,i) = wi[IDN]*wi[IVY]*wallV;
+          eFlx3(ivz,k,j,i) = wi[IDN]*wi[IVZ]*wallV;
+          eFlx3(IEN,k,j,i) = e*wallV;
+          if (DUAL_ENERGY) {
+            if (wi[IDN]*wallV  >= 0) {
+              eFlx3(IIE,k,j,i) = wi[IDN]*wallV*wi[IGE];
+            } else {
+              eFlx3(IIE,k,j,i) = wi[IDN]*wallV*wi[IGE];
+        
+            }
           }
         }
-      } else if (ivx == IVY) {
-        eFlx2(IDN,k,j,i) = wi[IDN]*wallV;
-        eFlx2(ivx,k,j,i) = wi[IDN]*wi[IVX]*wallV;
-        eFlx2(ivy,k,j,i) = wi[IDN]*wi[IVY]*wallV;
-        eFlx2(ivz,k,j,i) = wi[IDN]*wi[IVZ]*wallV;
-        eFlx2(IEN,k,j,i) = e*wallV;
-        if (DUAL_ENERGY) {
-          if (wi[IDN]*wallV  >= 0) {
-            eFlx2(IIE,k,j,i) = wi[IDN]*wallV*wi[IGE];
-          } else {
-            eFlx2(IIE,k,j,i) = wi[IDN]*wallV*wi[IGE];
-      
-          }
-        }
-      } else if (ivx == IVZ){ 
-        eFlx3(IDN,k,j,i) = wi[IDN]*wallV;
-        eFlx3(ivx,k,j,i) = wi[IDN]*wi[IVX]*wallV;
-        eFlx3(ivy,k,j,i) = wi[IDN]*wi[IVY]*wallV;
-        eFlx3(ivz,k,j,i) = wi[IDN]*wi[IVZ]*wallV;
-        eFlx3(IEN,k,j,i) = e*wallV;
-        if (DUAL_ENERGY) {
-          if (wi[IDN]*wallV  >= 0) {
-            eFlx3(IIE,k,j,i) = wi[IDN]*wallV*wi[IGE];
-          } else {
-            eFlx3(IIE,k,j,i) = wi[IDN]*wallV*wi[IGE];
-      
-          }
-        }
-      }
+      } 
     } //End Expanding
   }
   }}

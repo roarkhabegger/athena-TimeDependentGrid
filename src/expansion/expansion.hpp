@@ -29,6 +29,12 @@ public:
   Expansion(MeshBlock *pmb, ParameterInput *pin);
   ~Expansion();
 
+  //Boolean Direction variables
+  bool x1Move;
+  bool x2Move;
+  bool x3Move;
+
+
   // Expansion Data
   AthenaArray<Real> v1f;
   AthenaArray<Real> v2f;
@@ -53,7 +59,7 @@ public:
 
   void ExpansionSourceTerms(const Real dt, const AthenaArray<Real> *flux, const AthenaArray<Real> &prim, AthenaArray<Real> &cons); 
 
-  void GridEdit(MeshBlock *pmb);
+  void GridEdit(MeshBlock *pmb, bool lastStage);
   void UpdateVelData(MeshBlock *pmb,Real time, Real dt);
   Real GridTimeStep(MeshBlock *pmb);
   //void UpdateMeshSize(MeshBlock *pmb);
