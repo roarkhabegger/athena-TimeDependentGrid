@@ -30,6 +30,59 @@
 #include "../mesh/mesh.hpp"
 #include "../parameter_input.hpp"
 
+
+void InnerX1_SphericalReflecting(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
+     FaceField &b, Real time, Real dt, int is, int ie, int js, int je, int ks, int ke, int ngh);
+
+
+void InnerX1_SphericalReflecting(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
+     FaceField &b, Real time, Real dt, int is, int ie, int js, int je, int ks, int ke, int ngh) {
+  
+  for (int k=ks; k<=ke; ++k) {
+    for (int j=js; j<=je; ++j) {
+#pragma omp simd
+      for (int i=1; i<=ngh; ++i) {
+        prim(IVX,k,j,is-i) = -1.0*prim(IVX,k,j,is+i-1);
+        prim(IDN,k,j,is-i) = prim(IDN,k,j,is+i-1);
+        prim(IPR,k,j,is-i) = prim(IPR,k,j,is+i-1);  
+        prim(IVY,k,j,is-i) = prim(IVY,k,j,is+i-1);
+        prim(IVZ,k,j,is-i) = prim(IVZ,k,j,is+i-1);
+      }
+    }
+  }
+
+  // no magnetic fields in ambient medium
+  if (MAGNETIC_FIELDS_ENABLED) {
+    for (int k=ks; k<=ke; ++k) {
+      for (int j=js; j<=je; ++j) {
+#pragma omp simd
+        for (int i=1; i<=ngh; ++i) {
+          b.x1f(k,j,(is-i)) = b.x1f(k,j,is-i+1);  
+        }
+      }
+    }
+    for (int k=ks; k<=ke; ++k) {
+      for (int j=js; j<=je+1; ++j) {
+#pragma omp simd
+        for (int i=1; i<=ngh; ++i) {
+          b.x2f(k,j,(is-i)) = b.x2f(k,j,is-i+1);
+        }
+      }
+    }
+    for (int k=ks; k<=ke+1; ++k) {
+      for (int j=js; j<=je; ++j) {
+#pragma omp simd
+        for (int i=1; i<=ngh; ++i) {
+          b.x3f(k,j,(is-i)) =  b.x3f(k,j,is-i+1);
+        }
+      }
+    }
+  }
+  return;
+
+}
+
+
 //========================================================================================
 //! \fn void MeshBlock::ProblemGenerator(ParameterInput *pin)
 //  \brief Spherical blast wave test problem generator
@@ -37,7 +90,7 @@
 
 void MeshBlock::ProblemGenerator(ParameterInput *pin) {
   Real rout = pin->GetReal("problem","radius");
-  Real rin  = rout - pin->GetOrAddReal("problem","ramp",0.0);
+  Real dr   = pin->GetOrAddReal("problem","ramp",0.1);
   Real pa   = pin->GetOrAddReal("problem","pamb",1.0);
   Real da   = pin->GetOrAddReal("problem","damb",1.0);
   Real prat = pin->GetReal("problem","prat");
@@ -98,31 +151,33 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin) {
     }
 
     Real den = da;
-    if (rad < rout) {
-      if (rad < rin) {
-        den = drat*da;
-      } else {   // add smooth ramp in density
-        Real f = (rad-rin) / (rout-rin);
-        Real log_den = (1.0-f) * std::log(drat*da) + f * std::log(da);
-        den = std::exp(log_den);
-      }
-    }
+    //if (rad < rout) {
+    //  if (rad < rin) {
+    //    den = drat*da;
+    //  } else {   // add smooth ramp in density
+    //    Real f = (rad-rin) / (rout-rin);
+    //    Real log_den = (1.0-f) * std::log(drat*da) + f * std::log(da);
+    //    den = std::exp(log_den);
+    //  }
+    //}
 
+    den += drat*da*0.5*(1.0-std::tanh((rad-rout)/dr));
     phydro->u(IDN,k,j,i) = den;
     phydro->u(IM1,k,j,i) = 0.0;
     phydro->u(IM2,k,j,i) = 0.0;
     phydro->u(IM3,k,j,i) = 0.0;
     if (NON_BAROTROPIC_EOS) {
       Real pres = pa;
-      if (rad < rout) {
-        if (rad < rin) {
-          pres = prat*pa;
-        } else {  // add smooth ramp in pressure
-          Real f = (rad-rin) / (rout-rin);
-          Real log_pres = (1.0-f) * std::log(prat*pa) + f * std::log(pa);
-          pres = std::exp(log_pres);
-        }
-      }
+     // if (rad < rout) {
+     //   if (rad < rin) {
+     //     pres = prat*pa;
+     //   } else {  // add smooth ramp in pressure
+     //     Real f = (rad-rin) / (rout-rin);
+     //     Real log_pres = (1.0-f) * std::log(prat*pa) + f * std::log(pa);
+     //     pres = std::exp(log_pres);
+     //   }
+     // }
+      pres += prat*pa*0.5*(1.0-std::tanh((rad-rout)/dr));
       phydro->u(IEN,k,j,i) = pres/gm1;
 			if (DUAL_ENERGY) {
 				phydro->u(IIE,k,j,i) = pres/gm1; 
@@ -424,6 +479,9 @@ void Mesh::InitUserMeshData(ParameterInput *pin)
   if(adaptive==true)
     EnrollUserRefinementCondition(RefinementCondition);
 
+  if (mesh_bcs[INNER_X1] == GetBoundaryFlag("user")) {
+    EnrollUserBoundaryFunction(INNER_X1,InnerX1_SphericalReflecting);
+  }
   return;
 }
 
