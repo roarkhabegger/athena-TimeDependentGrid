@@ -11,8 +11,8 @@
 #include <algorithm>  // min()
 #include <cfloat>     // FLT_MAX
 #include <cmath>      // fabs(), sqrt()
-
 // Athena++ headers
+#include "../globals.hpp"
 #include "expansion.hpp"
 #include "../athena.hpp"
 #include "../athena_arrays.hpp"
@@ -22,6 +22,10 @@
 #include "../coordinates/coordinates.hpp"
 #include "../field/field.hpp"
 #include "../reconstruct/reconstruction.hpp"
+// MPI/OpenMP header
+#ifdef MPI_PARALLEL
+#include <mpi.h>
+#endif
 // constructor, initializes data structures and parameters
 
 Expansion::Expansion(MeshBlock *pmb, ParameterInput *pin) {
@@ -71,9 +75,9 @@ Expansion::Expansion(MeshBlock *pmb, ParameterInput *pin) {
 
 
    //Allocate velocities and grid data
-  v1f.NewAthenaArray((ncells1+1));
-  v2f.NewAthenaArray((ncells2+1));
-  v3f.NewAthenaArray((ncells3+1));
+  //v1f.NewAthenaArray((ncells1+1));
+  //v2f.NewAthenaArray((ncells2+1));
+  //v3f.NewAthenaArray((ncells3+1));
   x1_0.NewAthenaArray((ncells1+1));
   x2_0.NewAthenaArray((ncells2+1));
   x3_0.NewAthenaArray((ncells3+1));
@@ -83,16 +87,21 @@ Expansion::Expansion(MeshBlock *pmb, ParameterInput *pin) {
   x1_2.NewAthenaArray((ncells1+1));
   x2_2.NewAthenaArray((ncells2+1));
   x3_2.NewAthenaArray((ncells3+1));
+  vf[X1DIR].NewAthenaArray(ncells1+1);
+  vf[X2DIR].NewAthenaArray(ncells2+1);
+  vf[X3DIR].NewAthenaArray(ncells3+1);
  
   ExpwL.NewAthenaArray((NWAVE+NINT+NSCALARS),ncells3,ncells2,ncells1);
   ExpwR.NewAthenaArray((NWAVE+NINT+NSCALARS),ncells3,ncells2,ncells1);
-  if (x1Move) 
+  if (x1Move){ 
      expFlux[X1DIR].NewAthenaArray(NHYDRO,ncells3,ncells2,ncells1+1);
-  if (x2Move)
+  }
+  if (x2Move) {
     expFlux[X2DIR].NewAthenaArray(NHYDRO,ncells3,ncells2+1,ncells1);
-  if (x3Move)
+  }
+  if (x3Move){
     expFlux[X3DIR].NewAthenaArray(NHYDRO,ncells3+1,ncells2,ncells1);
-
+  }
   xArr.NewAthenaArray(5);
   dxArr.NewAthenaArray(4);
   intPnts.NewAthenaArray(5);
@@ -102,19 +111,27 @@ Expansion::Expansion(MeshBlock *pmb, ParameterInput *pin) {
   
 
   wi.NewAthenaArray(NHYDRO);
+  
+  AthenaArray<Real> &v1f = vf[X1DIR];
+  AthenaArray<Real> &v2f = vf[X2DIR];
+  AthenaArray<Real> &v3f = vf[X3DIR];
+
   if (x1Move) {
+#pragma omp simd
     for (int i=il; i<=iu+1;++i) {
       v1f(i) = 0.0;
       x1_0(i) = pmb->pcoord->x1f(i);
     }
   }
   if (x2Move) {
+#pragma omp simd
     for (int j=jl; j<=ju+1;++j) {
       v2f(j) = 0.0;
       x2_0(j) = pmb->pcoord->x2f(j);
     }
   }
   if (x3Move){
+#pragma omp simd
     for (int k=kl; k<=ku+1;++k) {
       v3f(k) = 0.0;
       x3_0(k) = pmb->pcoord->x3f(k);
@@ -126,9 +143,9 @@ Expansion::Expansion(MeshBlock *pmb, ParameterInput *pin) {
 
 Expansion::~Expansion() {
 
-  v1f.DeleteAthenaArray();
-  v2f.DeleteAthenaArray();
-  v3f.DeleteAthenaArray(); 
+  //v1f.DeleteAthenaArray();
+  //v2f.DeleteAthenaArray();
+  //v3f.DeleteAthenaArray(); 
   x1_0.DeleteAthenaArray();
   x2_0.DeleteAthenaArray();
   x3_0.DeleteAthenaArray();
@@ -141,12 +158,18 @@ Expansion::~Expansion() {
 
   ExpwL.DeleteAthenaArray();
   ExpwR.DeleteAthenaArray();
-  if (x1Move)
+  if (x1Move) {
     expFlux[X1DIR].DeleteAthenaArray();
-  if (x2Move)
+    vf[X1DIR].DeleteAthenaArray();
+  }
+  if (x2Move){
     expFlux[X2DIR].DeleteAthenaArray();
-  if (x3Move)
+    vf[X2DIR].DeleteAthenaArray();
+  }
+  if (x3Move) {
     expFlux[X3DIR].DeleteAthenaArray();
+    vf[X3DIR].DeleteAthenaArray();
+  }
   dxArr.DeleteAthenaArray();
   xArr.DeleteAthenaArray();
   intPnts.DeleteAthenaArray();
@@ -189,18 +212,24 @@ void Expansion::WeightedAveX(const int low, const int up, AthenaArray<Real> &x_o
 
 
 void Expansion::IntegrateWalls(Real dt){
-
+ 
+  AthenaArray<Real> &v1f = vf[X1DIR];
+  AthenaArray<Real> &v2f = vf[X2DIR];
+  AthenaArray<Real> &v3f = vf[X3DIR];
   if (x1Move) {
+#pragma omp simd
     for (int i=il; i<=iu+1; ++i) {
       x1_0(i) += dt*v1f(i);
     }
   }
   if (x2Move) {
+#pragma omp simd
     for (int j=jl; j<=ju+1; ++j) {
       x2_0(j) += dt*v2f(j);
     }
   }
   if (x3Move) {
+#pragma omp simd
     for (int k=kl; k<=ku+1; ++k) {
       x3_0(k) += dt*v3f(k);
     }
@@ -232,8 +261,13 @@ void Expansion::ExpansionSourceTerms(const Real dt, const AthenaArray<Real> *flu
   AthenaArray<Real> &x2flux=expFlux[X2DIR];
   AthenaArray<Real> &x3flux=expFlux[X3DIR];
 
+  AthenaArray<Real> &v1f = vf[X1DIR];
+  AthenaArray<Real> &v2f = vf[X2DIR];
+  AthenaArray<Real> &v3f = vf[X3DIR];
+  
   for (int k = ks; k<=ke;++k) {
     for (int j = js; j<=je;++j) {      
+#pragma omp simd
       for (int i = is; i<=ie;++i) {
 	if (COORDINATE_SYSTEM == "cartesian") {
 	  dx1 = pc->dx1f(i)+v1f(i+1)*dt - v1f(i)*dt ;          
@@ -292,6 +326,9 @@ void Expansion::ExpansionSourceTerms(const Real dt, const AthenaArray<Real> *flu
 
 
 void Expansion::UpdateVelData(MeshBlock *pmb ,Real time, Real dt){
+  AthenaArray<Real> &v1f = vf[X1DIR];
+  AthenaArray<Real> &v2f = vf[X2DIR];
+  AthenaArray<Real> &v3f = vf[X3DIR];
   mydt = dt;
   if (pmb->pmy_mesh->GridDiffEq_ != NULL) {
     //Edit each delx1f, delx2f, delx3f before source terms and editing of grid      
@@ -809,34 +846,66 @@ void Expansion::GridEdit(MeshBlock *pmb,bool lastStage){
   //Check Mesh_Size object and reset bounds if necessary
   if (x1Move) {
     //x1
-    if (pmb->block_size.x1min == pmb->pmy_mesh->mesh_size.x1min) {
-      pmb->pmy_mesh->mesh_size.x1min = x1_0(is);
-    }  
-    if (pmb->block_size.x1max == pmb->pmy_mesh->mesh_size.x1max) {
-      pmb->pmy_mesh->mesh_size.x1max = x1_0(ie);
-    } 
-    pmb->block_size.x1min = x1_0(is);
-    pmb->block_size.x1max = x1_0(ie);
+    Real inner = 0.0;
+    Real outer = 0.0;
+    inner = pmb->pcoord->x1f(is);
+    outer = pmb->pcoord->x1f(ie+1);
+    pmb->block_size.x1min = inner;
+    pmb->block_size.x1max = outer;
+
+#ifdef MPI_PARALLEL
+      MPI_Allreduce(MPI_IN_PLACE,&inner,1,MPI_ATHENA_REAL,MPI_MIN,
+                 MPI_COMM_WORLD);
+      MPI_Allreduce(MPI_IN_PLACE,&outer,1,MPI_ATHENA_REAL,MPI_MAX,
+                 MPI_COMM_WORLD);
+#endif
+
+      pmb->pmy_mesh->mesh_size.x1min = inner;
+      pmb->pmy_mesh->mesh_size.x1max = outer;
   }
   if (x2Move) {
     //x2 
-    if (pmb->block_size.x2min == pmb->pmy_mesh->mesh_size.x2min) {
-      pmb->pmy_mesh->mesh_size.x2min = x2_0(js);
-    }  
-    if (pmb->block_size.x2max == pmb->pmy_mesh->mesh_size.x2max) {
-      pmb->pmy_mesh->mesh_size.x2max = x2_0(je);
-    }  
-    pmb->block_size.x2min = x2_0(js);
-    pmb->block_size.x2max = x2_0(je);
+    Real inner = 0.0;
+    Real outer = 0.0;
+    inner = x2_0(js);
+    outer = x2_0(je+1);
+#ifdef MPI_PARALLEL
+      MPI_Allreduce(MPI_IN_PLACE,&inner,1,MPI_ATHENA_REAL,MPI_MIN,
+                 MPI_COMM_WORLD);
+      MPI_Allreduce(MPI_IN_PLACE,&outer,1,MPI_ATHENA_REAL,MPI_MAX,
+                 MPI_COMM_WORLD);
+#endif
+
+      pmb->pmy_mesh->mesh_size.x2min = inner;
+      pmb->pmy_mesh->mesh_size.x2max = outer;
+
   }
   if (x3Move) {
     //x3
-    if (pmb->block_size.x3min == pmb->pmy_mesh->mesh_size.x3min) {
-      pmb->pmy_mesh->mesh_size.x3min = x3_0(ks);
-    }  
-    if (pmb->block_size.x3max == pmb->pmy_mesh->mesh_size.x3max) {
-      pmb->pmy_mesh->mesh_size.x3max = x3_0(ke);
-    } 
+   
+    Real inner = 0.0;
+    Real outer = 0.0;
+    inner = x3_0(ks);
+    outer = x3_0(ke+1);
+
+//    if (pmb->block_size.x3min == pmb->pmy_mesh->mesh_size.x3min) {
+//      pmb->pmy_mesh->mesh_size.x3min = x3_0(ks);
+//    }  
+//    if (pmb->block_size.x3max == pmb->pmy_mesh->mesh_size.x3max) {
+//      pmb->pmy_mesh->mesh_size.x3max = x3_0(ke);
+//    } 
+#ifdef MPI_PARALLEL
+      MPI_Allreduce(MPI_IN_PLACE,&inner,1,MPI_ATHENA_REAL,MPI_MIN,
+                 MPI_COMM_WORLD);
+      MPI_Allreduce(MPI_IN_PLACE,&outer,1,MPI_ATHENA_REAL,MPI_MAX,
+                 MPI_COMM_WORLD);
+#endif
+
+      pmb->pmy_mesh->mesh_size.x3min = inner;
+      pmb->pmy_mesh->mesh_size.x3max = outer;
+
+
+
     pmb->block_size.x3min = x3_0(ks);
     pmb->block_size.x3max = x3_0(ke);
   }

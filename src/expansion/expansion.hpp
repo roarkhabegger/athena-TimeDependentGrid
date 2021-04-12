@@ -36,9 +36,9 @@ public:
 
 
   // Expansion Data
-  AthenaArray<Real> v1f;
-  AthenaArray<Real> v2f;
-  AthenaArray<Real> v3f;
+  //AthenaArray<Real> v1f;
+  //AthenaArray<Real> v2f;
+  //AthenaArray<Real> v3f;
   AthenaArray<Real> vol;
 
   //Integration Registers
@@ -48,6 +48,7 @@ public:
   
   AthenaArray<Real> ExpwL, ExpwR;
   AthenaArray<Real> expFlux[3];  // face-averaged flux vector
+  AthenaArray<Real> vf[3];  // face-averaged flux vector
 
   Real mydt;
   int il, iu, jl, ju, kl, ku, ng; //With Ghost cells

@@ -1,15 +1,15 @@
 # Easy to edit configure script for athena++ 
-python configure.py\
-			 --prob blast\
-			 --flux roe\
+python3 configure.py\
+			 --prob exp_followBlast\
+			 --flux hllc\
 			 --coord cartesian \
-			 --nghost=2 \
-			 -debug \
+			 --nghost=3 \
 			 -hdf5 \
-			 --include /usr/include/hdf5/openmpi/ \
-			 --fluxcl hlle\
-			 -cl \
 			 -mpi \
-			 -omp 
+                         -exp \
+                         --cxx icc \
+                         --ccmd /nas/longleaf/apps-dogwood/hdf5/1.10.2/openmpi/bin/h5pcc \
+                         --cflag="DH5_HAVE_PARALLEL -std=c++11" 
+                         #--lib /usr/mpi/intel/openmpi-2.0.3/lib64
 			 #--include /usr/include/hdf5/openmpi/ \
 #			 --hdf5_path=/usr/lib/x86_64-linux-gnu/

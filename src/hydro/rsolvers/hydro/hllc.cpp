@@ -24,6 +24,8 @@
 #include "../../../athena_arrays.hpp"
 #include "../../../eos/eos.hpp"
 
+
+
 //----------------------------------------------------------------------------------------
 //! \fn void Hydro::RiemannSolver
 //! \brief The HLLC Riemann solver for adiabatic hydrodynamics (use HLLE for isothermal)
@@ -40,10 +42,27 @@ void Hydro::RiemannSolver(const int kl, const int ku, const int jl, const int ju
   Real gm1 = pmy_block->peos->GetGamma() - 1.0;
   Real igm1 = 1.0/gm1;
 
+
+  Expansion *ex = pmy_block->pex;
+  AthenaArray<Real> &eFlx = ex->expFlux[(ivx-1)];
+  AthenaArray<Real> &eVel = ex->vf[(ivx-1)];
+  bool move = false;
+  if ((ivx == IVX)&&(ex->x1Move)){  
+    move = true;
+  } else if ((ivx == IVY)&&(ex->x2Move)) {
+    move = true;
+  } else if ((ivx == IVZ)&&(ex->x3Move)){ 
+    move = true;
+  }
+  AthenaArray<Real> &eWri = ex->ExpwR;
+  AthenaArray<Real> &eWli = ex->ExpwL;
+  Real wi[(NHYDRO)];
+  Real wallV = 0.0;
+  Real e; 
   for (int k=kl; k<=ku; ++k) {
   for (int j=jl; j<=ju; ++j) {
 #pragma distribute_point
-#pragma omp simd private(wli,wri,wroe,flxi,fl,fr)
+#pragma omp simd private(wli,wri,wroe,flxi,fl,fr,wi,wallV,e)
   for (int i=il; i<=iu; ++i) {
 
 //--- Step 1.  Load L/R states into local variables
@@ -171,38 +190,36 @@ void Hydro::RiemannSolver(const int kl, const int ku, const int jl, const int ju
     }
 
     //For Time Dependent grid, account for Wall Flux
-    if (EXPANDING) {
-      Real wallV = 0.0;
-      Real wi[(NHYDRO)];
-      Expansion *ex = pmy_block->pex;
-      AthenaArray<Real> &eFlx1 = ex->expFlux[X1DIR];
-      AthenaArray<Real> &eFlx2 = ex->expFlux[X2DIR];
-      AthenaArray<Real> &eFlx3 = ex->expFlux[X3DIR];
+    if ((EXPANDING) && (move)) {
       //--- Step 1. Determine Flux Direction
-      if ((ivx == IVX)&&(ex->x1Move)){  
-        wallV = ex->v1f(i);
-      } else if ((ivx == IVY)&&(ex->x2Move)) {
-        wallV = ex->v2f(j);
-      } else if ((ivx == IVZ)&&(ex->x3Move)){ 
-        wallV = ex->v3f(k);
+      
+      //wallV = eVel(i);
+      if (ivx == IVX){  
+        wallV = eVel(i);
+      } else if (ivx == IVY) {
+        wallV = eVel(j);
+      } else if (ivx == IVZ){ 
+        wallV = eVel(k);
+      } else {
+        wallV = 0.0;
       }
 
       //--- Step 2. Load primitive Variables from Expanding Recon.
       if (wallV > 0.0) {    
-        wi[IDN]=ex->ExpwR(IDN,k,j,i);
-        wi[IVX]=ex->ExpwR(ivx,k,j,i);
-        wi[IVY]=ex->ExpwR(ivy,k,j,i);
-        wi[IVZ]=ex->ExpwR(ivz,k,j,i);
-        wi[IPR]=ex->ExpwR(IPR,k,j,i);
-        if (DUAL_ENERGY) wi[IGE]=ex->ExpwR(IGE,k,j,i);
+        wi[IDN]=eWri(IDN,k,j,i);
+        wi[IVX]=eWri(ivx,k,j,i);
+        wi[IVY]=eWri(ivy,k,j,i);
+        wi[IVZ]=eWri(ivz,k,j,i);
+        wi[IPR]=eWri(IPR,k,j,i);
+        if (DUAL_ENERGY) wi[IGE]=eWri(IGE,k,j,i);
       } else if (wallV < 0.0) {    
-        wi[IDN]=ex->ExpwL(IDN,k,j,i);
-        wi[IVX]=ex->ExpwL(ivx,k,j,i);
-        wi[IVY]=ex->ExpwL(ivy,k,j,i);
-        wi[IVZ]=ex->ExpwL(ivz,k,j,i);
-        wi[IPR]=ex->ExpwL(IPR,k,j,i);
-        if (DUAL_ENERGY) wi[IGE]=ex->ExpwL(IGE,k,j,i);
-      } else if (wallV == 0){
+        wi[IDN]=eWli(IDN,k,j,i);
+        wi[IVX]=eWli(ivx,k,j,i);
+        wi[IVY]=eWli(ivy,k,j,i);
+        wi[IVZ]=eWli(ivz,k,j,i);
+        wi[IPR]=eWli(IPR,k,j,i);
+        if (DUAL_ENERGY) wi[IGE]=eWli(IGE,k,j,i);
+      } else{
         wi[IDN]=0.0;
         wi[IVX]=0.0;
         wi[IVY]=0.0;
@@ -210,55 +227,15 @@ void Hydro::RiemannSolver(const int kl, const int ku, const int jl, const int ju
         wi[IPR]=0.0;
         if (DUAL_ENERGY) wi[IGE]=0.0;
       }
-      if (wallV != 0.0) { 
-        Real e; 
-        e = wi[IPR]*igm1 + 0.5*wi[IDN]*(SQR(wi[IVX]) + SQR(wi[IVY]) + SQR(wi[IVZ]));
-    
-        //--- Step 3. Based on direction, calculate wall Fluxes
-        if (ivx == IVX){  
-          eFlx1(IDN,k,j,i) = wi[IDN]*wallV;
-          eFlx1(ivx,k,j,i) = wi[IDN]*wi[IVX]*wallV;
-          eFlx1(ivy,k,j,i) = wi[IDN]*wi[IVY]*wallV;
-          eFlx1(ivz,k,j,i) = wi[IDN]*wi[IVZ]*wallV;
-          eFlx1(IEN,k,j,i) = e*wallV;
-          if (DUAL_ENERGY) {
-            if (wi[IDN]*wallV  >= 0) {
-              eFlx1(IIE,k,j,i) = wi[IDN]*wallV*wi[IGE];
-            } else {
-              eFlx1(IIE,k,j,i) = wi[IDN]*wallV*wi[IGE];
-        
-            }
-          }
-        } else if (ivx == IVY) {
-          eFlx2(IDN,k,j,i) = wi[IDN]*wallV;
-          eFlx2(ivx,k,j,i) = wi[IDN]*wi[IVX]*wallV;
-          eFlx2(ivy,k,j,i) = wi[IDN]*wi[IVY]*wallV;
-          eFlx2(ivz,k,j,i) = wi[IDN]*wi[IVZ]*wallV;
-          eFlx2(IEN,k,j,i) = e*wallV;
-          if (DUAL_ENERGY) {
-            if (wi[IDN]*wallV  >= 0) {
-              eFlx2(IIE,k,j,i) = wi[IDN]*wallV*wi[IGE];
-            } else {
-              eFlx2(IIE,k,j,i) = wi[IDN]*wallV*wi[IGE];
-        
-            }
-          }
-        } else if (ivx == IVZ){ 
-          eFlx3(IDN,k,j,i) = wi[IDN]*wallV;
-          eFlx3(ivx,k,j,i) = wi[IDN]*wi[IVX]*wallV;
-          eFlx3(ivy,k,j,i) = wi[IDN]*wi[IVY]*wallV;
-          eFlx3(ivz,k,j,i) = wi[IDN]*wi[IVZ]*wallV;
-          eFlx3(IEN,k,j,i) = e*wallV;
-          if (DUAL_ENERGY) {
-            if (wi[IDN]*wallV  >= 0) {
-              eFlx3(IIE,k,j,i) = wi[IDN]*wallV*wi[IGE];
-            } else {
-              eFlx3(IIE,k,j,i) = wi[IDN]*wallV*wi[IGE];
-        
-            }
-          }
-        }
-      } 
+      e = wi[IPR]*igm1 + 0.5*wi[IDN]*(SQR(wi[IVX]) + SQR(wi[IVY]) + SQR(wi[IVZ]));
+      eFlx(IDN,k,j,i) = wi[IDN]*wallV;
+      eFlx(ivx,k,j,i) = wi[IDN]*wi[IVX]*wallV;
+      eFlx(ivy,k,j,i) = wi[IDN]*wi[IVY]*wallV;
+      eFlx(ivz,k,j,i) = wi[IDN]*wi[IVZ]*wallV;
+      eFlx(IEN,k,j,i) = e*wallV;
+      if (DUAL_ENERGY) {
+        eFlx(IIE,k,j,i) = wi[IDN]*wallV*wi[IGE];
+      }
     } //End Expanding
   }
   }}

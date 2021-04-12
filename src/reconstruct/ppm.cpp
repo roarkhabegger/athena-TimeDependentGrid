@@ -80,7 +80,9 @@ void Reconstruction::PiecewiseParabolicX1(MeshBlock *pmb,
   qminus.InitWithShallowCopy(pmb->precon->scr12_i_);
   dqf_plus.InitWithShallowCopy(pmb->precon->scr13_i_);
   dqf_minus.InitWithShallowCopy(pmb->precon->scr14_i_);
-  
+
+  double XARR[5];
+  double PRIMS[5];  
 
   for (int k=kl; k<=ku; ++k) {
   for (int j=jl; j<=ju; ++j) {
@@ -327,7 +329,7 @@ void Reconstruction::PiecewiseParabolicX1(MeshBlock *pmb,
 
     // compute ql_(i+1/2) and qr_(i-1/2)
     for (int n=0; n<(NWAVE+NINT+NSCALARS); ++n) {
-#pragma omp simd
+#pragma omp simd private(XARR,PRIMS)
       for (int i=il-1; i<=iu; ++i) {
         wl(n,k,j,i+1) = ql_iph(n,i);
         wr(n,k,j,i  ) = qr_imh(n,i);
@@ -336,57 +338,86 @@ void Reconstruction::PiecewiseParabolicX1(MeshBlock *pmb,
         if ((EXPANDING)&&(pmb->pex->x1Move)) {
           Real MyxL, MyxR;
           Real valLp1, valRp1;
-          AthenaArray<Real> &XARR = pmb->pex->xArr;
-          AthenaArray<Real> &PRIMS = pmb->pex->prims;
+          //AthenaArray<Real> &XARR = pmb->pex->xArr;
+          //AthenaArray<Real> &PRIMS = pmb->pex->prims;
           //---Load cell edges, centers, and primitive values
-          XARR(1) = pmb->pcoord->x1f(i)   - pmb->pcoord->x1v(i);
-          XARR(2) = 0.0;
-          XARR(3) = pmb->pcoord->x1f(i+1) - pmb->pcoord->x1v(i);
+          XARR[1] = pmb->pcoord->x1f(i)   - pmb->pcoord->x1v(i);
+          XARR[2] = 0.0;
+          XARR[3] = pmb->pcoord->x1f(i+1) - pmb->pcoord->x1v(i);
                 
-          PRIMS(1) = qr_imh(n,i);
-          PRIMS(2) = w(n,k,j,i);
-          PRIMS(3) = ql_iph(n,i);
+          PRIMS[1] = qr_imh(n,i);
+          PRIMS[2] = w(n,k,j,i);
+          PRIMS[3] = ql_iph(n,i);
         
           // Parabolic Interpolation
           Real A, B, C;
-          A = PRIMS(1)/(XARR(1)*(XARR(1)-XARR(3)));
-          B = PRIMS(2)/(XARR(1)*XARR(3));
-          C = PRIMS(3)/(XARR(3)*(XARR(3)-XARR(1)));
+          A = PRIMS[1]/(XARR[1]*(XARR[1]-XARR[3]));
+          B = PRIMS[2]/(XARR[1]*XARR[3]);
+          C = PRIMS[3]/(XARR[3]*(XARR[3]-XARR[1]));
         
           Real c1, c2, c0;
           c2 = A + B + C;
-          c1 = -1.0*(A*(XARR(3))+B*(XARR(1)+XARR(3))+C*XARR(1));
-          c0 = B*XARR(1)*XARR(3);
-                
-        
+          c1 = -1.0*(A*(XARR[3])+B*(XARR[1]+XARR[3])+C*XARR[1]);
+          c0 = B*XARR[1]*XARR[3];
+                   
           // Get next time step states
-          MyxL = XARR(1) + abs(pmb->pex->x1_0(i) - pmb->pcoord->x1f(i));	
-          MyxR = XARR(3) - abs(pmb->pex->x1_0(i+1) - pmb->pcoord->x1f(i+1));	
+          MyxL = XARR[1] + abs(pmb->pex->x1_0(i) - pmb->pcoord->x1f(i));	
+          MyxR = XARR[3] - abs(pmb->pex->x1_0(i+1) - pmb->pcoord->x1f(i+1));	
         
           // Get base line L R states at New Locations
-          valLp1 = ( c2*(pow(MyxL,3.0)-pow(XARR(1),3.0))/3.0 
-                   + c1*(pow(MyxL,2.0)-pow(XARR(1),2.0))/2.0 
-                   + c0*(pow(MyxL,1.0)-pow(XARR(1),1.0))) / (MyxL - XARR(1)) ;
-          valRp1 = ( c2*(pow(MyxR,3.0)-pow(XARR(3),3.0))/3.0 
-                   + c1*(pow(MyxR,2.0)-pow(XARR(3),2.0))/2.0 
-                   + c0*(pow(MyxR,1.0)-pow(XARR(3),1.0))) / (MyxR - XARR(3)) ;
+          valLp1 = ( c2*(pow(MyxL,3.0)-pow(XARR[1],3.0))/3.0 
+                   + c1*(pow(MyxL,2.0)-pow(XARR[1],2.0))/2.0 
+                   + c0*(pow(MyxL,1.0)-pow(XARR[1],1.0))) / (MyxL - XARR[1]) ;
+          valRp1 = ( c2*(pow(MyxR,3.0)-pow(XARR[3],3.0))/3.0 
+                   + c1*(pow(MyxR,2.0)-pow(XARR[3],2.0))/2.0 
+                   + c0*(pow(MyxR,1.0)-pow(XARR[3],1.0))) / (MyxR - XARR[3]) ;
         
           // Hard Limiters
-          if (valLp1 > std::max(PRIMS(2),PRIMS(1))) valLp1 = std::max(PRIMS(2),PRIMS(1));
-          if (valLp1 < std::min(PRIMS(2),PRIMS(1))) valLp1 = std::min(PRIMS(2),PRIMS(1));
-          if (valRp1 > std::max(PRIMS(2),PRIMS(3))) valRp1 = std::max(PRIMS(2),PRIMS(3));
-          if (valRp1 < std::min(PRIMS(2),PRIMS(3))) valRp1 = std::min(PRIMS(2),PRIMS(3));
-        
-          // Hard reset if no movement
-          if (MyxR==XARR(3)) valRp1 = ql_iph(n,i);
-          if (MyxL==XARR(1)) valLp1 = qr_imh(n,i);
+          if (valLp1 > std::max(PRIMS[2],PRIMS[1])){
+            valLp1 = std::max(PRIMS[2],PRIMS[1]);
+          } else { 
+            valLp1 = valLp1;
+          }
 
+          if (valLp1 < std::min(PRIMS[2],PRIMS[1])){
+            valLp1 = std::min(PRIMS[2],PRIMS[1]);
+          } else { 
+            valLp1 = valLp1;
+          }
+
+          if (valRp1 > std::max(PRIMS[2],PRIMS[3])){
+            valRp1 = std::max(PRIMS[2],PRIMS[3]);
+          } else { 
+            valRp1 = valRp1;
+          }
+
+          if (valRp1 < std::min(PRIMS[2],PRIMS[3])){
+            valRp1 = std::min(PRIMS[2],PRIMS[3]);
+          } else { 
+            valRp1 = valRp1;
+          }
+
+          // Hard reset if no movement
+          if (MyxR==XARR[3]){
+            valRp1 = ql_iph(n,i);
+          } else { 
+            valRp1 = valRp1;
+          }
+
+          if (MyxL==XARR[1]){
+            valLp1 = qr_imh(n,i);
+          } else { 
+            valLp1 = valLp1;
+          }
           //Cache Left and Right average positions
           pmb->pex->ExpwL(n,k,j,i+1) = valRp1;
           pmb->pex->ExpwR(n,k,j,i  ) = valLp1;
           pmb->peos->ApplyPrimitiveFloors(pmb->pex->ExpwL, k, j, i+1);
           pmb->peos->ApplyPrimitiveFloors(pmb->pex->ExpwR, k, j, i);
-        } // End Expanding Corrections
+        } else {
+          pmb->pex->ExpwL(n,k,j,i+1) = 0.0;
+          pmb->pex->ExpwR(n,k,j,i  ) = 0.0;
+        }// End Expanding Corrections
 
 
         // Reapply EOS floors to both L/R reconstructed primitive states
@@ -443,6 +474,8 @@ void Reconstruction::PiecewiseParabolicX2(MeshBlock *pmb,
   qminus.InitWithShallowCopy(pmb->precon->scr12_i_);
   dqf_plus.InitWithShallowCopy(pmb->precon->scr13_i_);
   dqf_minus.InitWithShallowCopy(pmb->precon->scr14_i_);
+  double XARR[5];
+  double PRIMS[5];  
 
   for (int k=kl; k<=ku; ++k) {
   for (int j=jl-1; j<=ju; ++j) {
@@ -688,7 +721,7 @@ void Reconstruction::PiecewiseParabolicX2(MeshBlock *pmb,
 
     // compute ql_(j+1/2) and qr_(j-1/2)
     for (int n=0; n<(NWAVE+NINT+NSCALARS); ++n) {
-#pragma omp simd
+#pragma omp simd private(XARR,PRIMS)
       for (int i=il; i<=iu; ++i) {
         wl(n,k,j+1,i) = ql_jph(n,i);
         wr(n,k,j  ,i) = qr_jmh(n,i);
@@ -696,57 +729,86 @@ void Reconstruction::PiecewiseParabolicX2(MeshBlock *pmb,
         if ((EXPANDING)&&(pmb->pex->x2Move)) {
           Real MyxL, MyxR;
           Real valLp1, valRp1;
-          AthenaArray<Real> &XARR = pmb->pex->xArr;
-          AthenaArray<Real> &PRIMS = pmb->pex->prims;
+          //AthenaArray<Real> &XARR = pmb->pex->xArr;
+          //AthenaArray<Real> &PRIMS = pmb->pex->prims;
           //---Load cell edges, centers, and primitive values
-          XARR(1) = pmb->pcoord->x2f(j)   - pmb->pcoord->x2v(j);
-          XARR(2) = 0.0;
-          XARR(3) = pmb->pcoord->x2f(j+1) - pmb->pcoord->x2v(j);
+          XARR[1] = pmb->pcoord->x2f(j)   - pmb->pcoord->x2v(j);
+          XARR[2] = 0.0;
+          XARR[3] = pmb->pcoord->x2f(j+1) - pmb->pcoord->x2v(j);
                 
-          PRIMS(1) = qr_jmh(n,i);
-          PRIMS(2) = w(n,k,j,i);
-          PRIMS(3) = ql_jph(n,i);
+          PRIMS[1] = qr_jmh(n,i);
+          PRIMS[2] = w(n,k,j,i);
+          PRIMS[3] = ql_jph(n,i);
         
           // Parabolic Interpolation
           Real A, B, C;
-          A = PRIMS(1)/(XARR(1)*(XARR(1)-XARR(3)));
-          B = PRIMS(2)/(XARR(1)*XARR(3));
-          C = PRIMS(3)/(XARR(3)*(XARR(3)-XARR(1)));
+          A = PRIMS[1]/(XARR[1]*(XARR[1]-XARR[3]));
+          B = PRIMS[2]/(XARR[1]*XARR[3]);
+          C = PRIMS[3]/(XARR[3]*(XARR[3]-XARR[1]));
         
           Real c1, c2, c0;
           c2 = A + B + C;
-          c1 = -1.0*(A*(XARR(3))+B*(XARR(1)+XARR(3))+C*XARR(1));
-          c0 = B*XARR(1)*XARR(3);
-                
-        
+          c1 = -1.0*(A*(XARR[3])+B*(XARR[1]+XARR[3])+C*XARR[1]);
+          c0 = B*XARR[1]*XARR[3];
+                   
           // Get next time step states
-          MyxL = XARR(1) + abs(pmb->pex->x2_0(j) - pmb->pcoord->x2f(j));	
-          MyxR = XARR(3) - abs(pmb->pex->x2_0(j+1) - pmb->pcoord->x2f(j+1));	
+          MyxL = XARR[1] + abs(pmb->pex->x2_0(j) - pmb->pcoord->x2f(j));	
+          MyxR = XARR[3] - abs(pmb->pex->x2_0(j+1) - pmb->pcoord->x2f(j+1));	
         
           // Get base line L R states at New Locations
-          valLp1 = ( c2*(pow(MyxL,3.0)-pow(XARR(1),3.0))/3.0 
-                   + c1*(pow(MyxL,2.0)-pow(XARR(1),2.0))/2.0 
-                   + c0*(pow(MyxL,1.0)-pow(XARR(1),1.0))) / (MyxL - XARR(1)) ;
-          valRp1 = ( c2*(pow(MyxR,3.0)-pow(XARR(3),3.0))/3.0 
-                   + c1*(pow(MyxR,2.0)-pow(XARR(3),2.0))/2.0 
-                   + c0*(pow(MyxR,1.0)-pow(XARR(3),1.0))) / (MyxR - XARR(3)) ;
+          valLp1 = ( c2*(pow(MyxL,3.0)-pow(XARR[1],3.0))/3.0 
+                   + c1*(pow(MyxL,2.0)-pow(XARR[1],2.0))/2.0 
+                   + c0*(pow(MyxL,1.0)-pow(XARR[1],1.0))) / (MyxL - XARR[1]) ;
+          valRp1 = ( c2*(pow(MyxR,3.0)-pow(XARR[3],3.0))/3.0 
+                   + c1*(pow(MyxR,2.0)-pow(XARR[3],2.0))/2.0 
+                   + c0*(pow(MyxR,1.0)-pow(XARR[3],1.0))) / (MyxR - XARR[3]) ;
         
           // Hard Limiters
-          if (valLp1 > std::max(PRIMS(2),PRIMS(1))) valLp1 = std::max(PRIMS(2),PRIMS(1));
-          if (valLp1 < std::min(PRIMS(2),PRIMS(1))) valLp1 = std::min(PRIMS(2),PRIMS(1));
-          if (valRp1 > std::max(PRIMS(2),PRIMS(3))) valRp1 = std::max(PRIMS(2),PRIMS(3));
-          if (valRp1 < std::min(PRIMS(2),PRIMS(3))) valRp1 = std::min(PRIMS(2),PRIMS(3));
-        
-          // Hard reset if no movement
-          if (MyxR==XARR(3)) valRp1 = ql_jph(n,i);
-          if (MyxL==XARR(1)) valLp1 = qr_jmh(n,i);
+          if (valLp1 > std::max(PRIMS[2],PRIMS[1])){
+            valLp1 = std::max(PRIMS[2],PRIMS[1]);
+          } else { 
+            valLp1 = valLp1;
+          }
 
+          if (valLp1 < std::min(PRIMS[2],PRIMS[1])){
+            valLp1 = std::min(PRIMS[2],PRIMS[1]);
+          } else { 
+            valLp1 = valLp1;
+          }
+
+          if (valRp1 > std::max(PRIMS[2],PRIMS[3])){
+            valRp1 = std::max(PRIMS[2],PRIMS[3]);
+          } else { 
+            valRp1 = valRp1;
+          }
+
+          if (valRp1 < std::min(PRIMS[2],PRIMS[3])){
+            valRp1 = std::min(PRIMS[2],PRIMS[3]);
+          } else { 
+            valRp1 = valRp1;
+          }
+
+          // Hard reset if no movement
+          if (MyxR==XARR[3]){
+            valRp1 = ql_jph(n,i);
+          } else { 
+            valRp1 = valRp1;
+          }
+
+          if (MyxL==XARR[1]){
+            valLp1 = qr_jmh(n,i);
+          } else { 
+            valLp1 = valLp1;
+          }
           //Cache Left and Right average positions
           pmb->pex->ExpwL(n,k,j+1,i) = valRp1;
           pmb->pex->ExpwR(n,k,j,i  ) = valLp1;
           pmb->peos->ApplyPrimitiveFloors(pmb->pex->ExpwL, k, j+1, i);
           pmb->peos->ApplyPrimitiveFloors(pmb->pex->ExpwR, k, j, i);
-        } // End Expanding Corrections
+        } else {
+          pmb->pex->ExpwL(n,k,j+1,i) = 0.0;
+          pmb->pex->ExpwR(n,k,j,i  ) = 0.0;
+        }// End Expanding Corrections
 
 
         // Reapply EOS floors to both L/R reconstructed primitive states
@@ -803,6 +865,8 @@ void Reconstruction::PiecewiseParabolicX3(MeshBlock *pmb,
   qminus.InitWithShallowCopy(pmb->precon->scr12_i_);
   dqf_plus.InitWithShallowCopy(pmb->precon->scr13_i_);
   dqf_minus.InitWithShallowCopy(pmb->precon->scr14_i_);
+  double XARR[5];
+  double PRIMS[5];  
 
   for (int k=kl-1; k<=ku; ++k) {
   for (int j=jl; j<=ju; ++j) {
@@ -1051,7 +1115,7 @@ void Reconstruction::PiecewiseParabolicX3(MeshBlock *pmb,
 
     // compute ql_(k+1/2) and qr_(k-1/2)
     for (int n=0; n<(NWAVE+NINT+NSCALARS); ++n) {
-#pragma omp simd
+#pragma omp simd private(XARR,PRIMS)
       for (int i=il; i<=iu; ++i) {
         wl(n,k+1,j,i) = ql_kph(n,i);
         wr(n,k  ,j,i) = qr_kmh(n,i);
@@ -1059,56 +1123,83 @@ void Reconstruction::PiecewiseParabolicX3(MeshBlock *pmb,
         if ((EXPANDING)&&(pmb->pex->x3Move)) {
           Real MyxL, MyxR;
           Real valLp1, valRp1;
-          AthenaArray<Real> &XARR = pmb->pex->xArr;
-          AthenaArray<Real> &PRIMS = pmb->pex->prims;
           //---Load cell edges, centers, and primitive values
-          XARR(1) = pmb->pcoord->x3f(k)   - pmb->pcoord->x3v(k);
-          XARR(2) = 0.0;
-          XARR(3) = pmb->pcoord->x3f(k+1) - pmb->pcoord->x3v(k);
+          XARR[1] = pmb->pcoord->x3f(k)   - pmb->pcoord->x3v(k);
+          XARR[2] = 0.0;
+          XARR[3] = pmb->pcoord->x3f(k+1) - pmb->pcoord->x3v(k);
                 
-          PRIMS(1) = qr_kmh(n,i);
-          PRIMS(2) = w(n,k,j,i);
-          PRIMS(3) = ql_kph(n,i);
+          PRIMS[1] = qr_kmh(n,i);
+          PRIMS[2] = w(n,k,j,i);
+          PRIMS[3] = ql_kph(n,i);
         
           // Parabolic Interpolation
           Real A, B, C;
-          A = PRIMS(1)/(XARR(1)*(XARR(1)-XARR(3)));
-          B = PRIMS(2)/(XARR(1)*XARR(3));
-          C = PRIMS(3)/(XARR(3)*(XARR(3)-XARR(1)));
+          A = PRIMS[1]/(XARR[1]*(XARR[1]-XARR[3]));
+          B = PRIMS[2]/(XARR[1]*XARR[3]);
+          C = PRIMS[3]/(XARR[3]*(XARR[3]-XARR[1]));
         
           Real c1, c2, c0;
           c2 = A + B + C;
-          c1 = -1.0*(A*(XARR(3))+B*(XARR(1)+XARR(3))+C*XARR(1));
-          c0 = B*XARR(1)*XARR(3);
-                
-        
+          c1 = -1.0*(A*(XARR[3])+B*(XARR[1]+XARR[3])+C*XARR[1]);
+          c0 = B*XARR[1]*XARR[3];
+                   
           // Get next time step states
-          MyxL = XARR(1) + abs(pmb->pex->x3_0(k) - pmb->pcoord->x3f(k));	
-          MyxR = XARR(3) - abs(pmb->pex->x3_0(k+1) - pmb->pcoord->x3f(k+1));	
+          MyxL = XARR[1] + abs(pmb->pex->x3_0(k) - pmb->pcoord->x3f(k));	
+          MyxR = XARR[3] - abs(pmb->pex->x3_0(k+1) - pmb->pcoord->x3f(k+1));	
         
           // Get base line L R states at New Locations
-          valLp1 = ( c2*(pow(MyxL,3.0)-pow(XARR(1),3.0))/3.0 
-                   + c1*(pow(MyxL,2.0)-pow(XARR(1),2.0))/2.0 
-                   + c0*(pow(MyxL,1.0)-pow(XARR(1),1.0))) / (MyxL - XARR(1)) ;
-          valRp1 = ( c2*(pow(MyxR,3.0)-pow(XARR(3),3.0))/3.0 
-                   + c1*(pow(MyxR,2.0)-pow(XARR(3),2.0))/2.0 
-                   + c0*(pow(MyxR,1.0)-pow(XARR(3),1.0))) / (MyxR - XARR(3)) ;
+          valLp1 = ( c2*(pow(MyxL,3.0)-pow(XARR[1],3.0))/3.0 
+                   + c1*(pow(MyxL,2.0)-pow(XARR[1],2.0))/2.0 
+                   + c0*(pow(MyxL,1.0)-pow(XARR[1],1.0))) / (MyxL - XARR[1]) ;
+          valRp1 = ( c2*(pow(MyxR,3.0)-pow(XARR[3],3.0))/3.0 
+                   + c1*(pow(MyxR,2.0)-pow(XARR[3],2.0))/2.0 
+                   + c0*(pow(MyxR,1.0)-pow(XARR[3],1.0))) / (MyxR - XARR[3]) ;
         
           // Hard Limiters
-          if (valLp1 > std::max(PRIMS(2),PRIMS(1))) valLp1 = std::max(PRIMS(2),PRIMS(1));
-          if (valLp1 < std::min(PRIMS(2),PRIMS(1))) valLp1 = std::min(PRIMS(2),PRIMS(1));
-          if (valRp1 > std::max(PRIMS(2),PRIMS(3))) valRp1 = std::max(PRIMS(2),PRIMS(3));
-          if (valRp1 < std::min(PRIMS(2),PRIMS(3))) valRp1 = std::min(PRIMS(2),PRIMS(3));
-        
-          // Hard reset if no movement
-          if (MyxR==XARR(3)) valRp1 = ql_kph(n,i);
-          if (MyxL==XARR(1)) valLp1 = qr_kmh(n,i);
+          if (valLp1 > std::max(PRIMS[2],PRIMS[1])){
+            valLp1 = std::max(PRIMS[2],PRIMS[1]);
+          } else { 
+            valLp1 = valLp1;
+          }
 
+          if (valLp1 < std::min(PRIMS[2],PRIMS[1])){
+            valLp1 = std::min(PRIMS[2],PRIMS[1]);
+          } else { 
+            valLp1 = valLp1;
+          }
+
+          if (valRp1 > std::max(PRIMS[2],PRIMS[3])){
+            valRp1 = std::max(PRIMS[2],PRIMS[3]);
+          } else { 
+            valRp1 = valRp1;
+          }
+
+          if (valRp1 < std::min(PRIMS[2],PRIMS[3])){
+            valRp1 = std::min(PRIMS[2],PRIMS[3]);
+          } else { 
+            valRp1 = valRp1;
+          }
+
+          // Hard reset if no movement
+          if (MyxR==XARR[3]){
+            valRp1 = ql_kph(n,i);
+          } else { 
+            valRp1 = valRp1;
+          }
+
+          if (MyxL==XARR[1]){
+            valLp1 = qr_kmh(n,i);
+          } else { 
+            valLp1 = valLp1;
+          }
           //Cache Left and Right average positions
           pmb->pex->ExpwL(n,k+1,j,i) = valRp1;
           pmb->pex->ExpwR(n,k,j,i  ) = valLp1;
           pmb->peos->ApplyPrimitiveFloors(pmb->pex->ExpwL, k+1, j, i);
           pmb->peos->ApplyPrimitiveFloors(pmb->pex->ExpwR, k, j, i);
+        } else {
+          pmb->pex->ExpwL(n,k+1,j,i) = 0.0;
+          pmb->pex->ExpwR(n,k,j,i  ) = 0.0;
         } // End Expanding Corrections
         // Reapply EOS floors to both L/R reconstructed primitive states
         pmb->peos->ApplyPrimitiveFloors(wl, k+1, j, i);

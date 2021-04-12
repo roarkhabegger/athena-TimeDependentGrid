@@ -25,6 +25,9 @@
 #include "../field/field.hpp"
 #include "../globals.hpp"
 #include "../hydro/hydro.hpp"
+#ifdef MPI_PARALLEL
+#include <mpi.h>
+#endif
 //========================================================================================
 // Time Dependent Grid Functions
 //  \brief Functions for time dependent grid, including two example boundary conditions
@@ -128,14 +131,15 @@ void UpdateGridData(Mesh *pm) {
     MeshBlock *pmb = pm->pblock;
     Real myVel = 0.0;
     Real pos  = 0.0;
-    Real posUp = pmb->pcoord->x1v(((pmb->ie)-3));
-    Real posLow = pmb->pcoord->x1v(((pmb->ie)-15));
+    Real cellsize = 2.0*pm->mesh_size.x1max/pm->mesh_size.nx1;
+    Real posUp = pm->mesh_size.x1max - 3.0*cellsize;
+    Real posLow = pm->mesh_size.x1max - 15.0*cellsize;
+
     Real mom1 = 0.0;
     Real vol = 0.0;   
-    //while (pmb != NULL) {
+    while (pmb != NULL) {
     for (int k=pmb->ks; k<=pmb->ke; ++k) {
       for (int j=pmb->js; j<=pmb->je; ++j) {
-#pragma omp simd
         for (int i=pmb->is; i<=pmb->ie; ++i) {
           pos = pow( pow( pmb->pcoord->x1v(i),2.0) + pow(pmb->pcoord->x2v(j),2.0),0.5);
           if ((pos<=posUp) && (pos>=posLow)) {
@@ -147,13 +151,32 @@ void UpdateGridData(Mesh *pm) {
         }
       }
     }
-    myVel = mom1/vol*(pm->GridData(3)/(posLow));
-    //std::cout << myVel << std::endl;
-    if ((myVel <=0.0)) {
-      myVel = 0.0;
+    pmb = pmb->next;
     }
-    pm->GridData(2) = myVel;
-    pm->GridData(6) = myVel;
+
+#ifdef MPI_PARALLEL
+    //if (Globals::my_rank == 0) {
+      MPI_Allreduce(MPI_IN_PLACE,&mom1,1,MPI_ATHENA_REAL,MPI_SUM,
+                 MPI_COMM_WORLD);
+      MPI_Allreduce(MPI_IN_PLACE,&vol,1,MPI_ATHENA_REAL,MPI_SUM,
+                 MPI_COMM_WORLD);
+    //} else {
+    //  MPI_Reduce(&mom1,&mom1,1,MPI_ATHENA_REAL,MPI_SUM,0,
+    //             MPI_COMM_WORLD);
+    //  MPI_Reduce(&vol,&vol,1,MPI_ATHENA_REAL,MPI_SUM,0,
+    //             MPI_COMM_WORLD);
+    //}
+#endif
+    //if (Globals::my_rank == 0) {
+      myVel = mom1/vol*(pm->GridData(3)/(posLow));
+      //std::cout << myVel << std::endl;
+      if ((myVel <=0.0)) {
+        myVel = 0.0;
+      }
+      //std::cout << myVel << std::endl;
+      pm->GridData(2) = myVel;
+      pm->GridData(6) = myVel;
+    //}
   } else {
     xMax = pm->mesh_size.x1max;
     pm->GridData(3) = xMax;
