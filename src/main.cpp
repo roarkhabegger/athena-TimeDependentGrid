@@ -394,6 +394,9 @@ int main(int argc, char *argv[]) {
         pmesh->CalcGridData_(pmesh); 
       }
       ptlist->DoTaskListOneStage(pmesh, stage);
+      if (EXPANDING) {
+        pmesh->SetMeshSize(pmesh); 
+      }
       
     }
 

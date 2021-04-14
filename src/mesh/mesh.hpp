@@ -212,6 +212,7 @@ public:
 
   WallVel_t GridDiffEq_;
   CalcGridData_t CalcGridData_;
+  void SetMeshSize(Mesh *pm);
   AthenaArray<Real> GridData; 
 
 private:

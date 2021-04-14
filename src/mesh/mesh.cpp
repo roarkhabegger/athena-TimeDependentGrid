@@ -2403,3 +2403,83 @@ void Mesh::SetGridData(int n) {
   }
   return;
 }
+//----------------------------------------------------------------------------------------
+//! \fn void Mesh::SetMeshSize()
+//  \brief Set Mesh size object with new bounds 
+
+void Mesh::SetMeshSize(Mesh *pm) {
+  if (EXPANDING) {
+    Real inner = 0.0;
+    Real outer = 0.0;
+    MeshBlock *pmb = pm->pblock;
+
+    if (pmb->pex->x1Move) {
+      //x1
+      inner = 0.0;
+      outer = 0.0;
+        
+      while (pmb != NULL) {
+        inner = std::min(pmb->block_size.x1min,inner);
+        outer = std::max(pmb->block_size.x1max,outer);
+        pmb = pmb->next;
+      }
+
+#ifdef MPI_PARALLEL
+      MPI_Allreduce(MPI_IN_PLACE,&inner,1,MPI_ATHENA_REAL,MPI_MIN,
+                   MPI_COMM_WORLD);
+      MPI_Allreduce(MPI_IN_PLACE,&outer,1,MPI_ATHENA_REAL,MPI_MAX,
+                   MPI_COMM_WORLD);
+#endif
+  
+      pm->mesh_size.x1min = inner;
+      pm->mesh_size.x1max = outer;
+    }
+    pmb = pm->pblock;
+
+    if (pmb->pex->x2Move) {
+      //x1
+      inner = 0.0;
+      outer = 0.0;
+        
+      while (pmb != NULL) {
+        inner = std::min(pmb->block_size.x2min,inner);
+        outer = std::max(pmb->block_size.x2max,outer);
+        pmb = pmb->next;
+      }
+
+#ifdef MPI_PARALLEL
+      MPI_Allreduce(MPI_IN_PLACE,&inner,1,MPI_ATHENA_REAL,MPI_MIN,
+                   MPI_COMM_WORLD);
+      MPI_Allreduce(MPI_IN_PLACE,&outer,1,MPI_ATHENA_REAL,MPI_MAX,
+                   MPI_COMM_WORLD);
+#endif
+  
+      pm->mesh_size.x2min = inner;
+      pm->mesh_size.x2max = outer;
+    }
+    pmb = pm->pblock;
+    if (pmb->pex->x3Move) {
+      //x1
+      inner = 0.0;
+      outer = 0.0;
+        
+      while (pmb != NULL) {
+        inner = std::min(pmb->block_size.x3min,inner);
+        outer = std::max(pmb->block_size.x3max,outer);
+        pmb = pmb->next;
+      }
+
+#ifdef MPI_PARALLEL
+      MPI_Allreduce(MPI_IN_PLACE,&inner,1,MPI_ATHENA_REAL,MPI_MIN,
+                   MPI_COMM_WORLD);
+      MPI_Allreduce(MPI_IN_PLACE,&outer,1,MPI_ATHENA_REAL,MPI_MAX,
+                   MPI_COMM_WORLD);
+#endif
+  
+      pm->mesh_size.x3min = inner;
+      pm->mesh_size.x3max = outer;
+    }
+
+  }
+  return;
+}

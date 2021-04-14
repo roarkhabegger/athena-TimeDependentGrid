@@ -848,20 +848,10 @@ void Expansion::GridEdit(MeshBlock *pmb,bool lastStage){
     //x1
     Real inner = 0.0;
     Real outer = 0.0;
-    inner = pmb->pcoord->x1f(is);
-    outer = pmb->pcoord->x1f(ie+1);
+    inner = x1_0(is);
+    outer = x1_0(ie+1);
     pmb->block_size.x1min = inner;
     pmb->block_size.x1max = outer;
-
-#ifdef MPI_PARALLEL
-      MPI_Allreduce(MPI_IN_PLACE,&inner,1,MPI_ATHENA_REAL,MPI_MIN,
-                 MPI_COMM_WORLD);
-      MPI_Allreduce(MPI_IN_PLACE,&outer,1,MPI_ATHENA_REAL,MPI_MAX,
-                 MPI_COMM_WORLD);
-#endif
-
-      pmb->pmy_mesh->mesh_size.x1min = inner;
-      pmb->pmy_mesh->mesh_size.x1max = outer;
   }
   if (x2Move) {
     //x2 
@@ -869,16 +859,8 @@ void Expansion::GridEdit(MeshBlock *pmb,bool lastStage){
     Real outer = 0.0;
     inner = x2_0(js);
     outer = x2_0(je+1);
-#ifdef MPI_PARALLEL
-      MPI_Allreduce(MPI_IN_PLACE,&inner,1,MPI_ATHENA_REAL,MPI_MIN,
-                 MPI_COMM_WORLD);
-      MPI_Allreduce(MPI_IN_PLACE,&outer,1,MPI_ATHENA_REAL,MPI_MAX,
-                 MPI_COMM_WORLD);
-#endif
-
-      pmb->pmy_mesh->mesh_size.x2min = inner;
-      pmb->pmy_mesh->mesh_size.x2max = outer;
-
+    pmb->block_size.x2min = inner;
+    pmb->block_size.x2max = outer;
   }
   if (x3Move) {
     //x3
@@ -887,27 +869,8 @@ void Expansion::GridEdit(MeshBlock *pmb,bool lastStage){
     Real outer = 0.0;
     inner = x3_0(ks);
     outer = x3_0(ke+1);
-
-//    if (pmb->block_size.x3min == pmb->pmy_mesh->mesh_size.x3min) {
-//      pmb->pmy_mesh->mesh_size.x3min = x3_0(ks);
-//    }  
-//    if (pmb->block_size.x3max == pmb->pmy_mesh->mesh_size.x3max) {
-//      pmb->pmy_mesh->mesh_size.x3max = x3_0(ke);
-//    } 
-#ifdef MPI_PARALLEL
-      MPI_Allreduce(MPI_IN_PLACE,&inner,1,MPI_ATHENA_REAL,MPI_MIN,
-                 MPI_COMM_WORLD);
-      MPI_Allreduce(MPI_IN_PLACE,&outer,1,MPI_ATHENA_REAL,MPI_MAX,
-                 MPI_COMM_WORLD);
-#endif
-
-      pmb->pmy_mesh->mesh_size.x3min = inner;
-      pmb->pmy_mesh->mesh_size.x3max = outer;
-
-
-
-    pmb->block_size.x3min = x3_0(ks);
-    pmb->block_size.x3max = x3_0(ke);
+    pmb->block_size.x3min = inner;
+    pmb->block_size.x3max = outer;
   }
    
   return;
