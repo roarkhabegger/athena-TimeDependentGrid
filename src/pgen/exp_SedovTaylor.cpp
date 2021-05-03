@@ -39,6 +39,11 @@ void UpdateGridData(Mesh *pm);
 Real ambDens;
 Real ambVel;
 Real ambPres;
+
+Real Eej;
+Real dej;
+Real Rej;
+
 void OuterX1_UniformMedium(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
      FaceField &b, Real time, Real dt, int is, int ie, int js, int je, int ks, int ke, int ngh);
 void OuterX2_UniformMedium(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
@@ -53,7 +58,6 @@ void InnerX2_UniformMedium(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &
 void InnerX3_UniformMedium(MeshBlock *pmb, Coordinates *pco, AthenaArray<Real> &prim,
      FaceField &b, Real time, Real dt, int is, int ie, int js, int je, int ks, int ke, int ngh);
 
-void ShockDetector(AthenaArray<Real> data, AthenaArray<Real> grid, int outArr[], Real eps);
 
 //========================================================================================
 //! \fn void WallVel(Real xf, int i, Real time, Real dt, int dir, AthenaArray<Real> gridData)
@@ -67,6 +71,10 @@ void ShockDetector(AthenaArray<Real> data, AthenaArray<Real> grid, int outArr[],
 //========================================================================================
 Real WallVel(Real xf, int i, Real time, Real dt, int dir, AthenaArray<Real> gridData) {
   Real retVal = 0.0;
+  Real myVel = 0.0;
+  Real vol = 0.0; 
+  Real vej = 0.0;
+  Real tST = 0.0;
   
  
   Real myX = xf;
@@ -106,13 +114,22 @@ Real WallVel(Real xf, int i, Real time, Real dt, int dir, AthenaArray<Real> grid
       else retVal = gridData(2) * (myX-gridData(0))/(gridData(3)-gridData(0));
     } 
   } else if (COORDINATE_SYSTEM == "spherical_polar") {
+    vol = 4.0/3.0*M_PI*std::pow(Rej,3.0);
+    vej =  std::pow(Eej*2/(dej*vol),0.5);
+    tST = std::pow(dej/ambDens,1.0/3.0)*Rej/vej;
+
+    if (time < tST) {
+      myVel =1.2* vej;
+    } else {
+      myVel =1.2* vej*std::pow(time/tST,-0.6)*1.16*1.17*0.4;
+    }
+
     if (dir != gridData(1)){
       retVal = 0.0;
     } else if (myX<=gridData(0)){
       retVal = 0.0;
     } else if (myX > gridData(0)){ 
-      if (gridData(2)==0.0) retVal = 0.0;
-      else retVal = gridData(2) * (myX-gridData(0))/(gridData(3)-gridData(0));
+      retVal = myVel * (myX-gridData(0))/(gridData(3)-gridData(0));
     } 
   }
 
@@ -144,44 +161,18 @@ void UpdateGridData(Mesh *pm) {
     xMin = pm->mesh_size.x3min;
     pm->GridData(11) = xMax;
     pm->GridData(8) = xMin;
-
-    MeshBlock *pmb = pm->pblock;
     Real myVel = 0.0;
-    Real pos  = 0.0;
-    Real cellsize = 2.0*pm->mesh_size.x1max/pm->mesh_size.nx1;
-    Real posUp = pm->mesh_size.x1max - 3.0*cellsize;
-    Real posLow = pm->mesh_size.x1max - 15.0*cellsize;
+    Real t = pm->time;
+    Real vol = 4.0/3.0*M_PI*std::pow(Rej,3.0);
+    Real vej = std::pow(Eej*2/(dej*vol),0.5);
+    Real tST = std::pow(dej/ambDens,1.0/3.0)*Rej/vej;
 
-    Real velAve = 0.0;
-    Real vol = 0.0;   
-    while (pmb != NULL) {
-    for (int k=pmb->ks; k<=pmb->ke; ++k) {
-      for (int j=pmb->js; j<=pmb->je; ++j) {
-        for (int i=pmb->is; i<=pmb->ie; ++i) {
-          pos = pow( pow( pmb->pcoord->x1v(i),2.0) + pow(pmb->pcoord->x2v(j),2.0)+ pow(pmb->pcoord->x3v(k),2.0),0.5);
-          if ((pos<=posUp) && (pos>=posLow)) {
-            velAve += 5.0*pow( pow(pmb->phydro->u(IM1,k,j,i),2.0) 
-                           + pow(pmb->phydro->u(IM2,k,j,i),2.0)
-                           + pow(pmb->phydro->u(IM3,k,j,i),2.0),0.5)
-                      /  pmb->phydro->u(IDN,k,j,i)*pmb->pcoord->GetCellVolume(k,j,i);
-            vol += pmb->pcoord->GetCellVolume(k,j,i);
-          }                  
-        }
-      }
-    }
-    pmb = pmb->next;
+    if (t < tST) {
+      myVel = vej;
+    } else {
+      myVel = vej*std::pow(t/tST,-0.6)*1.16*1.17*0.4;
     }
 
-#ifdef MPI_PARALLEL
-    MPI_Allreduce(MPI_IN_PLACE,&velAve,1,MPI_ATHENA_REAL,MPI_SUM,
-                  MPI_COMM_WORLD);
-    MPI_Allreduce(MPI_IN_PLACE,&vol,1,MPI_ATHENA_REAL,MPI_SUM,
-                  MPI_COMM_WORLD);
-#endif
-    myVel = velAve/vol*(pm->GridData(3)/(posLow));
-    if ((myVel <=0.0)) {
-      myVel = 0.0;
-    }
     pm->GridData(2) = myVel;
     pm->GridData(6) = myVel;
     pm->GridData(10) = myVel;
@@ -189,93 +180,12 @@ void UpdateGridData(Mesh *pm) {
   } else {
     xMax = pm->mesh_size.x1max;
     pm->GridData(3) = xMax;
-    MeshBlock *pmb = pm->pblock;
-    Real myVel = 0.0;
-    Real pos  = 0.0;
-    Real cellsize = pm->mesh_size.x1max/pm->mesh_size.nx1;
-    Real posUp = pm->mesh_size.x1max;
-    Real posLow = pm->mesh_size.x1max - 15.0*cellsize;
-    Real velMax = 0.0;
-    Real pVelMax = 0.0;   
-    while (pmb != NULL) {
-      for (int k=pmb->ks; k<=pmb->ke; ++k) {
-        for (int j=pmb->js; j<=pmb->je; ++j) {
-          for (int i=pmb->is; i<=pmb->ie; ++i) {
-            pos = pmb->pcoord->x1v(i);
-            if ((pos<=posUp) && (pos>=posLow)) {
-  
-              velMax = std::max( pmb->phydro->u(IM1,k,j,i)/pmb->phydro->u(IDN,k,j,i), velMax);
-              
-              pVelMax = std::max(std::pow( pmb->phydro->u(IEN,k,j,i)/pmb->phydro->u(IDN,k,j,i),0.5), velMax);
-              //velAve += pmb->phydro->u(IM1,k,j,i)/pmb->phydro->u(IDN,k,j,i)*pmb->pcoord->GetCellVolume(k,j,i);
-              //vol += pmb->pcoord->GetCellVolume(k,j,i);
-            }
-                        
-          }
-        }
-      }
-    pmb = pmb->next;
-    }
-#ifdef MPI_PARALLEL
-    MPI_Allreduce(MPI_IN_PLACE,&velMax,1,MPI_ATHENA_REAL,MPI_MAX,
-                  MPI_COMM_WORLD);
-    MPI_Allreduce(MPI_IN_PLACE,&pVelMax,1,MPI_ATHENA_REAL,MPI_MAX,
-                  MPI_COMM_WORLD);
-#endif
-    
-    myVel = std::max(velMax,pVelMax)*(pm->GridData(3)/(posLow));
-    //std::cout << myVel << std::endl;
-    if ((myVel <=0.0)) {
-      myVel = 0.0;
-    }
-    pm->GridData(2) = 3.0*myVel;
   }
 
    
 
   return;
 }
-
-
-//Harten Van Leer Shock detection algorithm Out data should be a 1 dimensional array,
-// with the same length as indata and grid. indata is the array of Real values where
-// we look for the shocks. eps is the slope magnitude limiter, i.e. if the slope is
-// above eps, then the location has a shock.
-void ShockDetector(AthenaArray<Real> data, AthenaArray<Real> grid, int outArr[], Real eps ) {
-  int n, loc;
-  Real a, b, c;
-  n = data.GetDim1();
-  AthenaArray<Real> shockData;
-  shockData.NewAthenaArray(n-1);
-  loc = 0;
-  for (int i=1; i<(n-1); ++i) {
-    a = 0;
-    b = 0;
-    a = std::abs(data(i)-data(i-1));
-    b = std::abs(data(i+1)-data(i));
-    c = a+b;
-    shockData(i-1) = std::pow(a-b,2);
-
-    if ( c <= eps) { 
-      shockData(i-1) = 0.0;
-    } else { 
-      shockData(i-1) *= std::pow(a+b,-2);
-    }  
-  }  
-  int k=0;
-  for (int i=0; i< (n-1); ++i) {
-    if (shockData(i) >= 0.95){
-      outArr[k] = i;
-      k+=1;    
-    }
-
-  }
-   
- 
-  shockData.DeleteAthenaArray();
-  return;
-}
-
 //========================================================================================
 //! \fn void Mesh::InitUserMeshData(ParameterInput *pin)
 //  \brief Function to initialize problem-specific data in Mesh class.  Can also be used
@@ -326,14 +236,14 @@ void Mesh::InitUserMeshData(ParameterInput *pin) {
       }
     }
     EnrollCalcGridData(UpdateGridData);
+    Rej = pin->GetReal("problem","radius");
+    ambPres   = pin->GetOrAddReal("problem","pamb",1.0);
+    ambDens   = pin->GetOrAddReal("problem","damb",1.0);
+    dej = pin->GetOrAddReal("problem","dej",ambDens);
+    Eej   = pin->GetOrAddReal("problem","Eej",0.0);
     
-    ambDens = pin->GetReal("problem","damb");
     ambVel  = 0.0;
-    ambPres = pin->GetReal("problem","pamb");
     
-    Real rout = pin->GetReal("problem","radius");
-    Real rin  = rout - pin->GetOrAddReal("problem","ramp",0.0);
-    Real vs   = pin->GetOrAddReal("problem","vel",0.0);
 
     if (COORDINATE_SYSTEM == "cartesian") {
       GridData(0) = mesh_size.x1min;
@@ -701,12 +611,13 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin) {
   // In practice, this function should *always* be replaced by a version
   // that sets the initial conditions for the problem of interest.
   Real rout = pin->GetReal("problem","radius");
+  Rej = rout;
   Real dr  =  pin->GetOrAddReal("problem","ramp",0.1);
-  Real pa   = pin->GetOrAddReal("problem","pamb",1.0);
-  Real da   = pin->GetOrAddReal("problem","damb",1.0);
-  Real prat = pin->GetReal("problem","prat");
-  Real drat = pin->GetOrAddReal("problem","drat",1.0);
-  Real vSh   = pin->GetOrAddReal("problem","vel",0.0);
+  ambPres   = pin->GetOrAddReal("problem","pamb",1.0);
+  ambDens   = pin->GetOrAddReal("problem","damb",1.0);
+  //Real prat = pin->GetReal("problem","prat");
+  dej = pin->GetOrAddReal("problem","dej",ambDens);
+  Eej   = pin->GetOrAddReal("problem","Eej",0.0);
   Real b0,angle;
   if (MAGNETIC_FIELDS_ENABLED) {
     b0 = pin->GetReal("problem","b0");
@@ -714,6 +625,8 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin) {
   }
   Real gamma = peos->GetGamma();
   Real gm1 = gamma - 1.0;
+
+  Real Pej = Eej * gm1 /(4/3*M_PI*std::pow(rout-0.5*dr,3));
 
   // get coordinates of center of blast, and convert to Cartesian if necessary
   Real x1_0   = pin->GetOrAddReal("problem","x1_0",0.0);
@@ -759,44 +672,22 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin) {
       Real z = pcoord->x1v(i)*std::cos(pcoord->x2v(j));
       rad = std::sqrt(SQR(x - x0) + SQR(y - y0) + SQR(z - z0));
     }
-    Real den = da;
-    Real v1  = 0.0;
-    //if (rad < rout) {
-    //  v1 = vSh;
-   //   if (rad < rin) {
-   //     den = drat*da;
-   //   } else {   // add smooth ramp in density
-   //     Real f = (rad-rin) / (rout-rin);
-   //     Real log_den = (1.0-f) * std::log(drat*da) + f * std::log(da);
-   //     den = std::exp(log_den);
-   //   }
-   // }
+    Real dens = ambDens;
+    dens += dej*0.5*(1.0-std::tanh((rad-rout)/dr));
 
-    den += drat*da*0.5*(1.0-std::tanh((rad-rout)/dr));
-    v1  += vSh*0.5*(1.0-std::tanh((rad-rout)/dr));
-
-    phydro->u(IDN,k,j,i) = den;
-    phydro->u(IM1,k,j,i) = den*v1;
+    phydro->u(IDN,k,j,i) = dens;
+    phydro->u(IM1,k,j,i) = 0.0;
     phydro->u(IM2,k,j,i) = 0.0;
     phydro->u(IM3,k,j,i) = 0.0;
     if (NON_BAROTROPIC_EOS) {
-      Real pres = pa;
-    //  if (rad < rout) {
-    //    if (rad < rin) {
-    //      pres = prat*pa;
-    //    } else {  // add smooth ramp in pressure
-    //      Real f = (rad-rin) / (rout-rin);
-    //      Real log_pres = (1.0-f) * std::log(prat*pa) + f * std::log(pa);
-    //      pres = std::exp(log_pres);
-    //    }
-    //  }
-      pres += prat*pa*0.5*(1.0-std::tanh((rad-rout)/dr));
-      phydro->u(IEN,k,j,i) = 0.5*den*pow(v1,2.0)+pres/gm1;
+      Real pres = ambPres;
+      pres += Pej*0.5*(1.0-std::tanh((rad-rout)/dr));
+      phydro->u(IEN,k,j,i) =pres/gm1;
     }
 
     if (NSCALARS > 0) {
       for (int n=NHYDRO-NSCALARS; n<NHYDRO; ++n) {
-        phydro->u(n,k,j,i) = den;
+        phydro->u(n,k,j,i) = dens;
       }
     }
 		

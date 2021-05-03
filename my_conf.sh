@@ -1,8 +1,8 @@
 # Easy to edit configure script for athena++ 
 python3 configure.py\
-			 --prob exp_followBlast\
+			 --prob exp_SedovTaylor\
 			 --flux hllc\
-			 --coord cartesian \
+			 --coord spherical_polar \
 			 --nghost=3 \
 			 -hdf5 \
 			 -mpi \
