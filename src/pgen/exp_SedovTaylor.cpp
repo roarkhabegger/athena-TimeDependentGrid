@@ -119,9 +119,9 @@ Real WallVel(Real xf, int i, Real time, Real dt, int dir, AthenaArray<Real> grid
     tST = std::pow(dej/ambDens,1.0/3.0)*Rej/vej;
 
     if (time < tST) {
-      myVel =1.2* vej;
+      myVel =4* vej;
     } else {
-      myVel =1.2* vej*std::pow(time/tST,-0.6)*1.16*1.17*0.4;
+      myVel =2*1.2*1.2* vej*std::pow(time/tST,-0.6)*1.16*1.17*0.4;
     }
 
     if (dir != gridData(1)){
@@ -626,8 +626,8 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin) {
   Real gamma = peos->GetGamma();
   Real gm1 = gamma - 1.0;
 
-  Real Pej = Eej * gm1 /(4/3*M_PI*std::pow(rout-0.5*dr,3));
-
+  Real Pej = 0.1*Eej * gm1 /(4/3*M_PI*std::pow(rout-0.5*dr,3));
+  Real KE  = 0.9*Eej;
   // get coordinates of center of blast, and convert to Cartesian if necessary
   Real x1_0   = pin->GetOrAddReal("problem","x1_0",0.0);
   Real x2_0   = pin->GetOrAddReal("problem","x2_0",0.0);
@@ -674,15 +674,18 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin) {
     }
     Real dens = ambDens;
     dens += dej*0.5*(1.0-std::tanh((rad-rout)/dr));
+    Real vel = 0.0;
+    vel += rad*std::pow(KE*5/(2*M_PI*(ambDens+dej)),0.5)*std::pow(rout,-2.5)*0.5*(1.0-std::tanh((rad-rout)/dr));
+
 
     phydro->u(IDN,k,j,i) = dens;
-    phydro->u(IM1,k,j,i) = 0.0;
+    phydro->u(IM1,k,j,i) = vel*dens;
     phydro->u(IM2,k,j,i) = 0.0;
     phydro->u(IM3,k,j,i) = 0.0;
     if (NON_BAROTROPIC_EOS) {
       Real pres = ambPres;
       pres += Pej*0.5*(1.0-std::tanh((rad-rout)/dr));
-      phydro->u(IEN,k,j,i) =pres/gm1;
+      phydro->u(IEN,k,j,i) =pres/gm1+0.5*vel*vel*dens;
     }
 
     if (NSCALARS > 0) {
