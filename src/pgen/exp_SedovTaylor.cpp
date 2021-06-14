@@ -613,6 +613,8 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin) {
   Real rout = pin->GetReal("problem","radius");
   Rej = rout;
   Real dr  =  pin->GetOrAddReal("problem","ramp",0.1);
+  Real rout2 = pin->GetReal("problem","radius2");
+  Real dr2  =  pin->GetOrAddReal("problem","ramp2",0.1);
   ambPres   = pin->GetOrAddReal("problem","pamb",1.0);
   ambDens   = pin->GetOrAddReal("problem","damb",1.0);
   //Real prat = pin->GetReal("problem","prat");
@@ -626,8 +628,8 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin) {
   Real gamma = peos->GetGamma();
   Real gm1 = gamma - 1.0;
 
-  Real Pej = 0.1*Eej * gm1 /(4/3*M_PI*std::pow(rout-0.5*dr,3));
-  Real KE  = 0.9*Eej;
+  Real Pej = Eej * gm1 /(4/3*M_PI*std::pow(rout-0.5*dr,3));
+  Real KE  = Eej;
   // get coordinates of center of blast, and convert to Cartesian if necessary
   Real x1_0   = pin->GetOrAddReal("problem","x1_0",0.0);
   Real x2_0   = pin->GetOrAddReal("problem","x2_0",0.0);
@@ -675,7 +677,8 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin) {
     Real dens = ambDens;
     dens += dej*0.5*(1.0-std::tanh((rad-rout)/dr));
     Real vel = 0.0;
-    vel += rad*std::pow(KE*5/(2*M_PI*(ambDens+dej)),0.5)*std::pow(rout,-2.5)*0.5*(1.0-std::tanh((rad-rout)/dr));
+    vel += rad*std::pow(KE*5/(2*M_PI*(ambDens+dej)),0.5)*std::pow(rout,-2.5)*0.5*(1.0-std::tanh((rad-rout)/dr))
+           + 0.75*rout*std::pow(KE*5/(2*M_PI*(ambDens+dej)),0.5)*std::pow(rout,-2.5)*0.5*(std::tanh((rad-rout)/dr)-std::tanh((rad-rout2)/dr2));
 
 
     phydro->u(IDN,k,j,i) = dens;

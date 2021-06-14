@@ -885,7 +885,7 @@ Real Expansion::GridTimeStep(MeshBlock *pmb){
 
   Real mydt = pmesh->dt;
 
-  Real min_dt = mydt*100000;
+  Real min_dt = (FLT_MAX);
   Real dtEx = min_dt;
   int count = 0;
   Real overStep = 0.0;
@@ -899,7 +899,6 @@ Real Expansion::GridTimeStep(MeshBlock *pmb){
         minCellSize = pmb->pcoord->dx1f(i);
       }
   
-      minCellSize *= pmesh->cfl_number;
       nextPosDelta = fabs(nextPosDelta);
   
       if (nextPosDelta != 0.0 && minCellSize != 0.0){
@@ -908,6 +907,7 @@ Real Expansion::GridTimeStep(MeshBlock *pmb){
         while (overStep <= 0){
           mydt *= 0.9;
           nextPosDelta = pmesh->GridDiffEq_(pmb->pcoord->x1f(i),i,pmesh->time,mydt,1,pmesh->GridData)*mydt;
+          nextPosDelta = fabs(nextPosDelta);
           overStep = minCellSize - nextPosDelta;      
           count++;
           if (count >=20) {
@@ -934,7 +934,6 @@ Real Expansion::GridTimeStep(MeshBlock *pmb){
         minCellSize = pmb->pcoord->dx2f(j);
       }
   
-      minCellSize *= pmesh->cfl_number;
       nextPosDelta = fabs(nextPosDelta);
   
       if (nextPosDelta != 0.0 && minCellSize != 0.0){
@@ -943,6 +942,7 @@ Real Expansion::GridTimeStep(MeshBlock *pmb){
         while (overStep <= 0){
           mydt *= 0.9;
           nextPosDelta = pmesh->GridDiffEq_(pmb->pcoord->x2f(j),j,pmesh->time,mydt,2,pmesh->GridData)*mydt;
+          nextPosDelta = fabs(nextPosDelta);
           overStep = minCellSize - nextPosDelta;      
           count++;
           if (count >=20) {
@@ -969,7 +969,6 @@ Real Expansion::GridTimeStep(MeshBlock *pmb){
         minCellSize = pmb->pcoord->dx3f(k);
       }
   
-      minCellSize *= pmesh->cfl_number;
       nextPosDelta = fabs(nextPosDelta);
   
       if (nextPosDelta != 0.0 && minCellSize != 0.0){
@@ -978,6 +977,7 @@ Real Expansion::GridTimeStep(MeshBlock *pmb){
         while (overStep <= 0){
           mydt *= 0.9;
           nextPosDelta = pmesh->GridDiffEq_(pmb->pcoord->x3f(k),k,pmesh->time,mydt,3,pmesh->GridData)*mydt;
+          nextPosDelta = fabs(nextPosDelta);
           overStep = minCellSize - nextPosDelta;      
           count++;
           if (count >=20) {
